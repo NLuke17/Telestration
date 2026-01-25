@@ -13,7 +13,8 @@
   "type": "module",
   "dependencies": {
     "express": "^5.2.1",
-    "tsx": "^4.21.0"
+    "tsx": "^4.21.0",
+    "ws": "^8.19.0"
   },
   "devDependencies": {
     "@types/express": "^5.0.6",
