@@ -1,16 +1,20 @@
 import express from 'express';
+import cors from 'cors';
 import http from 'http';
 import { setupWebSocket } from './websocket.ts';
 
 const app = express();
 const server = http.createServer(app);
 
+app.use(cors());
+app.use(express.json());
+
 setupWebSocket(server);
 
 const PORT = process.env.PORT || 8000;
 
-app.get('/health', (_, res) => {
-    res.send('OK');
+app.get('/', (_, res) => {
+    res.json({ message: 'The backend has been hit!!!' });
 });
 
 server.listen(PORT, () => {
