@@ -19,3 +19,7 @@ model User {
   password  String
   createdAt DateTime @default(now())
 }
+
+model Lobby {
+  id String
+}
