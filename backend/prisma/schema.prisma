@@ -14,8 +14,89 @@ datasource db {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  username  String   @unique
-  password  String
+  id        String @id @default(uuid())
+  username  String @unique
+  password  String 
+  profilePicture  String //(was thinking string to store file path?)
   createdAt DateTime @default(now())
+
+  // Relations
+  hostedLobbies Lobby[]     @relation("LobbyHost")
+  lobbies       Lobby[]     @relation("LobbyPlayers")
+  flipbooks     Flipbook[]
+  wonRounds     Round[]     @relation("RoundWinner")
+}
+
+model Lobby {
+  id        String     @id @default(uuid())
+  roomCode  String     @unique
+  state     LobbyState @default(WAITING)
+  createdAt DateTime   @default(now())
+
+  // Relations
+  host        User       @relation("LobbyHost", fields: [hostId], references: [id])
+  hostId      String
+  players     User[]     @relation("LobbyPlayers")
+  rounds      Round[]
+}
+
+model Round{
+  id          String     @id @default(uuid())
+  number      Int
+  createdAt   DateTime   @default(now())
+  
+  // Relations
+  lobby       Lobby      @relation(fields: [lobbyId], references: [id])
+  lobbyId     String
+  flipbooks   Flipbook[]
+  winner      User?      @relation("RoundWinner", fields: [winnerId], references: [id])
+  winnerId    String?
+}
+
+model Flipbook {
+  id          String        @id @default(uuid())
+  votes       Int           @default(0)
+  state       FlipbookState @default(DRAWING)
+  createdAt   DateTime      @default(now())
+
+  // Relations
+  author      User          @relation(fields: [authorId], references: [id])
+  authorId    String
+  round       Round         @relation(fields: [roundId], references: [id])
+  roundId     String
+  drawings    Drawing[]
+  guesses     Guess[]
+}
+
+model Drawing {
+  id          String   @id @default(uuid())
+  drawingData String   // Store JSON string or URL to image
+  createdAt   DateTime @default(now())
+
+  // Relations
+  flipbook    Flipbook @relation(fields: [flipbookId], references: [id])
+  flipbookId  String
+}
+
+model Guess {
+  id          String   @id @default(uuid())
+  text        String
+  createdAt   DateTime @default(now())
+
+  // Relations
+  flipbook    Flipbook @relation(fields: [flipbookId], references: [id])
+  flipbookId  String
+}
+
+enum LobbyState {
+  WAITING
+  STARTING
+  IN_PROGRESS
+  FINISHED
+}
+
+enum FlipbookState {
+  DRAWING
+  GUESSING
+  VOTING
 }
