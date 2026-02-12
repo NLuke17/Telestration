@@ -2,4 +2,8 @@
 
 @theme {
     --color-light-grey: #D9D9D9;
+    --font-size-body-base: 1rem;
+    --font-weight-body-base: 400;
+    --color-body-base: #1E1E1E;
+    --color-brand-charcoal: #2C2C2C;
 }
