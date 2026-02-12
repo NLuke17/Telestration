@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /* Project CSS variables (kept for reference) */
-:root {
+@theme {
     --color-light-grey: #D9D9D9;
     --font-size-body-base: 1rem;
     --font-weight-body-base: 400;
