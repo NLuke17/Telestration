@@ -34,7 +34,6 @@ const AuthForm = () => {
             <Button
                 label="Login"
                 type="submit"
-                
             />
             </div>
         </form>
