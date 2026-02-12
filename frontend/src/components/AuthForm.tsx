@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import InputField from './InputField';
 
 const AuthForm = () => {
     const [username, setUsername] = useState('');
@@ -12,22 +13,20 @@ const AuthForm = () => {
     return (
         <form onSubmit={handleLogin}>
             <div className="flex flex-col">
-                <label>Username</label>
-                <input
-                    type="text"
-                    placeholder='Enter your username'
+                <InputField 
+                    label="Username"
+                    placeholder="Enter your username"
                     value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    className='border'
-                    />
+                    onChange={setUsername}
+                />
             </div>
-            <div>
-                <label>Password</label>
-                <input
-                    type="text"
-                    placeholder='Enter your password'
+            <div className='flex flex-col'>
+                <InputField
+                    label="Password"
+                    placeholder="Enter your password"
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    type='password'
+                    onChange={setPassword}
                 />
             </div>
             <button type="submit">Login</button>
