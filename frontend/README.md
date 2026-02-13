@@ -14,13 +14,6 @@ This folder contains the React + Vite + TypeScript frontend for the game.
 * **src/types**: TypeScript interfaces and types for game data.
 * **src/utils**: Pure helper functions and math utilities.
 
-## 🛠 Tech Stack
-- **Framework**: React (Vite)
-- **Language**: TypeScript
-- **State Management**: [Insert your choice, e.g., Zustand]
-- **Communication**: Socket.io-client
-
-
 # React + TypeScript + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
