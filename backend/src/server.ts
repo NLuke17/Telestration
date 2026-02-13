@@ -4,6 +4,7 @@ import http from 'http';
 import { setupWebSocket } from './websocket.ts';
 import authRoutes from './routes/authRoutes.ts';
 import healthRoutes from './routes/healthRoutes.ts';
+import lobbyRoutes from './routes/lobbyRoutes.ts';
 
 const app = express();
 const server = http.createServer(app);
@@ -13,15 +14,17 @@ app.use(express.json());
 
 setupWebSocket(server);
 
-app.use('/auth', authRoutes);
-
 const PORT = process.env.PORT || 8000;
+
+app.use('/auth', authRoutes);
+app.use('/health', healthRoutes);
+app.use('/lobby', lobbyRoutes);
+
 
 app.get('/', (_, res) => {
     res.json({ message: 'The backend has been hit!!!' });
 });
 
-app.use('/health', healthRoutes);
 
 server.listen(PORT, () => {
     console.log(`HTTP + WS server running on port ${PORT}`);
