@@ -3,6 +3,7 @@ import cors from 'cors';
 import http from 'http';
 import { setupWebSocket } from './websocket.ts';
 import authRoutes from './routes/authRoutes.ts';
+import healthRoutes from './routes/healthRoutes.ts';
 
 const app = express();
 const server = http.createServer(app);
@@ -19,6 +20,8 @@ const PORT = process.env.PORT || 8000;
 app.get('/', (_, res) => {
     res.json({ message: 'The backend has been hit!!!' });
 });
+
+app.use('/health', healthRoutes);
 
 server.listen(PORT, () => {
     console.log(`HTTP + WS server running on port ${PORT}`);

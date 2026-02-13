@@ -17,7 +17,7 @@ model User {
   id        String @id @default(uuid())
   username  String @unique
   password  String 
-  profilePicture  String //(was thinking string to store file path?)
+  profilePicture  String? //(was thinking string to store file path?)
   createdAt DateTime @default(now())
 
   // Relations
@@ -25,6 +25,8 @@ model User {
   lobbies       Lobby[]     @relation("LobbyPlayers")
   flipbooks     Flipbook[]
   wonRounds     Round[]     @relation("RoundWinner")
+  drawings      Drawing[]
+  guesses       Guess[]
 }
 
 model Lobby {
@@ -55,6 +57,7 @@ model Round{
 
 model Flipbook {
   id          String        @id @default(uuid())
+  prompt      String        // Starting word/phrase for the flipbook
   votes       Int           @default(0)
   state       FlipbookState @default(DRAWING)
   createdAt   DateTime      @default(now())
@@ -71,21 +74,27 @@ model Flipbook {
 model Drawing {
   id          String   @id @default(uuid())
   drawingData String   // Store JSON string or URL to image
+  order       Int      // Position in the flipbook sequence
   createdAt   DateTime @default(now())
 
   // Relations
   flipbook    Flipbook @relation(fields: [flipbookId], references: [id])
   flipbookId  String
+  author      User     @relation(fields: [authorId], references: [id])
+  authorId    String
 }
 
 model Guess {
   id          String   @id @default(uuid())
   text        String
+  order       Int      // Position in the flipbook sequence
   createdAt   DateTime @default(now())
 
   // Relations
   flipbook    Flipbook @relation(fields: [flipbookId], references: [id])
   flipbookId  String
+  author      User     @relation(fields: [authorId], references: [id])
+  authorId    String
 }
 
 enum LobbyState {
