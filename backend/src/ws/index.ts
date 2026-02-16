@@ -3,13 +3,13 @@ import { createWSS } from "./wsServer";
 import { registerLobbyWS } from "./lobbyWs";
 
 export function setupWebSocket(server: Server) {
-    const { wss } = createWSS(server);
-  
-    // Register WS modules
-    const lobby = registerLobbyWS(wss);
-  
-    // Return any server-side broadcasters you want to call from HTTP routes/services
-    return {
-      broadcastLobbyCreated: lobby.broadcastLobbyCreated,
-    };
-  }
+  const { wss } = createWSS(server);
+
+  const lobby = registerLobbyWS(wss);
+
+  return {
+    broadcastLobbyCreated: lobby.broadcastLobbyCreated,
+    broadcastLobbyDeleted: lobby.broadcastLobbyDeleted,
+    broadcastPlayerLeft: lobby.broadcastPlayerLeft
+  };
+}

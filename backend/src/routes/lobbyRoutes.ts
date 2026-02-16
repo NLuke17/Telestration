@@ -5,6 +5,15 @@ import { createLobbySchema, joinLobbySchema, getLobbySchema, deleteLobbySchema, 
 
 const router = express.Router();
 
+// // See all live lobbies
+// router.get('/', async (req, res) => {
+//   try {
+//     const lobbies = await getAllLobbies
+//   } catch (e: any){
+//     f
+//   }
+// })
+
 // Create a lobby
 router.post('/', validate(createLobbySchema), async (req, res) => {
   try {
@@ -76,6 +85,9 @@ router.post('/:roomCode/leave', validate(leaveLobbySchema), async (req, res) => 
     const roomCode = typeof req.params.roomCode === 'string' ? req.params.roomCode : req.params.roomCode[0];
     const { userId } = req.body;
     await leaveLobby(roomCode, userId);
+    if (res.app.locals.broadcastPlayerLeft) {
+      res.app.locals.broadcastPlayerLeft(roomCode, userId);
+    }
     return res.json({ message: "Lobby left" });
   } catch (e: any) {
     if (e.message === "LOBBY_NOT_FOUND") return res.status(404).json({ error: "Lobby not found" });

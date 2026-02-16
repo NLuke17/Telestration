@@ -25,9 +25,10 @@ app.get('/', (_, res) => {
 
 const wsAPI = setupWebSocket(server);
 app.locals.broadcastLobbyCreated = wsAPI.broadcastLobbyCreated;
+app.locals.broadcastLobbyDeleted = wsAPI.broadcastLobbyDeleted;
+app.locals.broadcastPlayerLeft = wsAPI.broadcastPlayerLeft;
 
 server.listen(PORT, HOST, () => {
     const baseUrl = HOST === '0.0.0.0' ? `http://localhost:${PORT}` : `http://${HOST}:${PORT}`;
-    console.log(`HTTP + WS server running on ${baseUrl}`);
     console.log(`WebSocket server running on ${baseUrl.replace('http', 'ws')}/ws`);
 });
