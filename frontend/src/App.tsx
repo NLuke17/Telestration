@@ -11,7 +11,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 function App() {
   return (
     <Router>
-      <div className="p-4">
+      <div>
         <Routes>
           <Route path="/" element={<Home />} />
           {/*<Route path="/explore" element={<Explore />} /> */}

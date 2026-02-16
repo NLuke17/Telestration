@@ -7,7 +7,8 @@ interface ContainerProps {
 
 export default function Container({ratio='5/9', width='900', children, className=''}: ContainerProps) {
     return (
-        <div className={`w-[${width}px] aspect-[${ratio}] flex items-center justify-center ${className}`}>
+        <div style={{ width: `${width}px` }}
+        className={`aspect-[${ratio}] flex items-center justify-center ${className}`}>
             {children}
         </div>
     );
