@@ -23,4 +23,5 @@ COPY . .
 EXPOSE 8000
 
 # Run with tsx for TypeScript support (dev mode)
-CMD ["npx", "tsx", "watch", "src/server.ts"]
+# Generate Prisma client before starting the server (needed because volume mount overwrites it)
+CMD ["sh", "-c", "npx prisma generate && npx tsx watch src/server.ts"]
