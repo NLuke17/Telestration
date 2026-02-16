@@ -1,8 +1,8 @@
 import prisma from "../prismaClient";
 
-export async function createUser(username: string, password: string) {
+export async function createUser(username: string, password: string, profilePicture?: string) {
   return prisma.user.create({
-    data: { username, password },
+    data: { username, password, profilePicture },
     select: {
       id: true,
       username: true,

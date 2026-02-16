@@ -1,14 +1,14 @@
 import express from 'express';
 import { createLobby, joinLobby, getLobbySnapshot } from "../services/lobbyService";
+import { validate } from "../middleware/validate";
+import { createLobbySchema, joinLobbySchema, getLobbySchema } from "../validation/lobby.validation";
 
 const router = express.Router();
 
 // Create a lobby
-router.post('/', async (req, res) => {
+router.post('/', validate(createLobbySchema), async (req, res) => {
   try {
     const { hostId } = req.body;
-    if (!hostId) return res.status(400).json({ error: "hostId is required" });
-
     const lobby = await createLobby(hostId);
     return res.status(201).json(lobby);
   } catch (e) {
@@ -17,11 +17,10 @@ router.post('/', async (req, res) => {
 });
 
 // Join a lobby
-router.post('/:roomCode/join', async (req, res) => {
+router.post('/:roomCode/join', validate(joinLobbySchema), async (req, res) => {
   try {
-    const { roomCode } = req.params;
+    const roomCode = typeof req.params.roomCode === 'string' ? req.params.roomCode : req.params.roomCode[0];
     const { userId } = req.body;
-    if (!userId) return res.status(400).json({ error: "userId is required" });
 
     const lobby = await joinLobby(roomCode, userId);
     return res.json(lobby);
@@ -34,9 +33,10 @@ router.post('/:roomCode/join', async (req, res) => {
 });
 
 // Get lobby snapshot
-router.get('/:roomCode', async (req, res) => {
+router.get('/:roomCode', validate(getLobbySchema), async (req, res) => {
   try {
-    const lobby = await getLobbySnapshot(req.params.roomCode);
+    const roomCode = typeof req.params.roomCode === 'string' ? req.params.roomCode : req.params.roomCode[0];
+    const lobby = await getLobbySnapshot(roomCode);
     return res.json(lobby);
   } catch (e: any) {
     if (e.message === "LOBBY_NOT_FOUND") return res.status(404).json({ error: "Lobby not found" });
