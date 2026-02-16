@@ -1,20 +1,17 @@
 import express from "express";
 import { createUser, listUsers } from "../services/authService";
+import { validate } from "../middleware/validate";
+import { createUserSchema } from "../validation/auth.validation";
 
 const router = express.Router();
 
-router.post("/create-user", async (req, res) => {
-  const { username, password } = req.body ?? {};
-
-  if (!username || !password) {
-    return res.status(400).json({ message: "username and password are required" });
-  }
+router.post("/create-user", validate(createUserSchema), async (req, res) => {
+  const { username, password, profilePicture } = req.body;
 
   try {
-    const user = await createUser(username, password);
+    const user = await createUser(username, password, profilePicture);
     return res.status(201).json(user);
   } catch (error: any) {
-    // Prisma unique constraint error handling (optional but useful)
     if (error?.code === "P2002") {
       return res.status(409).json({ message: "username already exists" });
     }

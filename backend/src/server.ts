@@ -8,18 +8,15 @@ import lobbyRoutes from './routes/lobbyRoutes.ts';
 
 const app = express();
 const server = http.createServer(app);
+const PORT = process.env.PORT || 8000;
 
 app.use(cors());
 app.use(express.json());
-
-setupWebSocket(server);
-
-const PORT = process.env.PORT || 8000;
-
 app.use('/auth', authRoutes);
 app.use('/health', healthRoutes);
 app.use('/lobby', lobbyRoutes);
 
+setupWebSocket(server);
 
 app.get('/', (_, res) => {
     res.json({ message: 'The backend has been hit!!!' });
