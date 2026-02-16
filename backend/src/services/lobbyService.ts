@@ -75,3 +75,27 @@ export async function getLobbySnapshot(roomCodeRaw: string) {
     if (!lobby) throw new Error("LOBBY_NOT_FOUND");
     return lobby;
 }
+
+export async function leaveLobby(roomCodeRaw: string, userId: string) {
+    const roomCode = roomCodeRaw.toUpperCase();
+    const lobby = await prisma.lobby.update({ where: { roomCode }, data: { players: { disconnect: { id: userId } } }, include: lobbyInclude });
+    return prisma.lobby.findUnique({
+        where: { roomCode },
+        include: lobbyInclude,
+    }) || lobby;
+}
+
+export async function deleteLobby(roomCodeRaw: string) {
+    const roomCode = roomCodeRaw.toUpperCase();
+    await prisma.lobby.delete({ where: { roomCode } });
+}
+
+export async function startLobby(roomCodeRaw: string) {
+    const roomCode = roomCodeRaw.toUpperCase();
+    await prisma.lobby.update({ where: { roomCode }, data: { state: "STARTING" } });
+}
+
+export async function endLobby(roomCodeRaw: string) {
+    const roomCode = roomCodeRaw.toUpperCase();
+    await prisma.lobby.update({ where: { roomCode }, data: { state: "FINISHED" } });
+}

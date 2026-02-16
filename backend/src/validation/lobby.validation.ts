@@ -5,7 +5,7 @@ import { z } from 'zod';
  */
 
 // UUID validation helper
-const uuidSchema = z.string().uuid('Invalid UUID format');
+const uuidSchema = z.string().uuid({ message: 'Invalid UUID format' });
 
 // Room code validation helper (6 uppercase alphanumeric)
 const roomCodeSchema = z
@@ -38,6 +38,37 @@ export const getLobbySchema = z.object({
   }),
 });
 
+export const leaveLobbySchema = z.object({
+  params: z.object({
+    roomCode: roomCodeSchema,
+  }),
+  body: z.object({
+    userId: uuidSchema,
+  }),
+});
+
+export const deleteLobbySchema = z.object({
+  params: z.object({
+    roomCode: roomCodeSchema,
+  }),
+});
+
+export const startLobbySchema = z.object({
+  params: z.object({
+    roomCode: roomCodeSchema,
+  }),
+});
+
+export const endLobbySchema = z.object({
+  params: z.object({
+    roomCode: roomCodeSchema,
+  }),
+});
+
 export type CreateLobbyInput = z.infer<typeof createLobbySchema>;
 export type JoinLobbyInput = z.infer<typeof joinLobbySchema>;
 export type GetLobbyInput = z.infer<typeof getLobbySchema>;
+export type LeaveLobbyInput = z.infer<typeof leaveLobbySchema>;
+export type DeleteLobbyInput = z.infer<typeof deleteLobbySchema>;
+export type StartLobbyInput = z.infer<typeof startLobbySchema>;
+export type EndLobbyInput = z.infer<typeof endLobbySchema>;
