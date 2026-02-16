@@ -12,7 +12,7 @@ const AuthForm = () => {
     }
 
     return (
-        <form className='w-full max-w-md' onSubmit={handleLogin}>
+        <form className='w-full' onSubmit={handleLogin}>
             <div className='flex flex-col gap-6'>
             <div className="flex flex-col">
                 <InputField 
