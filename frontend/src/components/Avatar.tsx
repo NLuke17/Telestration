@@ -1,16 +1,15 @@
 interface AvatarProps {
     name: string;
     sizeX?: string;
-    sizeY?: string;
     className?: string;
 }
 
-export default function InitialAvatar({ name, sizeX='16', sizeY='16', className = "" }: AvatarProps) {
+export default function InitialAvatar({ name, sizeX='16', className="" }: AvatarProps) {
   // Get first letter, default to '?' if name is empty
   const initial = name ? name.charAt(0).toUpperCase() : '?';
 
   return (
-    <div className={`w-${sizeX} h-${sizeY} rounded-full bg-slate-800 text-white flex items-center justify-center font-bold text-2xl shadow-inner ${className}`}>
+    <div className={`w-${sizeX} aspect-square bg-slate-800 rounded-full flex justify-center items-center text-white text-2xl font-bold ${className}`}>
       {initial}
     </div>
   );
