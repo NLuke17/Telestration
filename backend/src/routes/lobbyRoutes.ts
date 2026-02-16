@@ -23,6 +23,9 @@ router.post('/:roomCode/join', validate(joinLobbySchema), async (req, res) => {
     const { userId } = req.body;
 
     const lobby = await joinLobby(roomCode, userId);
+    if (res.app.locals.broadcastLobbyCreated) {
+      res.app.locals.broadcastLobbyCreated(lobby);
+    }
     return res.json(lobby);
   } catch (e: any) {
     if (e.message === "LOBBY_NOT_FOUND") return res.status(404).json({ error: "Lobby not found" });

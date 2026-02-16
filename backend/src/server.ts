@@ -1,28 +1,34 @@
 import express from 'express';
 import cors from 'cors';
 import http from 'http';
-import { setupWebSocket } from './websocket.ts';
+import { setupWebSocket } from './ws/websocket.ts';
 import authRoutes from './routes/authRoutes.ts';
 import healthRoutes from './routes/healthRoutes.ts';
 import lobbyRoutes from './routes/lobbyRoutes.ts';
 
+const PORT = Number(process.env.PORT || 8000);
+const HOST = process.env.HOST || '0.0.0.0';
+
 const app = express();
 const server = http.createServer(app);
-const PORT = process.env.PORT || 8000;
 
 app.use(cors());
 app.use(express.json());
+
 app.use('/auth', authRoutes);
 app.use('/health', healthRoutes);
 app.use('/lobby', lobbyRoutes);
-
-setupWebSocket(server);
 
 app.get('/', (_, res) => {
     res.json({ message: 'The backend has been hit!!!' });
 });
 
+// Setup WebSocket server (only once!)
+const { broadcastLobbyCreated } = setupWebSocket(server);
+app.locals.broadcastLobbyCreated = broadcastLobbyCreated;
 
-server.listen(PORT, () => {
-    console.log(`HTTP + WS server running on port ${PORT}`);
+server.listen(PORT, HOST, () => {
+    const baseUrl = HOST === '0.0.0.0' ? `http://localhost:${PORT}` : `http://${HOST}:${PORT}`;
+    console.log(`HTTP + WS server running on ${baseUrl}`);
+    console.log(`WebSocket server running on ${baseUrl.replace('http', 'ws')}/ws`);
 });
