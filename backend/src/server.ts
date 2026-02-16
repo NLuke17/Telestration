@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import http from 'http';
-import { setupWebSocket } from './ws/websocket.ts';
+import { setupWebSocket } from './ws/index.ts';
 import authRoutes from './routes/authRoutes.ts';
 import healthRoutes from './routes/healthRoutes.ts';
 import lobbyRoutes from './routes/lobbyRoutes.ts';
@@ -23,9 +23,8 @@ app.get('/', (_, res) => {
     res.json({ message: 'The backend has been hit!!!' });
 });
 
-// Setup WebSocket server (only once!)
-const { broadcastLobbyCreated } = setupWebSocket(server);
-app.locals.broadcastLobbyCreated = broadcastLobbyCreated;
+const wsAPI = setupWebSocket(server);
+app.locals.broadcastLobbyCreated = wsAPI.broadcastLobbyCreated;
 
 server.listen(PORT, HOST, () => {
     const baseUrl = HOST === '0.0.0.0' ? `http://localhost:${PORT}` : `http://${HOST}:${PORT}`;
