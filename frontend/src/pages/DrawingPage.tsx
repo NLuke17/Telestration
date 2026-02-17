@@ -3,9 +3,9 @@ import type { ReactSketchCanvasRef } from 'react-sketch-canvas';
 import { useRef, useState } from 'react';
 import Container from '../components/Container';
 import ToolButton from '../components/ToolButton';
-import pencilIcon from '../assets/pencil.svg';
-import eraserIcon from '../assets/eraser.svg';
 import ColorButton from '../components/ColorButton';
+import { SlActionUndo, SlActionRedo, SlPencil } from "react-icons/sl";
+import { BsEraser } from "react-icons/bs";
 
 const styles = {
   border: '0.0625rem solid #9c9c9c',
@@ -50,13 +50,17 @@ const DrawingPage: React.FC = () => {
                     ref={canvasRef}
                 />
                 <div className="flex flex-col">
-                    <ToolButton icon={<img src={pencilIcon} alt="pencil" />} onClick={() => {
-                        canvasRef.current?.eraseMode(false)
-                        console.log("Pencil clicked!")
+                    <ToolButton icon={<SlActionUndo size={30} />} onClick={() => {
+                        canvasRef.current?.undo()
                         }}/>
-                    <ToolButton icon={<img src={eraserIcon} alt="eraser" />} onClick={() => {
+                    <ToolButton icon={<SlActionRedo size={30} />} onClick={() => {
+                        canvasRef.current?.redo()
+                        }}/>
+                    <ToolButton icon={<SlPencil size={30} />} onClick={() => {
+                        canvasRef.current?.eraseMode(false)
+                        }}/>
+                    <ToolButton icon={<BsEraser size={30} />} onClick={() => {
                         canvasRef.current?.eraseMode(true)
-                        console.log("Eraser clicked!")
                         }} />
                 </div>
             </Container>

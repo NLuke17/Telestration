@@ -6,7 +6,7 @@ interface ToolButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> 
 export default function ToolButton ({icon, onClick }: ToolButtonProps) {
 
     return (
-        <button onClick={onClick} className="">
+        <button onClick={onClick} className="w-[40px] aspect-square">
             {icon}
         </button>
     );
