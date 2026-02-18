@@ -2,23 +2,24 @@ import express from 'express';
 import { createLobby, joinLobby, getLobbySnapshot, deleteLobby, startLobby, endLobby, leaveLobby } from "../services/lobbyService";
 import { validate } from "../middleware/validate";
 import { createLobbySchema, joinLobbySchema, getLobbySchema, deleteLobbySchema, startLobbySchema, endLobbySchema, leaveLobbySchema } from "../validation/lobby.validation";
+import { WSGatewayHandle } from "../ws/index";
 
 const router = express.Router();
 
-// // See all live lobbies
-// router.get('/', async (req, res) => {
-//   try {
-//     const lobbies = await getAllLobbies
-//   } catch (e: any){
-//     f
-//   }
-// })
+function getWSHandle(req: express.Request): WSGatewayHandle | null {
+  return req.app.get('wsHandle') || null;
+}
 
 // Create a lobby
 router.post('/', validate(createLobbySchema), async (req, res) => {
   try {
     const { hostId } = req.body;
     const lobby = await createLobby(hostId);
+    const wsHandle = getWSHandle(req);
+    if (wsHandle) {
+      await wsHandle.notifyLobbyCreated(lobby.id);
+    }
+    
     return res.status(201).json(lobby);
   } catch (e) {
     return res.status(500).json({ error: "Failed to create lobby" });
@@ -32,9 +33,13 @@ router.post('/:roomCode/join', validate(joinLobbySchema), async (req, res) => {
     const { userId } = req.body;
 
     const lobby = await joinLobby(roomCode, userId);
-    if (res.app.locals.broadcastLobbyCreated) {
-      res.app.locals.broadcastLobbyCreated(lobby);
+    
+    // Notify WebSocket clients
+    const wsHandle = getWSHandle(req);
+    if (wsHandle) {
+      await wsHandle.notifyPlayerJoined(lobby.id, userId);
     }
+    
     return res.json(lobby);
   } catch (e: any) {
     if (e.message === "LOBBY_NOT_FOUND") return res.status(404).json({ error: "Lobby not found" });
@@ -60,7 +65,14 @@ router.get('/:roomCode', validate(getLobbySchema), async (req, res) => {
 router.post('/:roomCode/start', validate(startLobbySchema), async (req, res) => {
   try {
     const roomCode = typeof req.params.roomCode === 'string' ? req.params.roomCode : req.params.roomCode[0];
-    await startLobby(roomCode);
+    const lobby = await startLobby(roomCode);
+    
+    // Notify WebSocket clients
+    const wsHandle = getWSHandle(req);
+    if (wsHandle) {
+      await wsHandle.notifyLobbyUpdated(lobby.id);
+    }
+    
     return res.json({ message: "Lobby started" });
   } catch (e: any) {
     if (e.message === "LOBBY_NOT_FOUND") return res.status(404).json({ error: "Lobby not found" });
@@ -72,7 +84,14 @@ router.post('/:roomCode/start', validate(startLobbySchema), async (req, res) => 
 router.post('/:roomCode/end', validate(endLobbySchema), async (req, res) => {
   try {
     const roomCode = typeof req.params.roomCode === 'string' ? req.params.roomCode : req.params.roomCode[0];
-    await endLobby(roomCode);
+    const lobby = await endLobby(roomCode);
+    
+    // Notify WebSocket clients
+    const wsHandle = getWSHandle(req);
+    if (wsHandle) {
+      await wsHandle.notifyLobbyUpdated(lobby.id);
+    }
+    
     return res.json({ message: "Lobby ended" });
   } catch (e: any) {
     if (e.message === "LOBBY_NOT_FOUND") return res.status(404).json({ error: "Lobby not found" });
@@ -84,13 +103,18 @@ router.post('/:roomCode/leave', validate(leaveLobbySchema), async (req, res) => 
   try {
     const roomCode = typeof req.params.roomCode === 'string' ? req.params.roomCode : req.params.roomCode[0];
     const { userId } = req.body;
-    await leaveLobby(roomCode, userId);
-    if (res.app.locals.broadcastPlayerLeft) {
-      res.app.locals.broadcastPlayerLeft(roomCode, userId);
+    const lobby = await leaveLobby(roomCode, userId);
+    
+    // Notify WebSocket clients
+    const wsHandle = getWSHandle(req);
+    if (wsHandle) {
+      await wsHandle.notifyPlayerLeft(lobby.id, userId);
     }
+    
     return res.json({ message: "Lobby left" });
   } catch (e: any) {
     if (e.message === "LOBBY_NOT_FOUND") return res.status(404).json({ error: "Lobby not found" });
+    return res.status(500).json({ error: "Failed to leave lobby" });
   }
 });
 
@@ -98,10 +122,14 @@ router.post('/:roomCode/leave', validate(leaveLobbySchema), async (req, res) => 
 router.delete('/:roomCode', validate(deleteLobbySchema), async (req, res) => {
   try {
     const roomCode = typeof req.params.roomCode === 'string' ? req.params.roomCode : req.params.roomCode[0];
-    await deleteLobby(roomCode);
-    if (res.app.locals.broadcastLobbyDeleted) {
-      res.app.locals.broadcastLobbyDeleted(roomCode);
+    const lobbyId = await deleteLobby(roomCode);
+    
+    // Notify WebSocket clients
+    const wsHandle = getWSHandle(req);
+    if (wsHandle) {
+      await wsHandle.notifyLobbyDeleted(lobbyId);
     }
+    
     return res.json({ message: "Lobby deleted" });
   } catch (e: any) {
     if (e.message === "LOBBY_NOT_FOUND") return res.status(404).json({ error: "Lobby not found" });

@@ -1,14 +1,5 @@
-import prisma from '../prismaClient';
-
-// Generate a random 6-character room code
-function generateRoomCode(): string {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    let code = '';
-    for (let i = 0; i < 6; i++) {
-        code += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return code;
-}
+import prisma from '../prisma/client';
+import { generateRoomCode } from '../utils/roomCode';
 
 const lobbyInclude = {
     host: { select: { id: true, username: true, profilePicture: true } },
@@ -79,23 +70,23 @@ export async function getLobbySnapshot(roomCodeRaw: string) {
 export async function leaveLobby(roomCodeRaw: string, userId: string) {
     const roomCode = roomCodeRaw.toUpperCase();
     const lobby = await prisma.lobby.update({ where: { roomCode }, data: { players: { disconnect: { id: userId } } }, include: lobbyInclude });
-    return prisma.lobby.findUnique({
-        where: { roomCode },
-        include: lobbyInclude,
-    }) || lobby;
+    return lobby;
 }
 
 export async function deleteLobby(roomCodeRaw: string) {
     const roomCode = roomCodeRaw.toUpperCase();
+    const lobby = await prisma.lobby.findUnique({ where: { roomCode } });
+    if (!lobby) throw new Error("LOBBY_NOT_FOUND");
     await prisma.lobby.delete({ where: { roomCode } });
+    return lobby.id;
 }
 
 export async function startLobby(roomCodeRaw: string) {
     const roomCode = roomCodeRaw.toUpperCase();
-    await prisma.lobby.update({ where: { roomCode }, data: { state: "STARTING" } });
+    return await prisma.lobby.update({ where: { roomCode }, data: { state: "STARTING" } });
 }
 
 export async function endLobby(roomCodeRaw: string) {
     const roomCode = roomCodeRaw.toUpperCase();
-    await prisma.lobby.update({ where: { roomCode }, data: { state: "FINISHED" } });
+    return await prisma.lobby.update({ where: { roomCode }, data: { state: "FINISHED" } });
 }
