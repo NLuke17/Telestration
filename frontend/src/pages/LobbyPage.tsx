@@ -29,6 +29,25 @@ import Button from '../components/Button';
                         <p>Player 3</p>
                     </div>
 
+                {/* Middle: invite and start */}
+                    <div className="flex flex-col gap-6 w-1/2">
+                        <h2 className="text-lg font-bold pb-2 text-center">Room code:</h2>
+                        {/* Displaying the Room Code numbers */}
+                        <p className="text-heading-1 font-bold text-center">
+                            123456
+                        </p>
+                        <Button 
+                            label="Invite" 
+                            className="w-fit py-3 mt-2 self-center" 
+                            onClick={() => console.log("Inviting...")}
+                        />
+                        <Button 
+                            label="Start" 
+                            className="w-fit py-3 mt-2 self-center" 
+                            onClick={() => console.log("Starting...")}
+                        />
+                    </div>
+
             </Container>
         </div>
     );
