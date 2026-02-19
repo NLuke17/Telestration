@@ -8,7 +8,6 @@ const AuthForm = () => {
 
     function handleLogin(e: React.FormEvent) {
         e.preventDefault();
-        console.log("Logging in with: ", username, password);
     }
 
     return (
