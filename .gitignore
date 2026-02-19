@@ -153,4 +153,5 @@ Thumbs.db
 
 docker-compose.override.yml
 
-*.postman_environment.json
+.postman/
+postman/environments/*.postman_environment.json
