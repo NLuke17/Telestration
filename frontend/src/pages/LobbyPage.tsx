@@ -48,6 +48,18 @@ import Button from '../components/Button';
                         />
                     </div>
 
+                {/* Right: how to play */}
+                    <div className="flex flex-col justify-center items-center gap-6 w-1/2">
+                        <h2 className="text-lg font-bold pb-2 text-center">How to play</h2>
+                        <Container
+                            width='200'
+                            height='250'
+                            margin='0'
+                            className='gap-2 flex-col border-2 border-light-grey rounded-lg bg-white shadow-xl p-12'>
+                              <p className="text-center">Slideshow here</p>
+                        </Container>
+                    </div>
+
             </Container>
         </div>
     );
