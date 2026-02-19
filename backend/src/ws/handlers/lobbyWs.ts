@@ -1,8 +1,3 @@
-/**
- * Lobby WebSocket handlers
- * Handles all lobby-related WebSocket events
- */
-
 import { WebSocket } from 'ws';
 import { WSContext } from '../context/wsContext';
 import { ClientConn, createClientConn, setLobby } from '../core/clientConn';
@@ -12,23 +7,23 @@ import { WSClientMessage } from '../../types/ws';
 import { logInfo, logError, logWarn } from '../../utils/logger';
 import { normalizeRoomCode } from '../../utils/roomCode';
 
-/**
- * Register all lobby-related WebSocket handlers
- */
 export function registerLobbyHandlers(ctx: WSContext) {
-  ctx.wss.on('connection', (ws: WebSocket) => {
+  ctx.wss.on('connection', (ws: WebSocket & { isAlive?: boolean }) => {
     const conn = createClientConn(ws);
     ctx.registry.setConnection(conn.connId, conn);
+
+    // Initialize heartbeat on raw WebSocket (used by installHeartbeat)
+    ws.isAlive = true;
 
     // Send welcome message
     send(conn, { type: 'welcome', message: 'Welcome to Telestration server' });
 
-    // Setup heartbeat
+    // Setup heartbeat - must set isAlive on raw WebSocket, not just on wrapper
     ws.on('pong', () => {
-      conn.isAlive = true;
+      ws.isAlive = true;
+      conn.isAlive = true; // Also update wrapper for consistency
     });
 
-    // Handle incoming messages
     ws.on('message', async (raw: Buffer) => {
       const msg = parseEnvelope(raw);
       if (!msg) {
@@ -36,12 +31,10 @@ export function registerLobbyHandlers(ctx: WSContext) {
         return;
       }
 
-      // Route to handlers
       const handlers = createHandlerMap(ctx, conn);
       routeMessage(msg, handlers);
     });
 
-    // Handle disconnection
     ws.on('close', () => {
       handleDisconnect(ctx, conn);
     });
@@ -52,9 +45,6 @@ export function registerLobbyHandlers(ctx: WSContext) {
   });
 }
 
-/**
- * Create message handler map
- */
 function createHandlerMap(ctx: WSContext, conn: ClientConn): Map<string, MessageHandler> {
   const handlers = new Map<string, MessageHandler>();
 
@@ -66,16 +56,10 @@ function createHandlerMap(ctx: WSContext, conn: ClientConn): Map<string, Message
   return handlers;
 }
 
-/**
- * Handle ping message
- */
 function handlePing(conn: ClientConn): void {
   send(conn, { type: 'pong' });
 }
 
-/**
- * Handle lobby connect request
- */
 async function handleLobbyConnect(
   ctx: WSContext,
   conn: ClientConn,
@@ -84,33 +68,29 @@ async function handleLobbyConnect(
   try {
     const roomCode = normalizeRoomCode(msg.roomCode);
 
-    // Validate lobby exists
     const snapshot = await ctx.lobbySnapshotService.buildLobbySnapshotByRoomCode(roomCode);
 
-    // Join lobby in registry
     ctx.registry.joinLobby(snapshot.id, conn.connId);
     setLobby(conn, snapshot.id);
 
-    // Track presence if userId provided
+    // Handle user authentication
+    // TODO: Replace this with proper JWT/session validation
     if (msg.userId) {
       conn.userId = msg.userId;
       ctx.presence.markConnected(snapshot.id, msg.userId);
     }
 
-    // Confirm connection
     send(conn, {
       type: 'lobby:connected',
       roomCode: snapshot.roomCode,
       lobbyId: snapshot.id,
     });
 
-    // Send lobby snapshot to this connection
     send(conn, {
       type: 'lobby:snapshot',
       snapshot,
     });
 
-    // Broadcast presence to all in lobby
     await broadcastPresence(ctx, snapshot.id);
 
     logInfo('Client connected to lobby', {
@@ -129,9 +109,6 @@ async function handleLobbyConnect(
   }
 }
 
-/**
- * Handle lobby ready status
- */
 async function handleLobbyReady(
   ctx: WSContext,
   conn: ClientConn,
@@ -142,13 +119,9 @@ async function handleLobbyReady(
     return;
   }
 
-  // This is a placeholder for future ready-state tracking
   logInfo('Client ready status', { connId: conn.connId, ready: msg.ready, lobbyId: conn.lobbyId });
 }
 
-/**
- * Handle lobby disconnect
- */
 async function handleLobbyDisconnect(ctx: WSContext, conn: ClientConn): Promise<void> {
   if (!conn.lobbyId) {
     return;
@@ -156,16 +129,13 @@ async function handleLobbyDisconnect(ctx: WSContext, conn: ClientConn): Promise<
 
   const lobbyId = conn.lobbyId;
 
-  // Leave lobby in registry
   ctx.registry.leaveLobby(lobbyId, conn.connId);
   setLobby(conn, null);
 
-  // Mark disconnected in presence
   if (conn.userId) {
     ctx.presence.markDisconnected(lobbyId, conn.userId);
   }
 
-  // Broadcast updated presence
   await broadcastPresence(ctx, lobbyId);
 
   send(conn, { type: 'lobby:connected', roomCode: '', lobbyId: '' });
@@ -173,19 +143,14 @@ async function handleLobbyDisconnect(ctx: WSContext, conn: ClientConn): Promise<
   logInfo('Client disconnected from lobby', { connId: conn.connId, lobbyId });
 }
 
-/**
- * Handle WebSocket connection close
- */
 function handleDisconnect(ctx: WSContext, conn: ClientConn): void {
   if (conn.lobbyId) {
     const lobbyId = conn.lobbyId;
 
-    // Mark disconnected in presence (will be in grace period)
     if (conn.userId) {
       ctx.presence.markDisconnected(lobbyId, conn.userId);
     }
 
-    // Broadcast updated presence
     broadcastPresence(ctx, lobbyId).catch((error) => {
       logError('Failed to broadcast presence on disconnect', { error: error.message });
     });

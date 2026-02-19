@@ -14,7 +14,7 @@ export interface WSEnvelope<T = unknown> {
  */
 export type WSClientMessage =
   | { type: 'ping' }
-  | { type: 'lobby:connect'; roomCode: string; userId?: string }
+  | { type: 'lobby:connect'; roomCode: string; userId?: string; token?: string }
   | { type: 'lobby:ready'; ready: boolean }
   | { type: 'lobby:disconnect' };
 
@@ -30,7 +30,8 @@ export type WSServerMessage =
   | { type: 'lobby:presence'; connectedUserIds: string[] }
   | { type: 'lobby:player_joined'; userId: string; username: string }
   | { type: 'lobby:player_left'; userId: string }
-  | { type: 'lobby:state_changed'; state: 'WAITING' | 'STARTING' | 'IN_PROGRESS' | 'FINISHED' };
+  | { type: 'lobby:state_changed'; state: 'WAITING' | 'STARTING' | 'IN_PROGRESS' | 'FINISHED' }
+  | { type: 'lobby:deleted'; lobbyId: string };
 
 /**
  * Type guards
