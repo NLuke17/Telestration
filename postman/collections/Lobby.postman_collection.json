@@ -1,0 +1,226 @@
+{
+  "info": {
+    "_postman_id": "edc153cb-3011-4576-8554-4062b11a89d1",
+    "name": "Lobby",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "leave lobby",
+      "id": "6e84f202-b857-4236-8530-bddce445fda9",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"userId\": \"5b3ac75e-bf77-4eda-8b5b-7c09ae885b88\",\n    \"roomCode\": \"WUNEJU\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "localhost:8000/lobby/WUNEJU/leave",
+          "host": [
+            "localhost"
+          ],
+          "port": "8000",
+          "path": [
+            "lobby",
+            "WUNEJU",
+            "leave"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "join room",
+      "id": "24fa72f8-3950-44f1-ba3f-39ea4038aa5d",
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"userId\": \"5b3ac75e-bf77-4eda-8b5b-7c09ae885b88\",\n    \"roomCode\": \"WUNEJU\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "localhost:8000/lobby/WUNEJU/join",
+          "host": [
+            "localhost"
+          ],
+          "port": "8000",
+          "path": [
+            "lobby",
+            "WUNEJU",
+            "join"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "end lobby",
+      "id": "0b377e34-a2b7-4561-b857-555bd4013edd",
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"roomCode\": \"WUNEJU\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "localhost:8000/lobby/WUNEJU/end",
+          "host": [
+            "localhost"
+          ],
+          "port": "8000",
+          "path": [
+            "lobby",
+            "WUNEJU",
+            "end"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "start lobby",
+      "id": "4600343e-39ee-409c-8d5a-705b5d43d9e4",
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"roomCode\": \"WUNEJU\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "localhost:8000/lobby/WUNEJU/start",
+          "host": [
+            "localhost"
+          ],
+          "port": "8000",
+          "path": [
+            "lobby",
+            "WUNEJU",
+            "start"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "create lobby",
+      "id": "330208e7-31ed-4f51-8684-10a8b1d7b1a2",
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"hostId\": \"bb7b5614-4eb0-43dd-8415-3e30c2300b84\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "localhost:8000/lobby",
+          "host": [
+            "localhost"
+          ],
+          "port": "8000",
+          "path": [
+            "lobby"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "get lobby",
+      "id": "0be46ef7-0001-403d-abf5-2046305bbdef",
+      "protocolProfileBehavior": {
+        "disableBodyPruning": true
+      },
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "GET",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": ""
+        },
+        "url": {
+          "raw": "localhost:8000/lobby/WUNEJU",
+          "host": [
+            "localhost"
+          ],
+          "port": "8000",
+          "path": [
+            "lobby",
+            "WUNEJU"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Delete Lobby",
+      "id": "7709097a-3849-437f-a249-2382f57801c5",
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "DELETE",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": ""
+        },
+        "url": {
+          "raw": "localhost:8000/lobby/WUNEJU",
+          "host": [
+            "localhost"
+          ],
+          "port": "8000",
+          "path": [
+            "lobby",
+            "WUNEJU"
+          ]
+        }
+      },
+      "response": []
+    }
+  ]
+}
