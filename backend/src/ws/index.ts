@@ -2,6 +2,7 @@ import type { Server } from 'http';
 import { createWSS, installHeartbeat, installConnectionGuards } from './core/wsServer';
 import { buildWSContext } from './context/wsContext';
 import { registerLobbyHandlers, broadcastLobbySnapshot, broadcastPresence } from './handlers/lobbyWs';
+import { broadcast } from './core/wsUtils';
 import { logInfo } from '../utils/logger';
 
 export interface WSGatewayHandle {
@@ -38,12 +39,26 @@ export function setupWebSocket(server: Server): WSGatewayHandle {
     },
 
     async notifyLobbyDeleted(lobbyId: string): Promise<void> {
-      // Broadcast final snapshot or disconnect message
+      // Get all connections before removing them
       const connections = ctx.registry.getLobbyConnections(lobbyId);
+      
+      // Notify each client that the lobby was deleted
+      broadcast(connections, {
+        type: 'lobby:deleted',
+        lobbyId,
+      });
+      
+      // Remove connections from lobby registry
       for (const conn of connections) {
         ctx.registry.leaveLobby(lobbyId, conn.connId);
+        
+        // Clear presence tracking
+        if (conn.userId) {
+          ctx.presence.remove(lobbyId, conn.userId);
+        }
       }
-      logInfo('Lobby deleted, all connections removed', { lobbyId });
+      
+      logInfo('Lobby deleted, all connections removed', { lobbyId, connectionCount: connections.length });
     },
 
     async notifyPlayerJoined(lobbyId: string, userId: string): Promise<void> {

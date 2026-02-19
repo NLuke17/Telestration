@@ -75,10 +75,15 @@ export async function leaveLobby(roomCodeRaw: string, userId: string) {
 
 export async function deleteLobby(roomCodeRaw: string) {
     const roomCode = roomCodeRaw.toUpperCase();
-    const lobby = await prisma.lobby.findUnique({ where: { roomCode } });
-    if (!lobby) throw new Error("LOBBY_NOT_FOUND");
-    await prisma.lobby.delete({ where: { roomCode } });
-    return lobby.id;
+    try {
+         const deleted = await prisma.lobby.delete({ where: { roomCode } });
+        return deleted.id;
+    } catch (error: any) {
+        if (error.code === 'P2025') {
+            throw new Error("LOBBY_NOT_FOUND");
+        }
+        throw error;
+    }
 }
 
 export async function startLobby(roomCodeRaw: string) {
