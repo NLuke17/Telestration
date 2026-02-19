@@ -6,6 +6,8 @@ import ToolButton from '../components/ToolButton';
 import ColorButton from '../components/ColorButton';
 import { SlActionUndo, SlActionRedo, SlPencil } from "react-icons/sl";
 import { BsEraser } from "react-icons/bs";
+import PageCounter from '../components/PageCounter';
+import TimerDisplay from '../components/TimerDisplay';
 
 const styles = {
   border: '0.0625rem solid #9c9c9c',
@@ -18,50 +20,60 @@ const DrawingPage: React.FC = () => {
 
     return (
         <div className="flex flex-col justify-center items-center h-screen">
-            <Container width='900' height='500' padding='5' className='gap-8 border-2 border-dark-grey rounded-lg'>
-                <div className="flex flex-col gap-4">
-                    <ColorButton color='black' size='30' onClick={() => {
-                        setPenColor('#000000')
-                        canvasRef.current?.eraseMode(false)
-                    }}/>
-                    <ColorButton color='#0088FF' size='30' onClick={() => {
-                        setPenColor('#0088FF')
-                        canvasRef.current?.eraseMode(false)
-                    }}/>
-                    <ColorButton color='#FF383C' size='30' onClick={() => {
-                        setPenColor('#FF383C')
-                        canvasRef.current?.eraseMode(false)
-                    }}/>
-                    <ColorButton color='#FFCC00' size='30' onClick={() => {
-                        setPenColor('#FFCC00')
-                        canvasRef.current?.eraseMode(false)
-                    }}/>
-                    <ColorButton color='#ffffff' size='30' onClick={() => {
-                        setPenColor('#ffffff')
-                        canvasRef.current?.eraseMode(false)
-                    }}/>
+            <Container width='900' height='500' padding='5' className='gap-8 border-2 border-dark-grey rounded-lg flex-col'>
+                <div className='flex w-full justify-between'>
+                    <PageCounter pageNum='2' totalPages='4' className='text-heading-3'/>
+                    <div className='flex flex-col text-center'>
+                        <div className='text-heading-3'>Hey, it's time to draw!</div>
+                        <div className='text-display-prompt'>Previous Person's Sentence</div>
+                    </div> 
+                    <TimerDisplay minutesLeft='00' secondsLeft='30' className='text-heading-3'/>
                 </div>
-                <ReactSketchCanvas
-                    style={styles}
-                    width="600px"
-                    height="360px"
-                    strokeWidth={4}
-                    strokeColor={penColor}
-                    ref={canvasRef}
-                />
-                <div className="flex flex-col">
-                    <ToolButton icon={<SlActionUndo size={30} />} onClick={() => {
-                        canvasRef.current?.undo()
+                <div className='flex flex-row gap-6 justify-center items-center'>
+                    <div className="flex flex-col gap-4">
+                        <ColorButton color='black' size='30' onClick={() => {
+                            setPenColor('#000000')
+                            canvasRef.current?.eraseMode(false)
                         }}/>
-                    <ToolButton icon={<SlActionRedo size={30} />} onClick={() => {
-                        canvasRef.current?.redo()
+                        <ColorButton color='#0088FF' size='30' onClick={() => {
+                            setPenColor('#0088FF')
+                            canvasRef.current?.eraseMode(false)
                         }}/>
-                    <ToolButton icon={<SlPencil size={30} />} onClick={() => {
-                        canvasRef.current?.eraseMode(false)
+                        <ColorButton color='#FF383C' size='30' onClick={() => {
+                            setPenColor('#FF383C')
+                            canvasRef.current?.eraseMode(false)
                         }}/>
-                    <ToolButton icon={<BsEraser size={30} />} onClick={() => {
-                        canvasRef.current?.eraseMode(true)
-                        }} />
+                        <ColorButton color='#FFCC00' size='30' onClick={() => {
+                            setPenColor('#FFCC00')
+                            canvasRef.current?.eraseMode(false)
+                        }}/>
+                        <ColorButton color='#ffffff' size='30' onClick={() => {
+                            setPenColor('#ffffff')
+                            canvasRef.current?.eraseMode(false)
+                        }}/>
+                    </div>
+                    <ReactSketchCanvas
+                        style={styles}
+                        width="600px"
+                        height="360px"
+                        strokeWidth={4}
+                        strokeColor={penColor}
+                        ref={canvasRef}
+                    />
+                    <div className="flex flex-col">
+                        <ToolButton icon={<SlActionUndo size={30} />} onClick={() => {
+                            canvasRef.current?.undo()
+                            }}/>
+                        <ToolButton icon={<SlActionRedo size={30} />} onClick={() => {
+                            canvasRef.current?.redo()
+                            }}/>
+                        <ToolButton icon={<SlPencil size={30} />} onClick={() => {
+                            canvasRef.current?.eraseMode(false)
+                            }}/>
+                        <ToolButton icon={<BsEraser size={30} />} onClick={() => {
+                            canvasRef.current?.eraseMode(true)
+                            }} />
+                    </div>
                 </div>
             </Container>
         </div>
