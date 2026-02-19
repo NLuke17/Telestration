@@ -7,7 +7,7 @@ export default {
   theme: {
     extend: {
       colors: {
-        'brand-charcoal': '#1a1a1a',
+        'brand-charcoal': '#2C2C2C',
         'background-white': '#F5F5F5',
         'grey': {
             light: '#D9D9D9',
