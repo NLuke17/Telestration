@@ -1,14 +1,14 @@
 interface ContainerProps {
-    height: string;
     width: string;
+    height: string;
     children: React.ReactNode;
     className?: string;
-    margin?: string;
+    padding?: string;
 }
 
-export default function Container({width, height, margin='8', children, className=''}: ContainerProps) {
+export default function Container({width, height, padding='4', children, className=''}: ContainerProps) {
     return (
-        <div style={{ width: `${width}px`, height: `${height}px`, margin: `${margin}em` }}
+        <div style={{ width: `${width}`, height: `${height}`, padding: `${padding}` }}
         className={`flex items-center justify-center ${className}`}>
             {children}
         </div>

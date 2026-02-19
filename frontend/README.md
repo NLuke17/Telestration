@@ -1,3 +1,19 @@
+# 🎨 Telestrations Frontend
+
+This folder contains the React + Vite + TypeScript frontend for the game.
+
+## 📂 Folder Structure
+
+* **src/assets**: Static files like logos, icons, and global styles.
+* **src/components**: Shared, reusable UI pieces (Buttons, Inputs, Cards).
+* **src/features**: Complex game logic modules (Canvas drawing, Lobby management).
+* **src/hooks**: Custom React hooks for shared logic (e.g., `useSocket`, `useTimer`).
+* **src/pages**: The main screens of the app (Home, Lobby, Game, Results).
+* **src/lib**: Configuration for 3rd-party libraries (Socket.io, Axios).
+* **src/styles**: Global CSS and theme configurations (Tailwind/Sass).
+* **src/types**: TypeScript interfaces and types for game data.
+* **src/utils**: Pure helper functions and math utilities.
+
 # React + TypeScript + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.

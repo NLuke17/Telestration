@@ -1,7 +1,6 @@
 interface AvatarProps {
     name: string;
     size?: string;
-    sizeY?: string;
     className?: string;
 }
 
