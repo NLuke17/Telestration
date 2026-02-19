@@ -1,4 +1,5 @@
 interface InputFieldProps {
+    id: string;
     label: string;
     type?: 'text' | 'password';
     placeholder: string;
@@ -6,11 +7,12 @@ interface InputFieldProps {
     onChange: (val: string) => void;
 }
 
-export default function InputField({ label, type='text', placeholder, value, onChange}: InputFieldProps) {
+export default function InputField({ id, label, type='text', placeholder, value, onChange}: InputFieldProps) {
     return (
     <div className="flex flex-col gap-2">
-      <label className="text-sm font-semibold">{label}</label>
+      <label htmlFor={id} className="text-sm font-semibold">{label}</label>
       <input
+        id={id}
         type={type}
         placeholder={placeholder}
         value={value}

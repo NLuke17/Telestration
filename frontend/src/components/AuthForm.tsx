@@ -15,6 +15,7 @@ const AuthForm = () => {
             <div className='flex flex-col gap-6'>
             <div className="flex flex-col">
                 <InputField 
+                    id='username'
                     label="Username"
                     placeholder="Enter your username"
                     value={username}
@@ -23,6 +24,7 @@ const AuthForm = () => {
             </div>
             <div className='flex flex-col'>
                 <InputField
+                    id='password'
                     label="Password"
                     placeholder="Enter your password"
                     value={password}
