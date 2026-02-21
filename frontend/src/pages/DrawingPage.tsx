@@ -38,27 +38,27 @@ const DrawingPage: React.FC = () => {
                 {/* Color buttons */}
                 <div className='flex flex-row gap-6 justify-center items-center'>
                     <div className="flex flex-col gap-4">
-                        <ColorButton color='black' size='30' onClick={() => {
+                        <ColorButton color='black' size='30' aria-label="select black color" onClick={() => {
                             setPenColor('#000000')
                             canvasRef.current?.eraseMode(false)
                             setSelectedTool('pen')
                         }}/>
-                        <ColorButton color='#0088FF' size='30' onClick={() => {
+                        <ColorButton color='#0088FF' size='30' aria-label="select blue color" onClick={() => {
                             setPenColor('#0088FF')
                             canvasRef.current?.eraseMode(false)
                             setSelectedTool('pen')
                         }}/>
-                        <ColorButton color='#FF383C' size='30' onClick={() => {
+                        <ColorButton color='#FF383C' size='30' aria-label="select red color" onClick={() => {
                             setPenColor('#FF383C')
                             canvasRef.current?.eraseMode(false)
                             setSelectedTool('pen')
                         }}/>
-                        <ColorButton color='#FFCC00' size='30' onClick={() => {
+                        <ColorButton color='#FFCC00' size='30' aria-label="select yellow color" onClick={() => {
                             setPenColor('#FFCC00')
                             canvasRef.current?.eraseMode(false)
                             setSelectedTool('pen')
                         }}/>
-                        <ColorButton color='#ffffff' size='30' onClick={() => {
+                        <ColorButton color='#ffffff' size='30' aria-label="select white color" onClick={() => {
                             setPenColor('#ffffff')
                             canvasRef.current?.eraseMode(false)
                             setSelectedTool('pen')
