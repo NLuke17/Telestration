@@ -86,7 +86,7 @@ const DrawingPage: React.FC = () => {
                             canvasRef.current?.eraseMode(false)
                             setSelectedTool('pen')
                             }}/>
-                        <ToolButton key='eraser' icon={<BsEraser size={30} />} isActive={selectedTool === 'eraser'}onClick={() => {
+                        <ToolButton key='eraser' icon={<BsEraser size={30} />} isActive={selectedTool === 'eraser'} onClick={() => {
                             canvasRef.current?.eraseMode(true)
                             setSelectedTool('eraser')
                             }} />
