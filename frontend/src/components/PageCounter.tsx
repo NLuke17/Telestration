@@ -6,7 +6,7 @@ interface PageCounterProps {
 
 export default function PageCounter({ pageNum, totalPages, className='' }: PageCounterProps) {
     return (
-        <div className={`flex flex-row text-center${className}`}>
+        <div className={`flex flex-row text-center ${className}`}>
             {pageNum} / {totalPages}
         </div>
     )
