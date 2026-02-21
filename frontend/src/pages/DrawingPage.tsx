@@ -109,7 +109,6 @@ const DrawingPage: React.FC = () => {
                             variant={selectedSize === size ? 'active' : 'default'}
                             onClick={() => {
                                 setSelectedSize(size);
-                                console.log(`Tool size changed to: ${size}`);
                             }}
                         />
                     ))}
