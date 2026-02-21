@@ -19,11 +19,11 @@ const styles = {
 const DrawingPage: React.FC = () => {
     const canvasRef = useRef<ReactSketchCanvasRef>(null);
     const [penColor, setPenColor] = useState("#000000");
-    const [selectedSize, setSelectedSize] = useState("20")
-    const sizes = ["10", "15", "20", "25", "30"]
+    const [selectedSize, setSelectedSize] = useState(5);
+    const sizes = [5, 10, 15, 20, 25, 30];
 
     return (
-        <div className="flex flex-col justify-center items-center h-screen">
+        <div className="flex flex-col justify-center items-center gap-8 h-screen">
             <Container width='900px' height='500px' padding='5em' className='gap-8 border-2 border-dark-grey rounded-lg flex-col'>
                 <div className='flex w-full justify-between'>
                     <PageCounter pageNum='2' totalPages='4' className='text-heading-3'/>
@@ -63,7 +63,8 @@ const DrawingPage: React.FC = () => {
                         style={styles}
                         width="600px"
                         height="360px"
-                        strokeWidth={4}
+                        strokeWidth={selectedSize}
+                        eraserWidth={selectedSize}
                         strokeColor={penColor}
                         ref={canvasRef}
                     />

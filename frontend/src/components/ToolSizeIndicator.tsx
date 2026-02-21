@@ -1,5 +1,5 @@
 interface ToolSizeIndicatorProps {
-    toolSize: string;
+    toolSize: number;
     className?: string;
     color?: string;
     variant?: 'default' | 'active';
