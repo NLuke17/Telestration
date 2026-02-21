@@ -1,5 +1,3 @@
-import { GiClassicalKnowledge } from "react-icons/gi";
-
 interface ToolButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
     icon: React.ReactNode;
     isActive?: boolean;
