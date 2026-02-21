@@ -20,6 +20,7 @@ const DrawingPage: React.FC = () => {
     const canvasRef = useRef<ReactSketchCanvasRef>(null);
     const [penColor, setPenColor] = useState("#000000");
     const [selectedSize, setSelectedSize] = useState(5);
+    const [selectedTool, setSelectedTool] = useState('pen');
     const sizes = [5, 10, 15, 20, 25, 30];
 
     return (
@@ -40,22 +41,27 @@ const DrawingPage: React.FC = () => {
                         <ColorButton color='black' size='30' onClick={() => {
                             setPenColor('#000000')
                             canvasRef.current?.eraseMode(false)
+                            setSelectedTool('pen')
                         }}/>
                         <ColorButton color='#0088FF' size='30' onClick={() => {
                             setPenColor('#0088FF')
                             canvasRef.current?.eraseMode(false)
+                            setSelectedTool('pen')
                         }}/>
                         <ColorButton color='#FF383C' size='30' onClick={() => {
                             setPenColor('#FF383C')
                             canvasRef.current?.eraseMode(false)
+                            setSelectedTool('pen')
                         }}/>
                         <ColorButton color='#FFCC00' size='30' onClick={() => {
                             setPenColor('#FFCC00')
                             canvasRef.current?.eraseMode(false)
+                            setSelectedTool('pen')
                         }}/>
                         <ColorButton color='#ffffff' size='30' onClick={() => {
                             setPenColor('#ffffff')
                             canvasRef.current?.eraseMode(false)
+                            setSelectedTool('pen')
                         }}/>
                     </div>
                     {/* Canvas */}
@@ -70,17 +76,19 @@ const DrawingPage: React.FC = () => {
                     />
                     {/* Tools */}
                     <div className="flex flex-col">
-                        <ToolButton icon={<SlActionUndo size={30} />} onClick={() => {
+                        <ToolButton key='undo' icon={<SlActionUndo size={30} />} onClick={() => {
                             canvasRef.current?.undo()
                             }}/>
-                        <ToolButton icon={<SlActionRedo size={30} />} onClick={() => {
+                        <ToolButton key='redo' icon={<SlActionRedo size={30} />} onClick={() => {
                             canvasRef.current?.redo()
                             }}/>
-                        <ToolButton icon={<SlPencil size={30} />} onClick={() => {
+                        <ToolButton key='pen' icon={<SlPencil size={30} />} isActive={selectedTool === 'pen'} onClick={() => {
                             canvasRef.current?.eraseMode(false)
+                            setSelectedTool('pen')
                             }}/>
-                        <ToolButton icon={<BsEraser size={30} />} onClick={() => {
+                        <ToolButton key='eraser' icon={<BsEraser size={30} />} isActive={selectedTool === 'eraser'}onClick={() => {
                             canvasRef.current?.eraseMode(true)
+                            setSelectedTool('eraser')
                             }} />
                     </div>
                 </div>
