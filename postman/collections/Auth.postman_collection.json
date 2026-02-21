@@ -1,0 +1,45 @@
+{
+  "info": {
+    "_postman_id": "0bebc36f-9992-4073-abde-3964d53bcb75",
+    "name": "Auth",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "get all users",
+      "id": "d1b6495c-a996-4935-8406-d0e525668162",
+      "protocolProfileBehavior": {
+        "disableBodyPruning": true
+      },
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "GET",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"Friend\",\n  \"password\": \"12345\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:8000/auth/all-users",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8000",
+          "path": [
+            "auth",
+            "all-users"
+          ]
+        }
+      },
+      "response": []
+    }
+  ]
+}
