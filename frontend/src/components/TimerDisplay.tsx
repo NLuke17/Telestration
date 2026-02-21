@@ -4,7 +4,7 @@ interface TimerDisplayProps {
     className?: string;
 }
 
-export default function TimerDisplay({ minutesLeft='', secondsLeft, className=''}: TimerDisplayProps) {
+export default function TimerDisplay({ minutesLeft='00', secondsLeft, className=''}: TimerDisplayProps) {
     return (
         <div className={`${className}`}>
             {minutesLeft}:{secondsLeft}
