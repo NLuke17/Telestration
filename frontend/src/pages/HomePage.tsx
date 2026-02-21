@@ -14,7 +14,7 @@ const HomePage: React.FC = () => {
     return (
         <div className="flex flex-col justify-center items-center h-screen">
             {/* Home content container */}
-            <Container width='900px' height='500px' padding='5em' className='gap-8 flex-col border-2 border-dark-grey rounded-lg'>
+            <Container width='900px' height='500px' padding='4em' className='gap-8 flex-col border-2 border-dark-grey rounded-lg'>
                 {/* Heading */}
                 <h1 className="text-heading-1 w-full text-left">New Game</h1>
                 {/* Main content */}
