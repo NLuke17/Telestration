@@ -19,7 +19,8 @@ export default function ToolSizeIndicator({
         active: "bg-dark-grey",
     };
     return (
-        <div 
+        <button 
+            type="button"
             onClick = {onClick}
             className={`${baseStyles} ${variantStyles[variant]} ${className}`}
         >
@@ -31,6 +32,6 @@ export default function ToolSizeIndicator({
                 }} 
                 className="rounded-full"
             ></div>
-        </div>
+        </button>
     );
 }
