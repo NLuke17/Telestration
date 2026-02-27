@@ -6,6 +6,7 @@ import { parseEnvelope, routeMessage, MessageHandler } from '../core/wsRouter';
 import { WSClientMessage } from '../../types/ws';
 import { logInfo, logError, logWarn } from '../../utils/logger';
 import { normalizeRoomCode } from '../../utils/roomCode';
+import { handleDrawingSubmission, handleGuessSubmission } from './gameWs';
 
 export function registerLobbyHandlers(ctx: WSContext) {
   ctx.wss.on('connection', (ws: WebSocket & { isAlive?: boolean }) => {
@@ -52,6 +53,8 @@ function createHandlerMap(ctx: WSContext, conn: ClientConn): Map<string, Message
   handlers.set('lobby:connect', (msg) => handleLobbyConnect(ctx, conn, msg as any));
   handlers.set('lobby:ready', (msg) => handleLobbyReady(ctx, conn, msg as any));
   handlers.set('lobby:disconnect', () => handleLobbyDisconnect(ctx, conn));
+  handlers.set('game:submit_drawing', (msg) => handleDrawingSubmission(ctx, conn, msg as any));
+  handlers.set('game:submit_guess', (msg) => handleGuessSubmission(ctx, conn, msg as any));
 
   return handlers;
 }

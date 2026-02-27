@@ -65,17 +65,23 @@ router.get('/:roomCode', validate(getLobbySchema), async (req, res) => {
 router.post('/:roomCode/start', validate(startLobbySchema), async (req, res) => {
   try {
     const roomCode = typeof req.params.roomCode === 'string' ? req.params.roomCode : req.params.roomCode[0];
-    const lobby = await startLobby(roomCode);
+    const result = await startLobby(roomCode);
     
-    // Notify WebSocket clients
+    // Notify WebSocket clients about game start
     const wsHandle = getWSHandle(req);
     if (wsHandle) {
-      await wsHandle.notifyLobbyUpdated(lobby.id);
+      await wsHandle.notifyGameStarted(result.lobby.id, result.round.id, result.round.number);
     }
     
-    return res.json({ message: "Lobby started" });
+    return res.json({ 
+      message: "Game started",
+      roundId: result.round.id,
+      roundNumber: result.round.number,
+    });
   } catch (e: any) {
     if (e.message === "LOBBY_NOT_FOUND") return res.status(404).json({ error: "Lobby not found" });
+    if (e.message === "LOBBY_ALREADY_STARTED") return res.status(400).json({ error: "Lobby already started" });
+    if (e.message === "NOT_ENOUGH_PLAYERS") return res.status(400).json({ error: "Not enough players to start" });
     return res.status(500).json({ error: "Failed to start lobby" });
   }
 });

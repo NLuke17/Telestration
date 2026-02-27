@@ -1,0 +1,157 @@
+{
+  "info": {
+    "_postman_id": "game-collection-001",
+    "name": "Game",
+    "description": "Game endpoints for Telestration - Round management, drawings, and guesses",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Start Game",
+      "id": "ae8e9567-d5ea-4bb4-a30e-f172429453c5",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/lobby/:roomCode/start",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "lobby",
+            ":roomCode",
+            "start"
+          ],
+          "variable": [
+            {
+              "key": "roomCode",
+              "value": "{{roomCode}}",
+              "description": "6-character room code"
+            }
+          ]
+        },
+        "description": "Start the game for a lobby. Creates a round, flipbooks (1 per player), sets lobby to IN_PROGRESS, and broadcasts game:started via WebSocket."
+      },
+      "response": []
+    },
+    {
+      "name": "Get Current Round",
+      "id": "08841146-dc66-4692-86ef-7f4192ad3553",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/game/lobbies/:lobbyId/current-round",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "game",
+            "lobbies",
+            ":lobbyId",
+            "current-round"
+          ],
+          "variable": [
+            {
+              "key": "lobbyId",
+              "value": "{{lobbyId}}",
+              "description": "UUID of the lobby"
+            }
+          ]
+        },
+        "description": "Get the current round details including all flipbooks, drawings, and guesses."
+      },
+      "response": []
+    },
+    {
+      "name": "Submit Drawing (REST)",
+      "id": "449c6762-1bd0-4e7c-a1f9-2da831b14348",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"drawingData\": \"{\\\"paths\\\":[{\\\"points\\\":[{\\\"x\\\":10,\\\"y\\\":20}],\\\"color\\\":\\\"#000000\\\",\\\"width\\\":2}]}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/game/flipbooks/:flipbookId/drawings",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "game",
+            "flipbooks",
+            ":flipbookId",
+            "drawings"
+          ],
+          "variable": [
+            {
+              "key": "flipbookId",
+              "value": "{{flipbookId}}",
+              "description": "UUID of the flipbook"
+            }
+          ]
+        },
+        "description": "Submit a drawing to a flipbook. NOTE: Prefer using WebSocket (game:submit_drawing) for real-time updates."
+      },
+      "response": []
+    },
+    {
+      "name": "Submit Guess (REST)",
+      "id": "68f1650b-4267-4932-bfe1-4ce314181ad6",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"text\": \"A cat wearing a hat\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/game/flipbooks/:flipbookId/guesses",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "game",
+            "flipbooks",
+            ":flipbookId",
+            "guesses"
+          ],
+          "variable": [
+            {
+              "key": "flipbookId",
+              "value": "{{flipbookId}}",
+              "description": "UUID of the flipbook"
+            }
+          ]
+        },
+        "description": "Submit a guess to a flipbook. NOTE: Prefer using WebSocket (game:submit_guess) for real-time updates."
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "id": "e9016ac5-5664-4229-92b2-efd9ea1db9fc",
+      "key": "baseUrl",
+      "value": "",
+      "type": "default"
+    },
+    {
+      "id": "903e28d3-5a93-462a-99dd-3fe1ffdb2ee5",
+      "key": "roomCode",
+      "value": "",
+      "type": "default"
+    }
+  ]
+}
