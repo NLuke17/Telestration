@@ -46,7 +46,7 @@
         "header": [],
         "body": {
           "mode": "raw",
-          "raw": "{\n    \"userId\": \"5b3ac75e-bf77-4eda-8b5b-7c09ae885b88\",\n    \"roomCode\": \"WUNEJU\"\n}",
+          "raw": "{\n    \"userId\": \"5b3ac75e-bf77-4eda-8b5b-7c09ae885b88\",\n    \"roomCode\": \"{{roomCode}}\"\n}",
           "options": {
             "raw": {
               "language": "json"
@@ -54,14 +54,14 @@
           }
         },
         "url": {
-          "raw": "localhost:8000/lobby/WUNEJU/join",
+          "raw": "localhost:8000/lobby/{{roomCode}}/join",
           "host": [
             "localhost"
           ],
           "port": "8000",
           "path": [
             "lobby",
-            "WUNEJU",
+            "{{roomCode}}",
             "join"
           ]
         }

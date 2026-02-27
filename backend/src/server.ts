@@ -5,6 +5,7 @@ import { setupWebSocket, WSGatewayHandle } from './ws/index';
 import authRoutes from './routes/authRoutes';
 import healthRoutes from './routes/healthRoutes';
 import lobbyRoutes from './routes/lobbyRoutes';
+import gameRoutes from './routes/gameRoutes';
 
 const PORT = Number(process.env.PORT || 8000);
 const HOST = process.env.HOST || '0.0.0.0';
@@ -23,6 +24,7 @@ app.set('wsHandle', wsHandle);
 app.use('/auth', authRoutes);
 app.use('/health', healthRoutes);
 app.use('/lobby', lobbyRoutes);
+app.use('/game', gameRoutes);
 
 app.get('/', (_, res) => {
     res.json({ message: 'Telestration backend is running!' });

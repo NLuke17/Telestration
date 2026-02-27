@@ -2,6 +2,7 @@ import type { Server } from 'http';
 import { createWSS, installHeartbeat, installConnectionGuards } from './core/wsServer';
 import { buildWSContext } from './context/wsContext';
 import { registerLobbyHandlers, broadcastLobbySnapshot, broadcastPresence } from './handlers/lobbyWs';
+import { broadcastGameStarted, broadcastPhaseChange } from './handlers/gameWs';
 import { broadcast } from './core/wsUtils';
 import { logInfo } from '../utils/logger';
 
@@ -11,6 +12,8 @@ export interface WSGatewayHandle {
   notifyLobbyDeleted(lobbyId: string): Promise<void>;
   notifyPlayerJoined(lobbyId: string, userId: string): Promise<void>;
   notifyPlayerLeft(lobbyId: string, userId: string): Promise<void>;
+  notifyGameStarted(lobbyId: string, roundId: string, roundNumber: number): Promise<void>;
+  notifyPhaseChange(lobbyId: string, phase: 'DRAWING' | 'GUESSING' | 'VOTING'): Promise<void>;
 }
 
 
@@ -69,6 +72,15 @@ export function setupWebSocket(server: Server): WSGatewayHandle {
     async notifyPlayerLeft(lobbyId: string, userId: string): Promise<void> {
       await broadcastLobbySnapshot(ctx, lobbyId);
       await broadcastPresence(ctx, lobbyId);
+    },
+
+    async notifyGameStarted(lobbyId: string, roundId: string, roundNumber: number): Promise<void> {
+      await broadcastGameStarted(ctx, lobbyId, roundId, roundNumber);
+      await broadcastLobbySnapshot(ctx, lobbyId);
+    },
+
+    async notifyPhaseChange(lobbyId: string, phase: 'DRAWING' | 'GUESSING' | 'VOTING'): Promise<void> {
+      await broadcastPhaseChange(ctx, lobbyId, phase);
     },
   };
 }
