@@ -20,4 +20,15 @@ export const createUserSchema = z.object({
   }),
 });
 
+// POST /auth/login
+export const loginUserSchema = z.object({
+  body: z.object({
+    username: z.string().min(1, 'Username is required'),
+    password: z.string().min(1, 'Password is required'),
+  }),
+});
+
 export type CreateUserInput = z.infer<typeof createUserSchema>;
+export type LoginUserInput = z.infer<typeof loginUserSchema>;
+
+
