@@ -3,6 +3,7 @@
 /* Project CSS variables (kept for reference) */
 @theme {
     --color-light-grey: #D9D9D9;
+    --color-mid-grey: #B3B3B3;
     --color-dark-grey: #757575;
     --font-size-body-base: 1rem;
     --font-weight-body-base: 400;
@@ -37,5 +38,15 @@
   .text-heading-1 {
     font-size: 4rem;
     font-weight: 500;
+  }
+
+  .text-display-prompt {
+    font-size: 1.5rem;      
+    font-weight: 500;    
+  }
+
+  .text-heading-3 {
+    font-size: 1rem;
+    font-weight: 400;
   }
 }
