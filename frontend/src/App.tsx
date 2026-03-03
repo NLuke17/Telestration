@@ -21,7 +21,7 @@ function App() {
           <Route path="/home" element={<HomePage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/drawing" element={<DrawingPage />} />
-          <Route path="/lobby" element={<LobbyPage />} />
+          <Route path="/lobby/:roomCode" element={<LobbyPage />} />
         </Routes>
       </div>
     </Router>
