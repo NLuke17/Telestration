@@ -76,17 +76,17 @@ const DrawingPage: React.FC = () => {
                     />
                     {/* Tools */}
                     <div className="flex flex-col">
-                        <ToolButton key='undo' icon={<SlActionUndo size={30} />} onClick={() => {
+                        <ToolButton key='undo' icon={<SlActionUndo size={30} />} aria-label="Undo" onClick={() => {
                             canvasRef.current?.undo()
                             }}/>
-                        <ToolButton key='redo' icon={<SlActionRedo size={30} />} onClick={() => {
+                        <ToolButton key='redo' icon={<SlActionRedo size={30} />} aria-label="Redo" onClick={() => {
                             canvasRef.current?.redo()
                             }}/>
-                        <ToolButton key='pen' icon={<SlPencil size={30} />} isActive={selectedTool === 'pen'} onClick={() => {
+                        <ToolButton key='pen' icon={<SlPencil size={30} />} isActive={selectedTool === 'pen'} aria-label="Pen tool" onClick={() => {
                             canvasRef.current?.eraseMode(false)
                             setSelectedTool('pen')
                             }}/>
-                        <ToolButton key='eraser' icon={<BsEraser size={30} />} isActive={selectedTool === 'eraser'} onClick={() => {
+                        <ToolButton key='eraser' icon={<BsEraser size={30} />} isActive={selectedTool === 'eraser'} aria-label="Eraser tool" onClick={() => {
                             canvasRef.current?.eraseMode(true)
                             setSelectedTool('eraser')
                             }} />
