@@ -38,27 +38,27 @@ const DrawingPage: React.FC = () => {
                 {/* Color buttons */}
                 <div className='flex flex-row gap-6 justify-center items-center'>
                     <div className="flex flex-col gap-4">
-                        <ColorButton color='black' size='30' onClick={() => {
+                        <ColorButton color='black' size='30' aria-label="select black color" onClick={() => {
                             setPenColor('#000000')
                             canvasRef.current?.eraseMode(false)
                             setSelectedTool('pen')
                         }}/>
-                        <ColorButton color='#0088FF' size='30' onClick={() => {
+                        <ColorButton color='#0088FF' size='30' aria-label="select blue color" onClick={() => {
                             setPenColor('#0088FF')
                             canvasRef.current?.eraseMode(false)
                             setSelectedTool('pen')
                         }}/>
-                        <ColorButton color='#FF383C' size='30' onClick={() => {
+                        <ColorButton color='#FF383C' size='30' aria-label="select red color" onClick={() => {
                             setPenColor('#FF383C')
                             canvasRef.current?.eraseMode(false)
                             setSelectedTool('pen')
                         }}/>
-                        <ColorButton color='#FFCC00' size='30' onClick={() => {
+                        <ColorButton color='#FFCC00' size='30' aria-label="select yellow color" onClick={() => {
                             setPenColor('#FFCC00')
                             canvasRef.current?.eraseMode(false)
                             setSelectedTool('pen')
                         }}/>
-                        <ColorButton color='#ffffff' size='30' onClick={() => {
+                        <ColorButton color='#ffffff' size='30' aria-label="select white color" onClick={() => {
                             setPenColor('#ffffff')
                             canvasRef.current?.eraseMode(false)
                             setSelectedTool('pen')
@@ -76,17 +76,17 @@ const DrawingPage: React.FC = () => {
                     />
                     {/* Tools */}
                     <div className="flex flex-col">
-                        <ToolButton key='undo' icon={<SlActionUndo size={30} />} onClick={() => {
+                        <ToolButton key='undo' icon={<SlActionUndo size={30} />} aria-label="Undo" onClick={() => {
                             canvasRef.current?.undo()
                             }}/>
-                        <ToolButton key='redo' icon={<SlActionRedo size={30} />} onClick={() => {
+                        <ToolButton key='redo' icon={<SlActionRedo size={30} />} aria-label="Redo" onClick={() => {
                             canvasRef.current?.redo()
                             }}/>
-                        <ToolButton key='pen' icon={<SlPencil size={30} />} isActive={selectedTool === 'pen'} onClick={() => {
+                        <ToolButton key='pen' icon={<SlPencil size={30} />} isActive={selectedTool === 'pen'} aria-label="Pen tool" onClick={() => {
                             canvasRef.current?.eraseMode(false)
                             setSelectedTool('pen')
                             }}/>
-                        <ToolButton key='eraser' icon={<BsEraser size={30} />} isActive={selectedTool === 'eraser'}onClick={() => {
+                        <ToolButton key='eraser' icon={<BsEraser size={30} />} isActive={selectedTool === 'eraser'} aria-label="Eraser tool" onClick={() => {
                             canvasRef.current?.eraseMode(true)
                             setSelectedTool('eraser')
                             }} />
@@ -109,7 +109,6 @@ const DrawingPage: React.FC = () => {
                             variant={selectedSize === size ? 'active' : 'default'}
                             onClick={() => {
                                 setSelectedSize(size);
-                                console.log(`Tool size changed to: ${size}`);
                             }}
                         />
                     ))}

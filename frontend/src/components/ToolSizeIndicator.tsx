@@ -19,8 +19,11 @@ export default function ToolSizeIndicator({
         active: "bg-dark-grey",
     };
     return (
-        <div 
+        <button 
+            type="button"
             onClick = {onClick}
+            aria-label={`Select tool size ${toolSize}`}
+            aria-pressed={variant === 'active'}
             className={`${baseStyles} ${variantStyles[variant]} ${className}`}
         >
             <div 
@@ -31,6 +34,6 @@ export default function ToolSizeIndicator({
                 }} 
                 className="rounded-full"
             ></div>
-        </div>
+        </button>
     );
 }
