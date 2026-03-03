@@ -22,6 +22,8 @@ export default function ToolSizeIndicator({
         <button 
             type="button"
             onClick = {onClick}
+            aria-label={`Select tool size ${toolSize}`}
+            aria-pressed={variant === 'active'}
             className={`${baseStyles} ${variantStyles[variant]} ${className}`}
         >
             <div 
