@@ -6,12 +6,17 @@ interface ToolButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> 
     onClick: () => void;
 }
 
-export default function ToolButton ({icon, isActive=false, onClick }: ToolButtonProps) {
+export default function ToolButton ({icon, isActive=false, onClick, type='button', className="", ...rest }: ToolButtonProps) {
     const baseStyles = "w-[40px] aspect-square flex justify-center rounded-md"
     const activeStyles = "bg-dark-grey text-white shadow-inner scale-95"
     const defaultStyles = "bg-transparent text-slate-600 hover:bg-light-grey"
     return (
-        <button onClick={onClick} className={`${baseStyles} ${isActive ? activeStyles : defaultStyles}`}>
+        <button 
+            type={type}
+            onClick={onClick} 
+            className={`${baseStyles} ${isActive ? activeStyles : defaultStyles}`}
+            {...rest}
+        >
             {icon}
         </button>
     );

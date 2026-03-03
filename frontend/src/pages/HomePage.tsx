@@ -23,7 +23,7 @@ const HomePage: React.FC = () => {
                 {/* Main content */}
                 <div className="flex flex-row items-center justify-center w-full h-full gap-8">
                     {/* Join a room option */}
-                    <div className='flex flex-col justify-between items-center w-hug h-full text-center gap-auto'>
+                    <div className='flex flex-col justify-between items-center h-full text-center'>
                         <PiNumberCircleOne size={33}/>
                         <Button label="Join a room"/>
                         <div>Join a room using the code provided by whoever is hosting!</div>
