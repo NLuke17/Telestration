@@ -3,8 +3,37 @@ import Container from '../components/Container';
 import TutorialSlideshow from '../components/TutorialSlideshow';
 import { PiNumberCircleOne, PiNumberCircleTwo } from "react-icons/pi";
 import Button from '../components/Button';
+import { useNavigate } from 'react-router-dom';
+import { v4 as uuidv4 } from 'uuid';
 
 const HomePage: React.FC = () => {
+    const navigate = useNavigate();
+
+    const handleCreateLobby = async () => {
+        let userId = localStorage.getItem('telestrations_user_id');
+
+        if (!userId) {
+            userId = uuidv4();
+            localStorage.setItem('telestrations_user_id', userId);
+        }
+
+        try {
+            const baseUrl = import.meta.env.VITE_API_BASE_URL;
+            const response = await fetch(`${baseUrl}/lobby`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ hostId: userId })
+            })
+            if (!response.ok) throw new Error("Failed to create");
+
+            const lobby = await response.json();
+
+            navigate(`/lobby/${lobby.roomCode}`);
+        } catch (err) {
+            console.error("Create Error: ", err);
+        }
+    };
+
     return (
         <div className="flex flex-col justify-center items-center h-screen">
             {/* Home content container */}
@@ -35,6 +64,7 @@ const HomePage: React.FC = () => {
                         <PiNumberCircleTwo size={33} />
                         <Button 
                             label="Start a new room"
+                            onClick={handleCreateLobby}
                         />
                         <div>Start a room of your own and invite your friends to join!</div>
                     </div>
