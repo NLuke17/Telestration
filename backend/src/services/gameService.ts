@@ -7,8 +7,11 @@ import { logInfo, logError } from '../utils/logger';
  * - Creates Flipbooks (1 per player)
  * - Sets lobby to IN_PROGRESS
  * - Assigns initial prompts to flipbooks
+ * 
+ * @param lobbyId - The lobby to start the game for
+ * @param customPrompts - Optional array of custom prompts (1 per player). If not provided, generates random prompts.
  */
-export async function startGame(lobbyId: string) {
+export async function startGame(lobbyId: string, customPrompts?: string[]) {
   try {
     // Get lobby with players
     const lobby = await prisma.lobby.findUnique({
@@ -31,6 +34,18 @@ export async function startGame(lobbyId: string) {
       throw new Error('NOT_ENOUGH_PLAYERS');
     }
 
+    // Validate custom prompts if provided
+    if (customPrompts) {
+      if (customPrompts.length !== lobby.players.length) {
+        throw new Error('PROMPT_COUNT_MISMATCH');
+      }
+      
+      // Check that all prompts are non-empty
+      if (customPrompts.some(prompt => !prompt || prompt.trim().length === 0)) {
+        throw new Error('INVALID_PROMPTS');
+      }
+    }
+
     // Calculate next round number
     const nextRoundNumber = (lobby.rounds[0]?.number ?? 0) + 1;
 
@@ -49,7 +64,7 @@ export async function startGame(lobbyId: string) {
         lobby.players.map((player, index) =>
           tx.flipbook.create({
             data: {
-              prompt: generateInitialPrompt(player.username, index),
+              prompt: customPrompts ? customPrompts[index].trim() : generateInitialPrompt(player.username, index),
               authorId: player.id,
               roundId: round.id,
               state: 'DRAWING',
@@ -148,6 +163,11 @@ export async function submitDrawing(
       throw new Error('FLIPBOOK_NOT_ACCEPTING_DRAWINGS');
     }
 
+    // IMPORTANT: Prevent drawing on your own flipbook!
+    if (flipbook.authorId === userId) {
+      throw new Error('CANNOT_DRAW_OWN_FLIPBOOK');
+    }
+
     // Calculate the next order number
     const lastDrawing = flipbook.drawings[0];
     const lastGuess = flipbook.guesses[0];
@@ -208,6 +228,11 @@ export async function submitGuess(
       throw new Error('FLIPBOOK_NOT_ACCEPTING_GUESSES');
     }
 
+    // IMPORTANT: Prevent guessing on your own flipbook!
+    if (flipbook.authorId === userId) {
+      throw new Error('CANNOT_GUESS_OWN_FLIPBOOK');
+    }
+
     // Calculate the next order number
     const lastDrawing = flipbook.drawings[0];
     const lastGuess = flipbook.guesses[0];
@@ -241,6 +266,74 @@ export async function submitGuess(
     logError('Failed to submit guess', { flipbookId, userId, error: error.message });
     throw error;
   }
+}
+
+/**
+ * Get the assigned flipbook for a player to work on
+ * Players should NOT work on their own flipbook
+ * 
+ * @param roundId - The current round
+ * @param userId - The player requesting assignment
+ * @param phase - Current phase (DRAWING or GUESSING)
+ * @returns The flipbook to work on, or null if player has completed all work
+ */
+export async function getAssignedFlipbook(
+  roundId: string,
+  userId: string,
+  phase: 'DRAWING' | 'GUESSING'
+) {
+  const round = await prisma.round.findUnique({
+    where: { id: roundId },
+    include: {
+      flipbooks: {
+        include: {
+          author: { select: { id: true, username: true, profilePicture: true } },
+          drawings: {
+            include: {
+              author: { select: { id: true, username: true } },
+            },
+          },
+          guesses: {
+            include: {
+              author: { select: { id: true, username: true } },
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!round) {
+    throw new Error('ROUND_NOT_FOUND');
+  }
+
+  // Filter flipbooks to find ones this player should work on
+  const availableFlipbooks = round.flipbooks.filter((flipbook) => {
+    // Cannot work on your own flipbook
+    if (flipbook.authorId === userId) {
+      return false;
+    }
+
+    if (phase === 'DRAWING') {
+      // Check if player has already drawn on this flipbook
+      const hasDrawn = flipbook.drawings.some((d) => d.authorId === userId);
+      return !hasDrawn;
+    } else if (phase === 'GUESSING') {
+      // Check if player has already guessed on this flipbook
+      const hasGuessed = flipbook.guesses.some((g) => g.authorId === userId);
+      return !hasGuessed;
+    }
+
+    return false;
+  });
+
+  // Return the first available flipbook (or null if none available)
+  if (availableFlipbooks.length === 0) {
+    return null;
+  }
+
+  // Return the first available flipbook
+  return availableFlipbooks[0];
 }
 
 /**
@@ -320,6 +413,7 @@ export async function checkPhaseCompletion(roundId: string, phase: 'DRAWING' | '
 
 /**
  * Generate initial prompt for a flipbook
+ * Used as fallback when custom prompts are not provided
  * In production, you might want to use a prompt database or API
  */
 function generateInitialPrompt(username: string, index: number): string {
@@ -332,6 +426,14 @@ function generateInitialPrompt(username: string, index: number): string {
     'An astronaut on the moon',
     'A pirate searching for treasure',
     'A ninja in a library',
+    'A detective solving a mystery',
+    'A chef cooking a meal',
+    'A knight fighting a dragon',
+    'A surfer riding a wave',
+    'A scientist in a lab',
+    'A musician playing guitar',
+    'A firefighter saving a cat',
+    'A teacher in a classroom',
   ];
 
   return prompts[index % prompts.length];

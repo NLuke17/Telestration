@@ -36,6 +36,18 @@ export const submitGuessSchema = z.object({
   }),
 });
 
+// GET /game/rounds/:roundId/assignment
+export const getAssignedFlipbookSchema = z.object({
+  params: z.object({
+    roundId: uuidSchema,
+  }),
+  query: z.object({
+    userId: uuidSchema,
+    phase: z.enum(['DRAWING', 'GUESSING'], { message: 'Phase must be DRAWING or GUESSING' }),
+  }),
+});
+
 export type GetCurrentRoundInput = z.infer<typeof getCurrentRoundSchema>;
 export type SubmitDrawingInput = z.infer<typeof submitDrawingSchema>;
 export type SubmitGuessInput = z.infer<typeof submitGuessSchema>;
+export type GetAssignedFlipbookInput = z.infer<typeof getAssignedFlipbookSchema>;
