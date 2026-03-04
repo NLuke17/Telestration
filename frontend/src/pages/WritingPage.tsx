@@ -17,7 +17,7 @@ const WritingPage: React.FC = () => {
                     <TimerDisplay minutesLeft='00' secondsLeft='30' className='text-heading-3'/>
                 </div>
                 <div className="text-heading-1">Write a Sentence</div>
-                <div className="flex items-center justify-center w-full">
+                <div className="flex items-center justify-center w-full gap-8">
                     <InputField 
                         id='sentence'
                         label=""
