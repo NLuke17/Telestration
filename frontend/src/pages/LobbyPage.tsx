@@ -1,8 +1,43 @@
 import React from 'react';
 import Container from '../components/Container';
 import Button from '../components/Button';
+import { useParams } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import type { LobbySnapshot } from '../../../backend/src/types/dto';
 
  const LobbyPage: React.FC = () => {
+    const { roomCode } = useParams<{ roomCode: string }> ();
+    const [lobby, setLobby] = useState<LobbySnapshot | null>(null);
+    const [error, setError] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState<boolean>(true);
+
+    useEffect(() => {
+        // fetch function
+
+        const fetchLobby = async () => {
+            setIsLoading(true);
+            try {
+                const baseUrl = import.meta.env.VITE_API_BASE_URL;
+                const response = await fetch(`${baseUrl}/api/lobby/${roomCode}`);
+
+                if (!response.ok) {
+                    throw new Error("Lobby not found");
+                }
+
+                const data = await response.json();
+                setLobby(data);
+            } catch (err: any) {
+                setError(err.message);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        // execute if given a room code
+        if (roomCode) {
+            fetchLobby();
+        }
+    }, [roomCode]); // run every time room code changes
 
     return (
         <div className="flex flex-col justify-center items-center h-screen bg-gray-50">
@@ -35,7 +70,7 @@ import Button from '../components/Button';
                         <h2 className="text-lg font-bold pb-2 text-center">Room code:</h2>
                         {/* Displaying the Room Code numbers */}
                         <p className="text-heading-1 font-bold text-center">
-                            123456
+                            {roomCode}
                         </p>
                         <Button 
                             label="Share" 
