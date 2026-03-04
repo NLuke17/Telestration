@@ -65,17 +65,50 @@ router.get('/:roomCode', validate(getLobbySchema), async (req, res) => {
 router.post('/:roomCode/start', validate(startLobbySchema), async (req, res) => {
   try {
     const roomCode = typeof req.params.roomCode === 'string' ? req.params.roomCode : req.params.roomCode[0];
-    const lobby = await startLobby(roomCode);
+    const customPrompts = req.body?.prompts;
     
-    // Notify WebSocket clients
-    const wsHandle = getWSHandle(req);
-    if (wsHandle) {
-      await wsHandle.notifyLobbyUpdated(lobby.id);
+    // Get lobby info to retrieve player IDs
+    const lobby = await getLobbySnapshot(roomCode);
+    const playerIds = lobby.players.map(p => p.id);
+    
+    // If no custom prompts in body, try to get from WebSocket prompt tracker
+    let promptsToUse = customPrompts;
+    if (!promptsToUse) {
+      const wsHandle = getWSHandle(req);
+      if (wsHandle) {
+        const collectedPrompts = wsHandle.getPromptsForLobby(lobby.id, playerIds);
+        // Only use collected prompts if all players submitted
+        if (collectedPrompts.every(p => p && p.trim().length > 0)) {
+          promptsToUse = collectedPrompts;
+        }
+      }
     }
     
-    return res.json({ message: "Lobby started" });
+    const result = await startLobby(roomCode, promptsToUse);
+    
+    // Notify WebSocket clients about game start
+    const wsHandle = getWSHandle(req);
+    if (wsHandle) {
+      await wsHandle.notifyGameStarted(result.lobby.id, result.round.id, result.round.number);
+    }
+    
+    return res.json({ 
+      message: "Game started",
+      roundId: result.round.id,
+      roundNumber: result.round.number,
+      flipbooks: result.flipbooks.map(fb => ({
+        id: fb.id,
+        prompt: fb.prompt,
+        authorId: fb.author.id,
+        authorUsername: fb.author.username,
+      })),
+    });
   } catch (e: any) {
     if (e.message === "LOBBY_NOT_FOUND") return res.status(404).json({ error: "Lobby not found" });
+    if (e.message === "LOBBY_ALREADY_STARTED") return res.status(400).json({ error: "Lobby already started" });
+    if (e.message === "NOT_ENOUGH_PLAYERS") return res.status(400).json({ error: "Not enough players to start" });
+    if (e.message === "PROMPT_COUNT_MISMATCH") return res.status(400).json({ error: "Number of prompts must match number of players" });
+    if (e.message === "INVALID_PROMPTS") return res.status(400).json({ error: "All prompts must be non-empty strings" });
     return res.status(500).json({ error: "Failed to start lobby" });
   }
 });

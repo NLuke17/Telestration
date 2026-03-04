@@ -6,6 +6,7 @@ import { parseEnvelope, routeMessage, MessageHandler } from '../core/wsRouter';
 import { WSClientMessage } from '../../types/ws';
 import { logInfo, logError, logWarn } from '../../utils/logger';
 import { normalizeRoomCode } from '../../utils/roomCode';
+import { handleDrawingSubmission, handleGuessSubmission } from './gameWs';
 
 export function registerLobbyHandlers(ctx: WSContext) {
   ctx.wss.on('connection', (ws: WebSocket & { isAlive?: boolean }) => {
@@ -52,6 +53,9 @@ function createHandlerMap(ctx: WSContext, conn: ClientConn): Map<string, Message
   handlers.set('lobby:connect', (msg) => handleLobbyConnect(ctx, conn, msg as any));
   handlers.set('lobby:ready', (msg) => handleLobbyReady(ctx, conn, msg as any));
   handlers.set('lobby:disconnect', () => handleLobbyDisconnect(ctx, conn));
+  handlers.set('lobby:submit_prompt', (msg) => handlePromptSubmission(ctx, conn, msg as any));
+  handlers.set('game:submit_drawing', (msg) => handleDrawingSubmission(ctx, conn, msg as any));
+  handlers.set('game:submit_guess', (msg) => handleGuessSubmission(ctx, conn, msg as any));
 
   return handlers;
 }
@@ -120,6 +124,85 @@ async function handleLobbyReady(
   }
 
   logInfo('Client ready status', { connId: conn.connId, ready: msg.ready, lobbyId: conn.lobbyId });
+}
+
+async function handlePromptSubmission(
+  ctx: WSContext,
+  conn: ClientConn,
+  msg: { type: 'lobby:submit_prompt'; prompt: string }
+): Promise<void> {
+  if (!conn.lobbyId || !conn.userId) {
+    send(conn, { type: 'error', error: 'NOT_AUTHENTICATED', message: 'Not authenticated' });
+    return;
+  }
+
+  try {
+    // Validate prompt
+    const trimmedPrompt = msg.prompt.trim();
+    if (!trimmedPrompt || trimmedPrompt.length === 0) {
+      send(conn, { type: 'error', error: 'INVALID_PROMPT', message: 'Prompt cannot be empty' });
+      return;
+    }
+
+    if (trimmedPrompt.length > 100) {
+      send(conn, { type: 'error', error: 'PROMPT_TOO_LONG', message: 'Prompt must be 100 characters or less' });
+      return;
+    }
+
+    // Get lobby to check state and players
+    const snapshot = await ctx.lobbySnapshotService.buildLobbySnapshot(conn.lobbyId);
+    
+    if (snapshot.state !== 'WAITING') {
+      send(conn, { type: 'error', error: 'GAME_ALREADY_STARTED', message: 'Cannot submit prompt after game has started' });
+      return;
+    }
+
+    // Store the prompt
+    ctx.prompts.submitPrompt(conn.lobbyId, conn.userId, trimmedPrompt);
+
+    // Get user info
+    const user = snapshot.players.find(p => p.id === conn.userId);
+    const username = user?.username || 'Unknown';
+
+    // Notify lobby that prompt was submitted
+    const connections = ctx.registry.getLobbyConnections(conn.lobbyId);
+    broadcast(connections, {
+      type: 'lobby:prompt_submitted',
+      userId: conn.userId,
+      username,
+    });
+
+    // Check if all prompts are ready
+    const playerIds = snapshot.players.map(p => p.id);
+    const allReady = ctx.prompts.allPromptsSubmitted(conn.lobbyId, playerIds);
+
+    if (allReady) {
+      broadcast(connections, {
+        type: 'lobby:all_prompts_ready',
+        promptCount: playerIds.length,
+      });
+    }
+
+    logInfo('Prompt submitted', {
+      lobbyId: conn.lobbyId,
+      userId: conn.userId,
+      username,
+      promptLength: trimmedPrompt.length,
+      allReady,
+    });
+  } catch (error: any) {
+    logError('Failed to submit prompt', {
+      lobbyId: conn.lobbyId,
+      userId: conn.userId,
+      error: error.message,
+    });
+
+    send(conn, {
+      type: 'error',
+      error: 'PROMPT_SUBMISSION_FAILED',
+      message: error.message || 'Failed to submit prompt',
+    });
+  }
 }
 
 async function handleLobbyDisconnect(ctx: WSContext, conn: ClientConn): Promise<void> {

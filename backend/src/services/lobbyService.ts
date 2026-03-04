@@ -1,5 +1,6 @@
 import prisma from '../prisma/client';
 import { generateRoomCode } from '../utils/roomCode';
+import { startGame as startGameService } from './gameService';
 
 const lobbyInclude = {
     host: { select: { id: true, username: true, profilePicture: true } },
@@ -86,9 +87,23 @@ export async function deleteLobby(roomCodeRaw: string) {
     }
 }
 
-export async function startLobby(roomCodeRaw: string) {
+export async function startLobby(roomCodeRaw: string, customPrompts?: string[]) {
     const roomCode = roomCodeRaw.toUpperCase();
-    return await prisma.lobby.update({ where: { roomCode }, data: { state: "STARTING" } });
+    
+    // Find lobby by room code first
+    const lobby = await prisma.lobby.findUnique({
+        where: { roomCode },
+        include: { players: true },
+    });
+
+    if (!lobby) {
+        throw new Error("LOBBY_NOT_FOUND");
+    }
+
+    // Start the game using game service with optional custom prompts
+    const result = await startGameService(lobby.id, customPrompts);
+    
+    return result;
 }
 
 export async function endLobby(roomCodeRaw: string) {
