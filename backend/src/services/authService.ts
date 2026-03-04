@@ -3,8 +3,8 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 
 // Use environment variables for both secrets!
-const JWT_SECRET = process.env.JWT_SECRET 
-const REFRESH_SECRET = process.env.REFRESH_SECRET 
+const JWT_SECRET = process.env.JWT_SECRET as string;
+const REFRESH_SECRET = process.env.REFRESH_SECRET as string;
 
 if (!JWT_SECRET) {
   throw new Error("ERROR: JWT_SECRET is not defined in the environment variables.");
