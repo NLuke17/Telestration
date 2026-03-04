@@ -14,6 +14,8 @@ export interface WSGatewayHandle {
   notifyPlayerLeft(lobbyId: string, userId: string): Promise<void>;
   notifyGameStarted(lobbyId: string, roundId: string, roundNumber: number): Promise<void>;
   notifyPhaseChange(lobbyId: string, phase: 'DRAWING' | 'GUESSING' | 'VOTING'): Promise<void>;
+  getPromptsForLobby(lobbyId: string, playerIds: string[]): string[];
+  clearPromptsForLobby(lobbyId: string): void;
 }
 
 
@@ -77,10 +79,20 @@ export function setupWebSocket(server: Server): WSGatewayHandle {
     async notifyGameStarted(lobbyId: string, roundId: string, roundNumber: number): Promise<void> {
       await broadcastGameStarted(ctx, lobbyId, roundId, roundNumber);
       await broadcastLobbySnapshot(ctx, lobbyId);
+      // Clear prompts after game starts
+      ctx.prompts.clearPrompts(lobbyId);
     },
 
     async notifyPhaseChange(lobbyId: string, phase: 'DRAWING' | 'GUESSING' | 'VOTING'): Promise<void> {
       await broadcastPhaseChange(ctx, lobbyId, phase);
+    },
+
+    getPromptsForLobby(lobbyId: string, playerIds: string[]): string[] {
+      return ctx.prompts.getPromptsArray(lobbyId, playerIds);
+    },
+
+    clearPromptsForLobby(lobbyId: string): void {
+      ctx.prompts.clearPrompts(lobbyId);
     },
   };
 }

@@ -57,6 +57,15 @@ export const startLobbySchema = z.object({
   params: z.object({
     roomCode: roomCodeSchema,
   }),
+  body: z.object({
+    prompts: z
+      .array(z.string().min(1, 'Prompt cannot be empty').max(100, 'Prompt too long'))
+      .optional()
+      .refine(
+        (prompts) => !prompts || prompts.length >= 2,
+        { message: 'Must provide at least 2 prompts if specifying custom prompts' }
+      ),
+  }).optional(),
 });
 
 export const endLobbySchema = z.object({

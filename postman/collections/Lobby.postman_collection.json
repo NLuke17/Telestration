@@ -120,14 +120,13 @@
           }
         },
         "url": {
-          "raw": "localhost:8000/lobby/WUNEJU/start",
+          "raw": "localhost:8000/T6B2RK/start",
           "host": [
             "localhost"
           ],
           "port": "8000",
           "path": [
-            "lobby",
-            "WUNEJU",
+            "T6B2RK",
             "start"
           ]
         }

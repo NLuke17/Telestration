@@ -87,7 +87,7 @@ export async function deleteLobby(roomCodeRaw: string) {
     }
 }
 
-export async function startLobby(roomCodeRaw: string) {
+export async function startLobby(roomCodeRaw: string, customPrompts?: string[]) {
     const roomCode = roomCodeRaw.toUpperCase();
     
     // Find lobby by room code first
@@ -100,8 +100,8 @@ export async function startLobby(roomCodeRaw: string) {
         throw new Error("LOBBY_NOT_FOUND");
     }
 
-    // Start the game using game service
-    const result = await startGameService(lobby.id);
+    // Start the game using game service with optional custom prompts
+    const result = await startGameService(lobby.id, customPrompts);
     
     return result;
 }
