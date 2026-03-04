@@ -55,7 +55,10 @@ const HomePage: React.FC = () => {
                     {/* Join a room option */}
                     <div className='flex flex-col justify-between items-center h-full text-center'>
                         <PiNumberCircleOne size={33}/>
-                        <Button label="Join a room"/>
+                        <Button 
+                            label="Join a room"
+                            disabled={!isLoggedIn}
+                        />
                         <div>{!isLoggedIn ? (
                             <Alert severity='info'>Please log in first!</Alert>
                         ): (
@@ -70,6 +73,7 @@ const HomePage: React.FC = () => {
                         <PiNumberCircleTwo size={33} />
                         <Button 
                             label="Start a new room"
+                            disabled={!isLoggedIn}
                             onClick={handleCreateLobby}
                         />
                         <div>{!isLoggedIn ? (
