@@ -1,8 +1,11 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 
-// Use the exact same secret you use in your authService when signing the token!
-const JWT_SECRET = process.env.JWT_SECRET || "fallback-secret-key-change-me";
+const JWT_SECRET = process.env.JWT_SECRET;
+
+if (!JWT_SECRET) {
+  throw new Error("ERROR: JWT_SECRET is not defined in the environment variables.");
+}
 
 export interface AuthRequest extends Request {
   user?: any;
