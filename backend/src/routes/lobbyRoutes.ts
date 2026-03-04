@@ -1,7 +1,8 @@
 import express from 'express';
 import { createLobby, joinLobby, getLobbySnapshot, deleteLobby, startLobby, endLobby, leaveLobby } from "../services/lobbyService";
+import { getGameState } from "../services/gameStateService";
 import { validate } from "../middleware/validate";
-import { createLobbySchema, joinLobbySchema, getLobbySchema, deleteLobbySchema, startLobbySchema, endLobbySchema, leaveLobbySchema } from "../validation/lobby.validation";
+import { createLobbySchema, joinLobbySchema, getLobbySchema, deleteLobbySchema, startLobbySchema, endLobbySchema, leaveLobbySchema, getGameStateSchema } from "../validation/lobby.validation";
 import { WSGatewayHandle } from "../ws/index";
 
 const router = express.Router();
@@ -46,6 +47,21 @@ router.post('/:roomCode/join', validate(joinLobbySchema), async (req, res) => {
     if (e.message === "LOBBY_NOT_ACCEPTING") return res.status(400).json({ error: "Lobby is not accepting new players" });
     if (e.message === "ALREADY_IN_LOBBY") return res.status(400).json({ error: "Already in this lobby" });
     return res.status(500).json({ error: "Failed to join lobby" });
+  }
+});
+
+// Get complete game state for a user
+router.get('/:roomCode/state', validate(getGameStateSchema), async (req, res) => {
+  try {
+    const roomCode = typeof req.params.roomCode === 'string' ? req.params.roomCode : req.params.roomCode[0];
+    const { userId } = req.query;
+    
+    const state = await getGameState(roomCode, userId as string);
+    return res.json(state);
+  } catch (e: any) {
+    if (e.message === "LOBBY_NOT_FOUND") return res.status(404).json({ error: "Lobby not found" });
+    if (e.message === "ROUND_NOT_FOUND") return res.status(404).json({ error: "No active round found" });
+    return res.status(500).json({ error: "Failed to fetch game state" });
   }
 });
 
