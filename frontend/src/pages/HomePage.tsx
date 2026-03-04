@@ -60,7 +60,7 @@ const HomePage: React.FC = () => {
                             disabled={!isLoggedIn}
                         />
                         <div>{!isLoggedIn ? (
-                            <Alert severity='info'>Please log in first!</Alert>
+                            <Alert severity='info'>Please sign in first!</Alert>
                         ): (
                             <div></div>
                         )}</div>
@@ -77,7 +77,7 @@ const HomePage: React.FC = () => {
                             onClick={handleCreateLobby}
                         />
                         <div>{!isLoggedIn ? (
-                            <Alert severity='info'>Please log in first!</Alert>
+                            <Alert severity='info'>Please sign in first!</Alert>
                         ): (
                             <div></div>
                         )}</div>
