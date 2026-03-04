@@ -10,7 +10,7 @@ const WritingPage: React.FC = () => {
     const [sentence, setSentence] = useState('');
 
     return (
-        <div className="flex items-center h-screen">
+        <div className="flex justify-center items-center h-screen">
             <Container width='900px' height='500px' padding='5em' className='flex flex-col justify-between items-center border-2 border-dark-grey rounded-lg'>
                 <div className='flex w-full justify-between'>
                     <PageCounter pageNum='2' totalPages='4' className='text-heading-3'/>
