@@ -25,7 +25,7 @@ const DrawingPage: React.FC = () => {
 
     return (
         <div className="flex flex-col justify-center items-center gap-8 h-screen">
-            <Container width='900px' height='500px' padding='5em' className='gap-8 border-2 border-dark-grey rounded-lg flex-col'>
+            <Container width='900px' height='500px' padding='5em' className='flex items-center justify-center gap-8 border-2 border-dark-grey rounded-lg flex-col'>
                 <div className='flex w-full justify-between'>
                     <PageCounter pageNum='2' totalPages='4' className='text-heading-3'/>
                     {/* Heading */}
