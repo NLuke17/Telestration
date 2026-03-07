@@ -4,6 +4,7 @@ import Button from '../components/Button';
 import { useParams } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import type { LobbySnapshot } from '../../../backend/src/types/dto';
+import InitialAvatar from '../components/Avatar';
 
  const LobbyPage: React.FC = () => {
     const { roomCode } = useParams<{ roomCode: string }> ();
@@ -56,18 +57,24 @@ import type { LobbySnapshot } from '../../../backend/src/types/dto';
                         <Container
                             width='200px'
                             height='auto'
-                            padding='0'
-                            className='flex flex-col items-start border-2 border-light-grey rounded-lg bg-white shadow-xl p-2'>                          
+                            padding='1em'
+                            className='flex flex-col items-start border-2 border-light-grey rounded-lg bg-white shadow-xl gap-2'>                          
                             <h2 className="text-lg font-bold text-left w-full">Players</h2>
-                            <div>
+                            <div className="flex flex-col gap-2">
                                 {lobby?.players.map((player) => {
                                     return (
                                     <div
                                         key={player.id}
-                                        className="flex items-center"
+                                        className="flex items-center gap-2"
                                     >
+                                        {/* Profile Picture */}
+                                        <InitialAvatar
+                                            name={player.username}
+                                            src={player.profilePicture}
+                                            size="40"
+                                        />
                                         {/* Username */ }
-                                        <span className="text-sm">
+                                        <span className="text-dark-grey">
                                             {player.username}
                                         </span>
                                     </div>
