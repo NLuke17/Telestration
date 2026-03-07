@@ -18,7 +18,7 @@ import type { LobbySnapshot } from '../../../backend/src/types/dto';
             setIsLoading(true);
             try {
                 const baseUrl = import.meta.env.VITE_API_BASE_URL;
-                const response = await fetch(`${baseUrl}/api/lobby/${roomCode}`);
+                const response = await fetch(`${baseUrl}/lobby/${roomCode}`);
 
                 if (!response.ok) {
                     throw new Error("Lobby not found");
@@ -59,11 +59,22 @@ import type { LobbySnapshot } from '../../../backend/src/types/dto';
                             padding='0'
                             className='flex flex-col items-start border-2 border-light-grey rounded-lg bg-white shadow-xl p-2'>                          
                             <h2 className="text-lg font-bold text-left w-full">Players</h2>
+                            <div>
+                                {lobby?.players.map((player) => {
+                                    return (
+                                    <div
+                                        key={player.id}
+                                        className="flex items-center"
+                                    >
+                                        {/* Username */ }
+                                        <span className="text-sm">
+                                            {player.username}
+                                        </span>
+                                    </div>
+                                    )
+                                })}
+                            </div>
                         </Container>
-
-                        <p>Player 1</p>
-                        <p>Player 2</p>
-                        <p>Player 3</p>
                     </div>
 
                 {/* Middle: invite and start */}
