@@ -11,8 +11,8 @@ export default function InitialAvatar({ name, src, size='16', className="" }: Av
 
   return (
     <div 
-        style={{ width: `${size}px`, height: `${size}px` }}
-        className={`aspect-square bg-slate-800 rounded-full flex justify-center items-center text-white font-bold overflow-hidden shadow-sm ${className}`}
+        style={{ width: `${size}px`, height: `${size}px`, minWidth: `${size}px` }}
+        className={`relative inline-flex bg-slate-800 rounded-full flex justify-center items-center text-white font-bold overflow-hidden shadow-sm ${className}`}
     >
         {src ? (
             <img 
