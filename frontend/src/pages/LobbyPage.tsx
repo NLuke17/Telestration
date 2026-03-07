@@ -58,7 +58,7 @@ import InitialAvatar from '../components/Avatar';
                             width='200px'
                             height='auto'
                             padding='1em'
-                            className='flex flex-col items-start border-2 border-light-grey rounded-lg bg-white shadow-xl gap-2'>                          
+                            className='flex flex-col items-start border-2 border-light-grey rounded-lg bg-white shadow-xl gap-4'>                          
                             <h2 className="text-lg font-bold text-left w-full">Players</h2>
                             <div className="flex flex-col gap-2">
                                 {lobby?.players.map((player) => {
