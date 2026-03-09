@@ -81,3 +81,14 @@ export type LeaveLobbyInput = z.infer<typeof leaveLobbySchema>;
 export type DeleteLobbyInput = z.infer<typeof deleteLobbySchema>;
 export type StartLobbyInput = z.infer<typeof startLobbySchema>;
 export type EndLobbyInput = z.infer<typeof endLobbySchema>;
+// GET /lobby/:roomCode/state
+export const getGameStateSchema = z.object({
+  params: z.object({
+    roomCode: roomCodeSchema,
+  }),
+  query: z.object({
+    userId: uuidSchema,
+  }),
+});
+
+export type GetGameStateInput = z.infer<typeof getGameStateSchema>;
