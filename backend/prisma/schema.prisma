@@ -19,6 +19,8 @@ model User {
   password  String 
   profilePicture  String? //(was thinking string to store file path?)
   createdAt DateTime @default(now())
+  loginAttempts Int @default(0) // Track failed login attempts
+  lockedUntil   DateTime? // Account lockout timestamp
 
   // Relations
   hostedLobbies Lobby[]     @relation("LobbyHost")
@@ -27,6 +29,22 @@ model User {
   wonRounds     Round[]     @relation("RoundWinner")
   drawings      Drawing[]
   guesses       Guess[]
+  refreshTokens RefreshToken[]
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  revokedAt DateTime? // For token invalidation
+  
+  // Relations
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@index([token])
 }
 
 model Lobby {
@@ -36,7 +54,7 @@ model Lobby {
   createdAt DateTime   @default(now())
 
   // Relations
-  host        User       @relation("LobbyHost", fields: [hostId], references: [id])
+  host        User       @relation("LobbyHost", fields: [hostId], references: [id], onDelete: Cascade)
   hostId      String
   players     User[]     @relation("LobbyPlayers")
   rounds      Round[]
@@ -48,10 +66,10 @@ model Round{
   createdAt   DateTime   @default(now())
   
   // Relations
-  lobby       Lobby      @relation(fields: [lobbyId], references: [id])
+  lobby       Lobby      @relation(fields: [lobbyId], references: [id], onDelete: Cascade)
   lobbyId     String
   flipbooks   Flipbook[]
-  winner      User?      @relation("RoundWinner", fields: [winnerId], references: [id])
+  winner      User?      @relation("RoundWinner", fields: [winnerId], references: [id], onDelete: SetNull)
   winnerId    String?
 }
 
@@ -63,9 +81,9 @@ model Flipbook {
   createdAt   DateTime      @default(now())
 
   // Relations
-  author      User          @relation(fields: [authorId], references: [id])
+  author      User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
   authorId    String
-  round       Round         @relation(fields: [roundId], references: [id])
+  round       Round         @relation(fields: [roundId], references: [id], onDelete: Cascade)
   roundId     String
   drawings    Drawing[]
   guesses     Guess[]
@@ -78,9 +96,9 @@ model Drawing {
   createdAt   DateTime @default(now())
 
   // Relations
-  flipbook    Flipbook @relation(fields: [flipbookId], references: [id])
+  flipbook    Flipbook @relation(fields: [flipbookId], references: [id], onDelete: Cascade)
   flipbookId  String
-  author      User     @relation(fields: [authorId], references: [id])
+  author      User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
   authorId    String
 }
 
@@ -91,9 +109,9 @@ model Guess {
   createdAt   DateTime @default(now())
 
   // Relations
-  flipbook    Flipbook @relation(fields: [flipbookId], references: [id])
+  flipbook    Flipbook @relation(fields: [flipbookId], references: [id], onDelete: Cascade)
   flipbookId  String
-  author      User     @relation(fields: [authorId], references: [id])
+  author      User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
   authorId    String
 }
 
