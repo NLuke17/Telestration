@@ -1,37 +1,68 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Container from '../components/Container';
 import TutorialSlideshow from '../components/TutorialSlideshow';
 import { PiNumberCircleOne, PiNumberCircleTwo } from "react-icons/pi";
 import Button from '../components/Button';
 import { useNavigate } from 'react-router-dom';
-import { useState } from 'react';
 import Alert from '@mui/material/Alert';
+import { createLobby, joinLobby } from '../services/api/lobbyApi';
 
 const HomePage: React.FC = () => {
     const navigate = useNavigate();
     const [isLoggedIn, setLoggedIn] = useState<boolean>(false);
+    const [roomCodeInput, setRoomCodeInput] = useState<string>('');
+    const [error, setError] = useState<string | null>(null);
+    const [isCreating, setIsCreating] = useState(false);
+    const [isJoining, setIsJoining] = useState(false);
 
     const handleCreateLobby = async () => {
-        let userId = localStorage.getItem('telestrations_user_id');
+        let userId = localStorage.getItem('userId');
 
         if (!userId) {
-            // TODO
+            // Generate a temporary user ID if not logged in
+            userId = `temp-${Date.now()}`;
+            localStorage.setItem('userId', userId);
         }
 
         try {
-            const baseUrl = import.meta.env.VITE_API_BASE_URL;
-            const response = await fetch(`${baseUrl}/lobby`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ hostId: userId })
-            })
-            if (!response.ok) throw new Error("Failed to create");
-
-            const lobby = await response.json();
-
+            setIsCreating(true);
+            setError(null);
+            
+            const lobby = await createLobby(userId);
             navigate(`/lobby/${lobby.roomCode}`);
-        } catch (err) {
-            console.error("Create Error: ", err);
+        } catch (err: any) {
+            console.error("Create Error:", err);
+            setError(err.message || 'Failed to create lobby');
+        } finally {
+            setIsCreating(false);
+        }
+    };
+
+    const handleJoinLobby = async () => {
+        if (!roomCodeInput.trim()) {
+            setError('Please enter a room code');
+            return;
+        }
+
+        let userId = localStorage.getItem('userId');
+
+        if (!userId) {
+            // Generate a temporary user ID if not logged in
+            userId = `temp-${Date.now()}`;
+            localStorage.setItem('userId', userId);
+        }
+
+        try {
+            setIsJoining(true);
+            setError(null);
+            
+            await joinLobby(roomCodeInput.trim().toUpperCase(), userId);
+            navigate(`/lobby/${roomCodeInput.trim().toUpperCase()}`);
+        } catch (err: any) {
+            console.error("Join Error:", err);
+            setError(err.message || 'Failed to join lobby');
+        } finally {
+            setIsJoining(false);
         }
     };
 
@@ -55,12 +86,23 @@ const HomePage: React.FC = () => {
                     {/* Join a room option */}
                     <div className='flex flex-col justify-between items-center h-full text-center'>
                         <PiNumberCircleOne size={33}/>
-                        <Button 
-                            label="Join a room"
-                            disabled={!isLoggedIn}
-                        />
+                        <div className="flex flex-col gap-2">
+                            <input
+                                type="text"
+                                placeholder="Enter room code"
+                                value={roomCodeInput}
+                                onChange={(e) => setRoomCodeInput(e.target.value.toUpperCase())}
+                                className="border border-gray-300 rounded px-3 py-2 text-center"
+                                maxLength={6}
+                            />
+                            <Button 
+                                label={isJoining ? "Joining..." : "Join a room"}
+                                disabled={!roomCodeInput.trim() || isJoining}
+                                onClick={handleJoinLobby}
+                            />
+                        </div>
                         <div>{!isLoggedIn ? (
-                            <Alert severity='info'>Please sign in first!</Alert>
+                            <Alert severity='info'>Playing as guest</Alert>
                         ): (
                             <div></div>
                         )}</div>
@@ -72,18 +114,21 @@ const HomePage: React.FC = () => {
                     <div className='flex flex-col justify-between items-center w-hug h-full text-center gap-auto'>
                         <PiNumberCircleTwo size={33} />
                         <Button 
-                            label="Start a new room"
-                            disabled={!isLoggedIn}
+                            label={isCreating ? "Creating..." : "Start a new room"}
+                            disabled={isCreating}
                             onClick={handleCreateLobby}
                         />
                         <div>{!isLoggedIn ? (
-                            <Alert severity='info'>Please sign in first!</Alert>
+                            <Alert severity='info'>Playing as guest</Alert>
                         ): (
                             <div></div>
                         )}</div>
                         <div>Start a room of your own and invite your friends to join!</div>
                     </div>
                 </div>
+                {error && (
+                    <Alert severity='error' className='w-full'>{error}</Alert>
+                )}
             </Container>
         </div>
     );

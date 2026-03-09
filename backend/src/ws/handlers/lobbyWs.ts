@@ -40,7 +40,7 @@ export function registerLobbyHandlers(ctx: WSContext) {
       handleDisconnect(ctx, conn);
     });
 
-    ws.on('error', (error) => {
+    ws.on('error', (error: Error) => {
       logError('WebSocket error', { connId: conn.connId, error: error.message });
     });
   });
