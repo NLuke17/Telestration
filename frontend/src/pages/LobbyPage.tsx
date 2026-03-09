@@ -4,6 +4,7 @@ import Button from '../components/Button';
 import { useParams } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import type { LobbySnapshot } from '../../../backend/src/types/dto';
+import InitialAvatar from '../components/Avatar';
 
  const LobbyPage: React.FC = () => {
     const { roomCode } = useParams<{ roomCode: string }> ();
@@ -18,7 +19,7 @@ import type { LobbySnapshot } from '../../../backend/src/types/dto';
             setIsLoading(true);
             try {
                 const baseUrl = import.meta.env.VITE_API_BASE_URL;
-                const response = await fetch(`${baseUrl}/api/lobby/${roomCode}`);
+                const response = await fetch(`${baseUrl}/lobby/${roomCode}`);
 
                 if (!response.ok) {
                     throw new Error("Lobby not found");
@@ -45,7 +46,7 @@ import type { LobbySnapshot } from '../../../backend/src/types/dto';
                 width='900px' 
                 height='500px' 
                 padding='5em' 
-                className='gap-2 flex-col border-2 border-dark-grey rounded-lg bg-white shadow-xl p-12'
+                className='flex flex-col justify-center gap-2 flex-col border-2 border-dark-grey rounded-lg bg-white shadow-xl p-12'
             >
                 {/* Header */}
                 <h1 className="text-heading-1 w-full text-left mb-0">Join Room</h1>
@@ -56,13 +57,31 @@ import type { LobbySnapshot } from '../../../backend/src/types/dto';
                         <Container
                             width='200px'
                             height='auto'
-                            padding='0'
-                            className='flex flex-col items-start border-2 border-light-grey rounded-lg bg-white shadow-xl p-2'>                          
+                            padding='1em'
+                            className='flex flex-col items-start border-2 border-light-grey rounded-lg bg-white shadow-xl gap-4'>                          
                             <h2 className="text-lg font-bold text-left w-full">Players</h2>
+                            <div className="flex flex-col gap-2">
+                                {lobby?.players.map((player) => {
+                                    return (
+                                    <div
+                                        key={player.id}
+                                        className="flex items-center gap-2"
+                                    >
+                                        {/* Profile Picture */}
+                                        <InitialAvatar
+                                            name={player.username}
+                                            src={player.profilePicture}
+                                            size="40"
+                                        />
+                                        {/* Username */ }
+                                        <span className="text-dark-grey">
+                                            {player.username}
+                                        </span>
+                                    </div>
+                                    )
+                                })}
+                            </div>
                         </Container>
-                        <p>Player 1</p>
-                        <p>Player 2</p>
-                        <p>Player 3</p>
                     </div>
 
                 {/* Middle: invite and start */}
