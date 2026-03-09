@@ -1,27 +1,36 @@
 import React, { useState } from 'react';
-import Container from '../components/Container';
-import TutorialSlideshow from '../components/TutorialSlideshow';
+import Container from '../../components/common/Container';
+import TutorialSlideshow from '../auth/components/TutorialSlideshow';
 import { PiNumberCircleOne, PiNumberCircleTwo } from "react-icons/pi";
-import Button from '../components/Button';
+import Button from '../../components/common/Button';
 import { useNavigate } from 'react-router-dom';
 import Alert from '@mui/material/Alert';
-import { createLobby, joinLobby } from '../services/api/lobbyApi';
+import { createLobby, joinLobby } from '../../services/api/lobbyApi';
+import { useAuth } from '../../contexts/AuthContext';
 
 const HomePage: React.FC = () => {
     const navigate = useNavigate();
-    const [isLoggedIn, setLoggedIn] = useState<boolean>(false);
+    const { user, isAuthenticated, logout } = useAuth();
     const [roomCodeInput, setRoomCodeInput] = useState<string>('');
     const [error, setError] = useState<string | null>(null);
     const [isCreating, setIsCreating] = useState(false);
     const [isJoining, setIsJoining] = useState(false);
+    const [isLoggingOut, setIsLoggingOut] = useState(false);
 
     const handleCreateLobby = async () => {
-        let userId = localStorage.getItem('userId');
+        let userId: string;
 
-        if (!userId) {
+        if (isAuthenticated && user) {
+            userId = user.id;
+        } else {
             // Generate a temporary user ID if not logged in
-            userId = `temp-${Date.now()}`;
-            localStorage.setItem('userId', userId);
+            const storedUserId = localStorage.getItem('userId');
+            if (storedUserId) {
+                userId = storedUserId;
+            } else {
+                userId = `temp-${Date.now()}`;
+                localStorage.setItem('userId', userId);
+            }
         }
 
         try {
@@ -44,12 +53,19 @@ const HomePage: React.FC = () => {
             return;
         }
 
-        let userId = localStorage.getItem('userId');
+        let userId: string;
 
-        if (!userId) {
+        if (isAuthenticated && user) {
+            userId = user.id;
+        } else {
             // Generate a temporary user ID if not logged in
-            userId = `temp-${Date.now()}`;
-            localStorage.setItem('userId', userId);
+            const storedUserId = localStorage.getItem('userId');
+            if (storedUserId) {
+                userId = storedUserId;
+            } else {
+                userId = `temp-${Date.now()}`;
+                localStorage.setItem('userId', userId);
+            }
         }
 
         try {
@@ -66,6 +82,18 @@ const HomePage: React.FC = () => {
         }
     };
 
+    const handleLogout = async () => {
+        try {
+            setIsLoggingOut(true);
+            await logout();
+        } catch (err: any) {
+            console.error("Logout error:", err);
+            setError('Failed to logout');
+        } finally {
+            setIsLoggingOut(false);
+        }
+    };
+
     return (
         <div className="flex flex-col justify-center items-center h-screen">
             {/* Home content container */}
@@ -74,11 +102,26 @@ const HomePage: React.FC = () => {
                 <div className="w-full flex align-left items-center justify-between">
                     <h1 className="text-heading-1 text-left">New Game</h1>
                     <div className='flex flex-row items-center gap-4'>
-                        <div className='text-heading-3'>or</div>
-                        <Button
-                            className='h-fit flex'
-                            label="Sign in"
-                        />
+                        {isAuthenticated ? (
+                            <>
+                                <div className='text-body-base'>Welcome, {user?.username}!</div>
+                                <Button
+                                    className='h-fit flex'
+                                    label={isLoggingOut ? "Logging out..." : "Logout"}
+                                    onClick={handleLogout}
+                                    disabled={isLoggingOut}
+                                />
+                            </>
+                        ) : (
+                            <>
+                                <div className='text-heading-3'>or</div>
+                                <Button
+                                    className='h-fit flex'
+                                    label="Sign in"
+                                    onClick={() => navigate('/login')}
+                                />
+                            </>
+                        )}
                     </div>
                 </div>
                 {/* Main content */}
@@ -101,7 +144,7 @@ const HomePage: React.FC = () => {
                                 onClick={handleJoinLobby}
                             />
                         </div>
-                        <div>{!isLoggedIn ? (
+                        <div>{!isAuthenticated ? (
                             <Alert severity='info'>Playing as guest</Alert>
                         ): (
                             <div></div>
@@ -118,7 +161,7 @@ const HomePage: React.FC = () => {
                             disabled={isCreating}
                             onClick={handleCreateLobby}
                         />
-                        <div>{!isLoggedIn ? (
+                        <div>{!isAuthenticated ? (
                             <Alert severity='info'>Playing as guest</Alert>
                         ): (
                             <div></div>

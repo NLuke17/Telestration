@@ -1,10 +1,8 @@
 import React from 'react';
-import Container from '../components/Container';
-import { useParams } from 'react-router-dom';
-import { useGameState } from '../hooks/useGameState';
+import Container from '../../../components/common/Container';
+import { useGameState } from '../../../hooks/useGameState';
 
 const WaitingPage: React.FC = () => {
-    const { roomCode } = useParams<{ roomCode: string }>();
     const gameState = useGameState();
 
     return (

@@ -3,5 +3,7 @@
  */
 
 export * from './httpClient';
+export * from './authenticatedClient';
+export * from './authApi';
 export * from './lobbyApi';
 export * from './gameApi';

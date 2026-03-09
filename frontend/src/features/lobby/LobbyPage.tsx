@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import Container from '../components/Container';
-import Button from '../components/Button';
+import Container from '../../components/common/Container';
+import Button from '../../components/common/Button';
 import { useParams, useNavigate } from 'react-router-dom';
-import InitialAvatar from '../components/Avatar';
-import { useLobby, usePromptTracker, useGameState } from '../hooks/useGameState';
-import { startLobby } from '../services/api/lobbyApi';
+import InitialAvatar from '../../components/common/Avatar';
+import { useLobby, usePromptTracker, useGameState } from '../../hooks/useGameState';
+import { startLobby } from '../../services/api/lobbyApi';
 
 const LobbyPage: React.FC = () => {
     const { roomCode } = useParams<{ roomCode: string }>();
@@ -204,4 +204,4 @@ const LobbyPage: React.FC = () => {
     );
 }
 
- export default LobbyPage
+export default LobbyPage;

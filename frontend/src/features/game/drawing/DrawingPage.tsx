@@ -2,17 +2,17 @@ import { ReactSketchCanvas } from 'react-sketch-canvas';
 import type { ReactSketchCanvasRef } from 'react-sketch-canvas';
 import { useRef, useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import Container from '../components/Container';
-import ToolButton from '../components/ToolButton';
-import ColorButton from '../components/ColorButton';
+import Container from '../../../components/common/Container';
+import ToolButton from '../../../components/game/ToolButton';
+import ColorButton from '../../../components/game/ColorButton';
 import { SlActionUndo, SlActionRedo, SlPencil } from "react-icons/sl";
 import { BsEraser } from "react-icons/bs";
-import PageCounter from '../components/PageCounter';
-import TimerDisplay from '../components/TimerDisplay';
-import ToolSizeIndicator from '../components/ToolSizeIndicator';
-import Button from '../components/Button';
-import { useGameState, usePhaseTimer } from '../hooks/useGameState';
-import { getAssignedFlipbook } from '../services/api/gameApi';
+import PageCounter from '../../../components/game/PageCounter';
+import TimerDisplay from '../../../components/game/TimerDisplay';
+import ToolSizeIndicator from '../../../components/game/ToolSizeIndicator';
+import Button from '../../../components/common/Button';
+import { useGameState, usePhaseTimer } from '../../../hooks/useGameState';
+import { getAssignedFlipbook } from '../../../services/api/gameApi';
 
 const styles = {
   border: '0.0625rem solid #9c9c9c',
@@ -20,7 +20,7 @@ const styles = {
 };
 
 const DrawingPage: React.FC = () => {
-    const { roomCode } = useParams<{ roomCode: string }>();
+    const { roomCode } = useParams<{ roomCode: string}>();
     const navigate = useNavigate();
     const canvasRef = useRef<ReactSketchCanvasRef>(null);
     

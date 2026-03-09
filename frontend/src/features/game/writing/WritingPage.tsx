@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import Container from '../components/Container';
-import InputField from '../components/InputField';
-import Button from '../components/Button';
-import PageCounter from '../components/PageCounter';
-import TimerDisplay from '../components/TimerDisplay';
+import Container from '../../../components/common/Container';
+import InputField from '../../../components/common/InputField';
+import Button from '../../../components/common/Button';
+import PageCounter from '../../../components/game/PageCounter';
+import TimerDisplay from '../../../components/game/TimerDisplay';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useGameState, usePhaseTimer } from '../hooks/useGameState';
-import { getAssignedFlipbook } from '../services/api/gameApi';
+import { useGameState, usePhaseTimer } from '../../../hooks/useGameState';
+import { getAssignedFlipbook } from '../../../services/api/gameApi';
 
 const WritingPage: React.FC = () => {
     const { roomCode } = useParams<{ roomCode: string }>();

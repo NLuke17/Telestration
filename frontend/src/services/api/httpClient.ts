@@ -87,6 +87,10 @@ export const httpClient = {
       body: body ? JSON.stringify(body) : undefined,
     }),
 
-  delete: <T>(endpoint: string, options?: RequestInit) =>
-    request<T>(endpoint, { ...options, method: 'DELETE' }),
+  delete: <T>(endpoint: string, body?: unknown, options?: RequestInit) =>
+    request<T>(endpoint, { 
+      ...options, 
+      method: 'DELETE',
+      body: body ? JSON.stringify(body) : undefined,
+    }),
 };
