@@ -23,6 +23,7 @@ services:
       - PORT=8000
       - JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
       - REFRESH_SECRET=your-super-secret-refresh-key-change-this-in-production
+      - LOG_LEVEL=warn  # Options: error, warn, info, debug
     ports:
       - "8000:8000"
     depends_on:
