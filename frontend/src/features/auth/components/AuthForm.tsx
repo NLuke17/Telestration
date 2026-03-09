@@ -21,6 +21,18 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode = 'login' }) => {
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
         setError(null);
+        
+        // Validate inputs before submitting
+        if (!username.trim()) {
+            setError('Username is required');
+            return;
+        }
+        
+        if (!password.trim()) {
+            setError('Password is required');
+            return;
+        }
+        
         setIsLoading(true);
 
         try {
@@ -36,7 +48,18 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode = 'login' }) => {
             // Navigate to home page after successful auth
             navigate('/');
         } catch (err: any) {
-            const errorMessage = err?.data?.message || err?.message || 'Authentication failed';
+            let errorMessage = 'Authentication failed';
+            
+            // Handle validation errors from backend
+            if (err?.data?.error === 'Validation failed' && err?.data?.details) {
+                const details = err.data.details.map((d: any) => d.message).join(', ');
+                errorMessage = `Validation error: ${details}`;
+            } else if (err?.data?.message) {
+                errorMessage = err.data.message;
+            } else if (err?.message) {
+                errorMessage = err.message;
+            }
+            
             setError(errorMessage);
         } finally {
             setIsLoading(false);
@@ -59,6 +82,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode = 'login' }) => {
                         value={username}
                         onChange={setUsername}
                         disabled={isLoading}
+                        required={true}
                     />
                 </div>
                 <div className='flex flex-col'>
@@ -70,6 +94,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode = 'login' }) => {
                         type='password'
                         onChange={setPassword}
                         disabled={isLoading}
+                        required={true}
                     />
                 </div>
                 {mode === 'signup' && (
