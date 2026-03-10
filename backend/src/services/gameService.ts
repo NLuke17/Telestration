@@ -64,10 +64,10 @@ export async function startGame(lobbyId: string, customPrompts?: string[]) {
         lobby.players.map((player, index) =>
           tx.flipbook.create({
             data: {
-              prompt: customPrompts ? customPrompts[index].trim() : generateInitialPrompt(player.username, index),
+              prompt: customPrompts ? customPrompts[index].trim() : '', // Empty prompt if no custom prompts
               authorId: player.id,
               roundId: round.id,
-              state: 'DRAWING',
+              state: customPrompts ? 'DRAWING' : 'GUESSING', // Start in GUESSING if no prompts (players write their own)
             },
             include: {
               author: { select: { id: true, username: true, profilePicture: true } },
@@ -228,7 +228,31 @@ export async function submitGuess(
       throw new Error('FLIPBOOK_NOT_ACCEPTING_GUESSES');
     }
 
-    // IMPORTANT: Prevent guessing on your own flipbook!
+    // Special case: If flipbook has no prompt, this is the initial prompt submission (player writes on their own)
+    const isInitialPrompt = !flipbook.prompt || flipbook.prompt.trim().length === 0;
+    
+    if (isInitialPrompt) {
+      // Allow writing initial prompt on own flipbook
+      if (flipbook.authorId !== userId) {
+        throw new Error('CAN_ONLY_WRITE_OWN_INITIAL_PROMPT');
+      }
+      
+      // Update the flipbook's prompt instead of creating a guess
+      const updatedFlipbook = await prisma.flipbook.update({
+        where: { id: flipbookId },
+        data: { prompt: text.trim() },
+      });
+      
+      logInfo('Initial prompt submitted', {
+        flipbookId,
+        userId,
+        prompt: text.trim(),
+      });
+      
+      return { id: flipbookId, text: text.trim(), isInitialPrompt: true };
+    }
+
+    // Normal guessing: Prevent guessing on your own flipbook
     if (flipbook.authorId === userId) {
       throw new Error('CANNOT_GUESS_OWN_FLIPBOOK');
     }
@@ -309,16 +333,23 @@ export async function getAssignedFlipbook(
 
   // Filter flipbooks to find ones this player should work on
   const availableFlipbooks = round.flipbooks.filter((flipbook) => {
-    // Cannot work on your own flipbook
-    if (flipbook.authorId === userId) {
-      return false;
-    }
-
     if (phase === 'DRAWING') {
+      // Cannot work on your own flipbook during DRAWING
+      if (flipbook.authorId === userId) {
+        return false;
+      }
       // Check if player has already drawn on this flipbook
       const hasDrawn = flipbook.drawings.some((d) => d.authorId === userId);
       return !hasDrawn;
     } else if (phase === 'GUESSING') {
+      // Special case: If flipbook has no prompt, player writes on their OWN flipbook
+      if (!flipbook.prompt || flipbook.prompt.trim().length === 0) {
+        return flipbook.authorId === userId && flipbook.guesses.length === 0;
+      }
+      // Normal guessing: cannot work on your own flipbook
+      if (flipbook.authorId === userId) {
+        return false;
+      }
       // Check if player has already guessed on this flipbook
       const hasGuessed = flipbook.guesses.some((g) => g.authorId === userId);
       return !hasGuessed;

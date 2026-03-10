@@ -97,6 +97,51 @@ async function handleLobbyConnect(
 
     await broadcastPresence(ctx, snapshot.id);
 
+    // If lobby is in progress, send current game state to the connecting player
+    if (snapshot.state === 'IN_PROGRESS') {
+      const prisma = (await import('../../prisma/client')).default;
+      const round = await prisma.round.findFirst({
+        where: { lobbyId: snapshot.id },
+        orderBy: { number: 'desc' },
+        include: {
+          flipbooks: {
+            select: { state: true, prompt: true },
+            take: 1,
+          },
+        },
+      });
+
+      if (round) {
+        // Send game:started event
+        send(conn, {
+          type: 'game:started',
+          roundId: round.id,
+          roundNumber: round.number,
+        });
+
+        // Determine current phase from flipbook state
+        const hasPrompts = round.flipbooks[0]?.prompt && round.flipbooks[0].prompt.trim().length > 0;
+        const currentPhase = hasPrompts ? 'DRAWING' : 'GUESSING';
+
+        // Send current phase
+        const { DRAWING_PHASE_DURATION_MS, GUESSING_PHASE_DURATION_MS } = 
+          await import('../../config/constants');
+        const duration = currentPhase === 'DRAWING' ? DRAWING_PHASE_DURATION_MS : GUESSING_PHASE_DURATION_MS;
+        
+        send(conn, {
+          type: 'game:phase_changed',
+          phase: currentPhase,
+          endsAt: Date.now() + duration, // Approximate - ideally we'd store actual phase start time
+        });
+
+        logInfo('Sent current game state to connecting player', {
+          connId: conn.connId,
+          roundId: round.id,
+          phase: currentPhase,
+        });
+      }
+    }
+
     logInfo('Client connected to lobby', {
       connId: conn.connId,
       userId: msg.userId,
@@ -227,6 +272,9 @@ async function handleLobbyDisconnect(ctx: WSContext, conn: ClientConn): Promise<
 }
 
 function handleDisconnect(ctx: WSContext, conn: ClientConn): void {
+  // Remove from registry FIRST to prevent sending to this connection
+  ctx.registry.removeConnection(conn.connId);
+  
   if (conn.lobbyId) {
     const lobbyId = conn.lobbyId;
 
@@ -234,12 +282,12 @@ function handleDisconnect(ctx: WSContext, conn: ClientConn): void {
       ctx.presence.markDisconnected(lobbyId, conn.userId);
     }
 
+    // Now broadcast presence - the closed connection is already removed
     broadcastPresence(ctx, lobbyId).catch((error) => {
       logError('Failed to broadcast presence on disconnect', { error: error.message });
     });
   }
 
-  ctx.registry.removeConnection(conn.connId);
   logInfo('Client disconnected', { connId: conn.connId });
 }
 

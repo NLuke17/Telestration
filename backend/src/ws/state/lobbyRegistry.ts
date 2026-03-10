@@ -81,14 +81,31 @@ class LobbyRegistry {
     }
 
     const conns: ClientConn[] = [];
+    const staleConnIds: string[] = [];
+    
     for (const connId of connIds) {
       const conn = this.connIdToConn.get(connId);
       if (conn) {
         conns.push(conn);
       } else {
-        logWarn('Connection ID in lobby but not in registry', { connId, lobbyId });
+        // Track stale connection IDs for cleanup
+        staleConnIds.push(connId);
       }
     }
+    
+    // Clean up stale connections from the lobby set
+    if (staleConnIds.length > 0) {
+      for (const connId of staleConnIds) {
+        connIds.delete(connId);
+        this.connIdToLobby.delete(connId);
+      }
+      
+      // If lobby is now empty, remove it
+      if (connIds.size === 0) {
+        this.lobbyToConns.delete(lobbyId);
+      }
+    }
+    
     return conns;
   }
 

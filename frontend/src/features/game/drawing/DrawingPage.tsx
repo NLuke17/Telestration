@@ -11,8 +11,9 @@ import PageCounter from '../../../components/game/PageCounter';
 import TimerDisplay from '../../../components/game/TimerDisplay';
 import ToolSizeIndicator from '../../../components/game/ToolSizeIndicator';
 import Button from '../../../components/common/Button';
-import { useGameState, usePhaseTimer } from '../../../hooks/useGameState';
+import { useGameState, usePhaseTimer, useLobby } from '../../../hooks/useGameState';
 import { getAssignedFlipbook } from '../../../services/api/gameApi';
+import { useAuth } from '../../../contexts/AuthContext';
 
 const styles = {
   border: '0.0625rem solid #9c9c9c',
@@ -23,9 +24,15 @@ const DrawingPage: React.FC = () => {
     const { roomCode } = useParams<{ roomCode: string}>();
     const navigate = useNavigate();
     const canvasRef = useRef<ReactSketchCanvasRef>(null);
+    const { user } = useAuth();
     
-    // Get userId from localStorage
-    const userId = localStorage.getItem('userId') || '';
+    // Get userId from auth context or localStorage for guest users
+    const userId = user?.id || localStorage.getItem('userId') || '';
+    
+    console.log('[DrawingPage] userId:', userId);
+    
+    // First, get lobby to get lobbyId
+    const { lobby } = useLobby(roomCode || '', userId);
     
     // Canvas state
     const [penColor, setPenColor] = useState("#000000");
@@ -33,8 +40,8 @@ const DrawingPage: React.FC = () => {
     const [selectedTool, setSelectedTool] = useState('pen');
     const sizes = [5, 10, 15, 20, 25, 30];
     
-    // Game state
-    const gameState = useGameState(); // Will connect via WebSocket
+    // Game state - pass lobbyId to useGameState
+    const gameState = useGameState(lobby?.id);
     const timer = usePhaseTimer(gameState.phaseEndsAt);
     
     // Assignment state

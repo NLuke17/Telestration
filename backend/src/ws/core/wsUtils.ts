@@ -12,7 +12,7 @@ import { logWarn } from '../../utils/logger';
  */
 export function send(conn: ClientConn, msg: WSServerMessage): void {
   if (conn.ws.readyState !== WebSocket.OPEN) {
-    logWarn('Attempted to send to closed connection', { connId: conn.connId });
+    // Silently skip closed connections - this is normal during disconnects
     return;
   }
   try {

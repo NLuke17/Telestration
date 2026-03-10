@@ -5,19 +5,26 @@ import Button from '../../../components/common/Button';
 import PageCounter from '../../../components/game/PageCounter';
 import TimerDisplay from '../../../components/game/TimerDisplay';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useGameState, usePhaseTimer } from '../../../hooks/useGameState';
+import { useGameState, usePhaseTimer, useLobby } from '../../../hooks/useGameState';
 import { getAssignedFlipbook } from '../../../services/api/gameApi';
+import { useAuth } from '../../../contexts/AuthContext';
 
 const WritingPage: React.FC = () => {
     const { roomCode } = useParams<{ roomCode: string }>();
     const navigate = useNavigate();
     const [sentence, setSentence] = useState('');
+    const { user } = useAuth();
     
-    // Get userId from localStorage
-    const userId = localStorage.getItem('userId') || '';
+    // Get userId from auth context or localStorage for guest users
+    const userId = user?.id || localStorage.getItem('userId') || '';
     
-    // Game state
-    const gameState = useGameState();
+    console.log('[WritingPage] userId:', userId);
+    
+    // First, get lobby to get lobbyId
+    const { lobby } = useLobby(roomCode || '', userId);
+    
+    // Game state - pass lobbyId to useGameState
+    const gameState = useGameState(lobby?.id);
     const timer = usePhaseTimer(gameState.phaseEndsAt);
     
     // Assignment state
@@ -25,6 +32,7 @@ const WritingPage: React.FC = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [isInitialPrompt, setIsInitialPrompt] = useState(false);
 
     // Fetch assignment when component mounts
     useEffect(() => {
@@ -37,8 +45,19 @@ const WritingPage: React.FC = () => {
                 
                 if (result.assigned && result.flipbook) {
                     setAssignment(result.flipbook);
+                    // Check if the flipbook has an empty prompt (initial prompt writing)
+                    const hasEmptyPrompt = !result.flipbook.prompt || result.flipbook.prompt.trim().length === 0;
+                    setIsInitialPrompt(hasEmptyPrompt);
+                    console.log('[WritingPage] Assignment received:', {
+                        flipbookId: result.flipbook.id,
+                        hasPrompt: !hasEmptyPrompt,
+                        isInitialPrompt: hasEmptyPrompt
+                    });
                 } else {
-                    setError(result.message || 'No assignment available');
+                    // No assignment means this is the first round - write initial prompt on own flipbook
+                    setIsInitialPrompt(true);
+                    setAssignment({ id: null, isOwn: true });
+                    console.log('[WritingPage] No assignment - initial prompt');
                 }
             } catch (err: any) {
                 console.error('Failed to fetch assignment:', err);
@@ -121,12 +140,12 @@ const WritingPage: React.FC = () => {
                         className='text-heading-3'
                     />
                 </div>
-                <div className="text-heading-1">What did you see?</div>
+                <div className="text-heading-1">{isInitialPrompt ? 'Write your prompt!' : 'What did you see?'}</div>
                 <div className="flex items-center justify-center w-full gap-8">
                     <InputField 
                         id='sentence'
                         label=""
-                        placeholder="Type your guess here!"
+                        placeholder={isInitialPrompt ? "e.g., 'A cat riding a skateboard'" : "Type your guess here!"}
                         value={sentence}
                         onChange={setSentence}
                         className='w-full'
