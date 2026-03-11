@@ -1,8 +1,9 @@
 import React from 'react';
-import AuthForm from '../components/AuthForm';
-import Container from '../components/Container';
-import InitialAvatar from '../components/Avatar';
-import TutorialSlideshow from '../components/TutorialSlideshow';
+import { Link } from 'react-router-dom';
+import AuthForm from './components/AuthForm';
+import Container from '../../components/common/Container';
+import InitialAvatar from '../../components/common/Avatar';
+import TutorialSlideshow from './components/TutorialSlideshow';
 
 const LoginPage: React.FC = () => {
     return (
@@ -11,8 +12,11 @@ const LoginPage: React.FC = () => {
                 <h1 className="text-heading-1 w-full text-left">Login</h1>
                 <div className="flex flex-row items-center justify-center w-full gap-8">
                     <InitialAvatar size='100' name='Firestone'/>
-                    <AuthForm />
+                    <AuthForm mode="login" />
                     <TutorialSlideshow />
+                </div>
+                <div className="text-sm text-center">
+                    Don't have an account? <Link to="/signup" className="text-brand-charcoal font-semibold hover:underline">Sign up here</Link>
                 </div>
             </Container>
         </div>

@@ -86,24 +86,58 @@ export async function handleGuessSubmission(
       userId: conn.userId,
     });
 
-    // Check if all players have finished this phase
-    const round = await getCurrentRound(conn.lobbyId);
-    const isPhaseComplete = await checkPhaseCompletion(round.id, 'GUESSING');
+    // Check if this was an initial prompt submission
+    const isInitialPrompt = (guess as any).isInitialPrompt === true;
 
-    if (isPhaseComplete) {
-      broadcast(connections, {
-        type: 'game:phase_complete',
-        phase: 'GUESSING',
+    if (isInitialPrompt) {
+      // Check if all players have submitted their initial prompts
+      const prisma = (await import('../../prisma/client')).default;
+      const round = await getCurrentRound(conn.lobbyId);
+      const flipbooks = await prisma.flipbook.findMany({
+        where: { roundId: round.id },
+        select: { prompt: true },
+      });
+
+      // All flipbooks should have non-empty prompts
+      const allPromptsSubmitted = flipbooks.every(
+        (fb) => fb.prompt && fb.prompt.trim().length > 0
+      );
+
+      if (allPromptsSubmitted) {
+        logInfo('All initial prompts submitted, advancing to DRAWING phase', {
+          lobbyId: conn.lobbyId,
+          roundId: round.id,
+        });
+
+        // Advance all flipbooks to DRAWING state
+        await prisma.flipbook.updateMany({
+          where: { roundId: round.id },
+          data: { state: 'DRAWING' },
+        });
+
+        // Broadcast phase change to DRAWING
+        await broadcastPhaseChange(ctx, conn.lobbyId, 'DRAWING');
+      }
+    } else {
+      // Normal guess submission - check if all players have finished this phase
+      const round = await getCurrentRound(conn.lobbyId);
+      const isPhaseComplete = await checkPhaseCompletion(round.id, 'GUESSING');
+
+      if (isPhaseComplete) {
+        broadcast(connections, {
+          type: 'game:phase_complete',
+          phase: 'GUESSING',
+        });
+      }
+
+      logInfo('Guess submitted', {
+        lobbyId: conn.lobbyId,
+        flipbookId: msg.flipbookId,
+        userId: conn.userId,
+        guessId: (guess as any).id,
+        isPhaseComplete,
       });
     }
-
-    logInfo('Guess submitted', {
-      lobbyId: conn.lobbyId,
-      flipbookId: msg.flipbookId,
-      userId: conn.userId,
-      guessId: guess.id,
-      isPhaseComplete,
-    });
   } catch (error: any) {
     logError('Failed to submit guess', {
       lobbyId: conn.lobbyId,
@@ -138,10 +172,33 @@ export async function broadcastGameStarted(
     roundNumber,
   });
 
-  // Immediately broadcast the first phase (DRAWING)
-  await broadcastPhaseChange(ctx, lobbyId, 'DRAWING');
+  // Get the round to check flipbook states
+  const prisma = (await import('../../prisma/client')).default;
+  const round = await prisma.round.findUnique({
+    where: { id: roundId },
+    include: {
+      flipbooks: {
+        select: { state: true, prompt: true },
+        take: 1, // Just need one to check the state
+      },
+    },
+  });
 
-  logInfo('Broadcasted game started', { lobbyId, roundId, roundNumber, connectionCount: connections.length });
+  // Determine initial phase based on flipbook state
+  // If flipbooks have no prompts, start in GUESSING (initial prompt writing)
+  // Otherwise start in DRAWING
+  const hasPrompts = round?.flipbooks[0]?.prompt && round.flipbooks[0].prompt.trim().length > 0;
+  const initialPhase = hasPrompts ? 'DRAWING' : 'GUESSING';
+
+  await broadcastPhaseChange(ctx, lobbyId, initialPhase);
+
+  logInfo('Broadcasted game started', { 
+    lobbyId, 
+    roundId, 
+    roundNumber, 
+    initialPhase,
+    connectionCount: connections.length 
+  });
 }
 
 /**

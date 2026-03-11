@@ -1,32 +1,62 @@
 import './App.css'
-import { useEffect, useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider } from './contexts/AuthContext';
+import { useTokenRefresh } from './hooks/useTokenRefresh';
 
-//import PageName from './pages/PageName';
+// Pages
+import HomePage from './features/home/HomePage';
+import LoginPage from './features/auth/LoginPage';
+import SignupPage from './features/auth/SignupPage';
+import LobbyPage from './features/lobby/LobbyPage';
+import DrawingPage from './features/game/drawing/DrawingPage';
+import WritingPage from './features/game/writing/WritingPage';
+import WaitingPage from './features/game/waiting/WaitingPage';
+import GameCountdownPage from './features/game/countdown/GameCountdownPage';
+
+// Debug page (development only)
 import Home from './pages/home';
-import LoginPage from './pages/LoginPage';
-import DrawingPage from './pages/DrawingPage';
-import LobbyPage from './pages/LobbyPage';
-import HomePage from './pages/HomePage';
-import WritingPage from './pages/WritingPage';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+function AppContent() {
+  // Auto refresh tokens
+  useTokenRefresh();
+
+  return (
+    <div>
+      <Routes>
+        {/* Main Flow */}
+        <Route path="/" element={<HomePage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/signup" element={<SignupPage />} />
+        
+        {/* Lobby */}
+        <Route path="/lobby/:roomCode" element={<LobbyPage />} />
+        
+        {/* Game Routes */}
+        <Route path="/game/:roomCode/countdown" element={<GameCountdownPage />} />
+        <Route path="/game/:roomCode/draw" element={<DrawingPage />} />
+        <Route path="/game/:roomCode/guess" element={<WritingPage />} />
+        <Route path="/game/:roomCode/waiting" element={<WaitingPage />} />
+        
+        {/* Legacy/Debug Routes */}
+        <Route path="/home" element={<Navigate to="/" replace />} />
+        <Route path="/drawing" element={<Navigate to="/" replace />} />
+        <Route path="/writing" element={<Navigate to="/" replace />} />
+        <Route path="/debug" element={<Home />} />
+        
+        {/* 404 Catch-all */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </div>
+  );
+}
 
 function App() {
   return (
-    <Router>
-      <div>
-        <Routes>
-          <Route path="/" element={<Home />} />
-          {/*<Route path="/explore" element={<Explore />} /> */}
-          <Route path="/home" element={<HomePage />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/drawing" element={<DrawingPage />} />
-          <Route path="/writing" element={<WritingPage />} />
-          <Route path="/lobby/:roomCode" element={<LobbyPage />} />
-        </Routes>
-      </div>
-    </Router>
+    <AuthProvider>
+      <Router>
+        <AppContent />
+      </Router>
+    </AuthProvider>
   )
 }
 
