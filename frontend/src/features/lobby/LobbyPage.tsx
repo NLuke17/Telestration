@@ -151,7 +151,7 @@ const LobbyPage: React.FC = () => {
                 width='900px' 
                 height='500px' 
                 padding='5em' 
-                className='flex flex-col justify-center gap-2 flex-col border-2 border-dark-grey rounded-lg bg-white shadow-xl p-12'
+                className='flex flex-col justify-center gap-2 flex-col border-2 border-dark-grey rounded-lg bg-white p-12'
             >
                 {/* Header */}
                 <h1 className="text-heading-1 w-full text-left mb-0">Join Room</h1>
@@ -163,7 +163,7 @@ const LobbyPage: React.FC = () => {
                             width='200px'
                             height='auto'
                             padding='1em'
-                            className='flex flex-col items-start border-2 border-light-grey rounded-lg bg-white shadow-xl gap-4'>                          
+                            className='flex flex-col items-start border-2 border-light-grey rounded-lg bg-white gap-4'>                          
                             <h2 className="text-lg font-bold text-left w-full">
                                 Players ({playerCount}/{MIN_PLAYERS} min)
                             </h2>
