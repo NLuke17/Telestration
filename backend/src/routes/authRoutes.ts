@@ -1,5 +1,4 @@
 import express from "express";
-// @ts-ignore - express-rate-limit v8 has built-in types but may need TS server restart
 import rateLimit from "express-rate-limit"; 
 import { createUser, listUsers, loginUser, refreshUserToken, logoutUser, logoutAllDevices, deleteUserAccount } from "../services/authService";
 import { validate } from "../middleware/validate";
@@ -10,43 +9,30 @@ import { authenticateJWT } from "../middleware/authMiddleware";
 const router = express.Router();
 
 // Rate limiter for authentication attempts (login)
-// Key by username instead of IP to avoid issues with proxies/Docker
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 20, 
+  max: 5, // 5 attempts
   message: { message: "Too many login attempts, please try again later" }, 
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => {
-    // Use username as key if provided, otherwise use a generic key
-    return req.body?.username || 'default-key';
-  },
-  // Skip rate limiting in development if DISABLE_RATE_LIMIT is set
-  skip: (req) => process.env.DISABLE_RATE_LIMIT === 'true',
 });
 
 // Rate limiter for account creation (signup)
 const signupLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
-  max: 50, // 50 accounts per hour (much higher for multi-user scenarios)
-  message: { message: "Too many accounts created, please try again later" },
+  max: 3, // 3 account creations per hour per IP
+  message: { message: "Too many accounts created from this IP, please try again later" },
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => {
-    // Use username as key to prevent duplicate usernames
-    return req.body?.username || 'default-key';
-  },
-  skip: (req) => process.env.DISABLE_RATE_LIMIT === 'true',
 });
 
 // Rate limiter for token refresh
 const refreshLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // 100 refresh attempts
+  max: 10, // 10 refresh attempts
   message: { message: "Too many refresh attempts, please try again later" },
   standardHeaders: true,
   legacyHeaders: false,
-  skip: (req) => process.env.DISABLE_RATE_LIMIT === 'true',
 });
 
 router.post("/create-user", signupLimiter, validate(createUserSchema), async (req, res) => {
