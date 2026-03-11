@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import AuthForm from './components/AuthForm';
 import Container from '../../components/common/Container';
 import InitialAvatar from '../../components/common/Avatar';
-import TutorialSlideshow from './components/TutorialSlideshow';
+import Tutorial from '../../components/common/Tutorial';
 
 const SignupPage: React.FC = () => {
     return (
@@ -13,7 +13,7 @@ const SignupPage: React.FC = () => {
                 <div className="flex flex-row items-center justify-center w-full gap-8">
                     <InitialAvatar size='100' name='Firestone'/>
                     <AuthForm mode="signup" />
-                    <TutorialSlideshow />
+                    <Tutorial/>
                 </div>
                 <div className="text-sm text-center">
                     Already have an account? <Link to="/login" className="text-brand-charcoal font-semibold hover:underline">Login here</Link>

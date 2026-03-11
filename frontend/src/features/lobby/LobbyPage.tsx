@@ -6,6 +6,7 @@ import InitialAvatar from '../../components/common/Avatar';
 import { useLobby, useGameState } from '../../hooks/useGameState';
 import { startLobby } from '../../services/api/lobbyApi';
 import { useAuth } from '../../contexts/AuthContext';
+import Tutorial from '../../components/common/Tutorial';
 
 const MIN_PLAYERS = 2;
 
@@ -242,15 +243,8 @@ const LobbyPage: React.FC = () => {
                     </div>
 
                 {/* Right: how to play */}
-                    <div className="flex flex-col justify-center items-center gap-6 w-auto">
-                        <h2 className="text-lg font-bold pb-2 text-center">How to play</h2>
-                        <Container
-                            width='200px'
-                            height='250px'
-                            padding='0'
-                            className='gap-2 flex-col border-2 border-light-grey rounded-lg bg-white shadow-xl p-12'>
-                              <p className="text-center">Slideshow here</p>
-                        </Container>
+                    <div>
+                        <Tutorial width="w-1/5"/>
                     </div>
                 </div>
 

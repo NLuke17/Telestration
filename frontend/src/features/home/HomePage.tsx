@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import Container from '../../components/common/Container';
-import TutorialSlideshow from '../auth/components/TutorialSlideshow';
+import Tutorial from '../../components/common/Tutorial';
 import { PiNumberCircleOne, PiNumberCircleTwo } from "react-icons/pi";
 import Button from '../../components/common/Button';
 import { useNavigate } from 'react-router-dom';
@@ -152,7 +152,7 @@ const HomePage: React.FC = () => {
                         <div>Join a room using the code provided by whoever is hosting!</div>
                     </div>
                     {/* How to Play slideshow */}
-                    <TutorialSlideshow className='w-hug'/>
+                    <Tutorial width="w-3/5"/>
                     {/* Start a new room option */}
                     <div className='flex flex-col justify-between items-center w-hug h-full text-center gap-auto'>
                         <PiNumberCircleTwo size={33} />
