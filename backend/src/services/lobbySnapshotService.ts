@@ -71,7 +71,7 @@ export async function buildLobbySnapshotByRoomCode(roomCode: string): Promise<Lo
 /**
  * Format raw Prisma data into LobbySnapshot DTO
  */
-function formatLobbySnapshot(lobby: any): LobbySnapshot {
+export function formatLobbySnapshot(lobby: any): LobbySnapshot {
   const currentRound = lobby.rounds && lobby.rounds.length > 0 ? lobby.rounds[0] : null;
 
   return {
