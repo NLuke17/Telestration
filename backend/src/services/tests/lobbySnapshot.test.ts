@@ -1,7 +1,7 @@
 import { formatLobbySnapshot, buildLobbySnapshotByRoomCode, buildLobbySnapshot } from '../lobbySnapshotService';
 import { getPrisma } from '../../prisma/client';
 
-// 1. Mock the Prisma Client
+// Create a mock prisma client
 jest.mock('../../prisma/client', () => ({
   getPrisma: jest.fn().mockReturnValue({
     lobby: {
@@ -12,7 +12,8 @@ jest.mock('../../prisma/client', () => ({
 
 const prismaMock = getPrisma() as any;
 
-describe('Lobby Snapshot Service', () => {
+// Run the command 'npm test -- --coverage' to see test coverage
+describe('Lobby Snapshot Service tests', () => {
   
   describe('formatLobbySnapshot', () => {
     it('should correctly map raw database fields to a clean DTO', () => {
