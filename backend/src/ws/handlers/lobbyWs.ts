@@ -7,6 +7,7 @@ import { WSClientMessage } from '../../types/ws';
 import { logInfo, logError, logWarn } from '../../utils/logger';
 import { normalizeRoomCode } from '../../utils/roomCode';
 import { handleDrawingSubmission, handleGuessSubmission } from './gameWs';
+import { deriveExpectedPhaseFromChainWave } from '../../services/gameService';
 
 export function registerLobbyHandlers(ctx: WSContext) {
   ctx.wss.on('connection', (ws: WebSocket & { isAlive?: boolean }) => {
@@ -103,41 +104,48 @@ async function handleLobbyConnect(
       const round = await prisma.round.findFirst({
         where: { lobbyId: snapshot.id },
         orderBy: { number: 'desc' },
-        include: {
-          flipbooks: {
-            select: { state: true, prompt: true },
-            take: 1,
-          },
+        select: {
+          id: true,
+          number: true,
+          chainWave: true,
+          phaseDeadline: true,
         },
       });
 
       if (round) {
-        // Send game:started event
         send(conn, {
           type: 'game:started',
           roundId: round.id,
           roundNumber: round.number,
         });
 
-        // Determine current phase from flipbook state
-        const hasPrompts = round.flipbooks[0]?.prompt && round.flipbooks[0].prompt.trim().length > 0;
-        const currentPhase = hasPrompts ? 'DRAWING' : 'GUESSING';
+        const playerCount = snapshot.players?.length ?? 0;
+        const currentPhase = deriveExpectedPhaseFromChainWave(round.chainWave ?? 0, playerCount);
 
-        // Send current phase
-        const { DRAWING_PHASE_DURATION_MS, GUESSING_PHASE_DURATION_MS } = 
-          await import('../../config/constants');
-        const duration = currentPhase === 'DRAWING' ? DRAWING_PHASE_DURATION_MS : GUESSING_PHASE_DURATION_MS;
-        
+        const {
+          DRAWING_PHASE_DURATION_MS,
+          GUESSING_PHASE_DURATION_MS,
+          VOTING_PHASE_DURATION_MS,
+        } = await import('../../config/constants');
+        let duration = GUESSING_PHASE_DURATION_MS;
+        if (currentPhase === 'DRAWING') duration = DRAWING_PHASE_DURATION_MS;
+        if (currentPhase === 'VOTING') duration = VOTING_PHASE_DURATION_MS;
+
+        const endsAt = round.phaseDeadline
+          ? new Date(round.phaseDeadline).getTime()
+          : Date.now() + duration;
+
         send(conn, {
           type: 'game:phase_changed',
           phase: currentPhase,
-          endsAt: Date.now() + duration, // Approximate - ideally we'd store actual phase start time
+          endsAt,
         });
 
         logInfo('Sent current game state to connecting player', {
           connId: conn.connId,
           roundId: round.id,
           phase: currentPhase,
+          endsAt,
         });
       }
     }
@@ -266,7 +274,8 @@ async function handleLobbyDisconnect(ctx: WSContext, conn: ClientConn): Promise<
 
   await broadcastPresence(ctx, lobbyId);
 
-  send(conn, { type: 'lobby:connected', roomCode: '', lobbyId: '' });
+  // Do not send `lobby:connected` with empty ids — clients treated it as a real connect and
+  // logged "Connected to lobby: " before the next `lobby:connect` completed.
 
   logInfo('Client disconnected from lobby', { connId: conn.connId, lobbyId });
 }

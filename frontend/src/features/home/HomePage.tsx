@@ -28,7 +28,7 @@ const HomePage: React.FC = () => {
             if (storedUserId) {
                 userId = storedUserId;
             } else {
-                userId = `temp-${Date.now()}`;
+                userId = crypto.randomUUID();
                 localStorage.setItem('userId', userId);
             }
         }
@@ -63,7 +63,7 @@ const HomePage: React.FC = () => {
             if (storedUserId) {
                 userId = storedUserId;
             } else {
-                userId = `temp-${Date.now()}`;
+                userId = crypto.randomUUID();
                 localStorage.setItem('userId', userId);
             }
         }

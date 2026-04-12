@@ -48,6 +48,42 @@ export async function getAssignedFlipbook(
   );
 }
 
+export type FlipbookPresentationResponse = {
+  flipbook: {
+    id: string;
+    prompt: string;
+    author: { id: string; username: string; profilePicture?: string | null };
+  };
+  timeline: Array<
+    | { kind: 'prompt'; text: string }
+    | {
+        kind: 'drawing';
+        id: string;
+        order: number;
+        authorId: string;
+        authorUsername: string;
+        drawingData: string;
+      }
+    | {
+        kind: 'guess';
+        id: string;
+        order: number;
+        authorId: string;
+        authorUsername: string;
+        text: string;
+      }
+  >;
+};
+
+export async function getFlipbookPresentation(
+  flipbookId: string,
+  userId: string
+): Promise<FlipbookPresentationResponse> {
+  return httpClient.get<FlipbookPresentationResponse>(
+    `/game/flipbooks/${flipbookId}/presentation?userId=${encodeURIComponent(userId)}`
+  );
+}
+
 /**
  * Submit a drawing (deprecated - prefer WebSocket)
  * Kept for backward compatibility

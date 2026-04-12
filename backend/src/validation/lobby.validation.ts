@@ -7,6 +7,9 @@ import { z } from 'zod';
 // UUID validation helper
 const uuidSchema = z.string().uuid({ message: 'Invalid UUID format' });
 
+/** Stored User.id (UUID or legacy client-generated ids) */
+const participantIdSchema = z.string().min(1).max(128);
+
 // Room code validation helper (6 uppercase alphanumeric)
 const roomCodeSchema = z
   .string()
@@ -17,7 +20,7 @@ const roomCodeSchema = z
 // POST /lobby
 export const createLobbySchema = z.object({
   body: z.object({
-    hostId: uuidSchema,
+    hostId: participantIdSchema,
   }),
 });
 
@@ -27,7 +30,7 @@ export const joinLobbySchema = z.object({
     roomCode: roomCodeSchema,
   }),
   body: z.object({
-    userId: uuidSchema,
+    userId: participantIdSchema,
   }),
 });
 
@@ -43,13 +46,16 @@ export const leaveLobbySchema = z.object({
     roomCode: roomCodeSchema,
   }),
   body: z.object({
-    userId: uuidSchema,
+    userId: participantIdSchema,
   }),
 });
 
 export const deleteLobbySchema = z.object({
   params: z.object({
     roomCode: roomCodeSchema,
+  }),
+  query: z.object({
+    userId: participantIdSchema,
   }),
 });
 
@@ -87,7 +93,7 @@ export const getGameStateSchema = z.object({
     roomCode: roomCodeSchema,
   }),
   query: z.object({
-    userId: uuidSchema,
+    userId: participantIdSchema,
   }),
 });
 

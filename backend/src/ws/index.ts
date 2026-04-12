@@ -13,7 +13,11 @@ export interface WSGatewayHandle {
   notifyPlayerJoined(lobbyId: string, userId: string): Promise<void>;
   notifyPlayerLeft(lobbyId: string, userId: string): Promise<void>;
   notifyGameStarted(lobbyId: string, roundId: string, roundNumber: number): Promise<void>;
-  notifyPhaseChange(lobbyId: string, phase: 'DRAWING' | 'GUESSING' | 'VOTING'): Promise<void>;
+  notifyPhaseChange(
+    lobbyId: string,
+    phase: 'DRAWING' | 'GUESSING' | 'VOTING',
+    opts?: { endsAt?: number }
+  ): Promise<void>;
   getPromptsForLobby(lobbyId: string, playerIds: string[]): string[];
   clearPromptsForLobby(lobbyId: string): void;
 }
@@ -44,6 +48,8 @@ export function setupWebSocket(server: Server): WSGatewayHandle {
     },
 
     async notifyLobbyDeleted(lobbyId: string): Promise<void> {
+      ctx.prompts.clearPrompts(lobbyId);
+
       // Get all connections before removing them
       const connections = ctx.registry.getLobbyConnections(lobbyId);
       
@@ -83,8 +89,12 @@ export function setupWebSocket(server: Server): WSGatewayHandle {
       ctx.prompts.clearPrompts(lobbyId);
     },
 
-    async notifyPhaseChange(lobbyId: string, phase: 'DRAWING' | 'GUESSING' | 'VOTING'): Promise<void> {
-      await broadcastPhaseChange(ctx, lobbyId, phase);
+    async notifyPhaseChange(
+      lobbyId: string,
+      phase: 'DRAWING' | 'GUESSING' | 'VOTING',
+      opts?: { endsAt?: number }
+    ): Promise<void> {
+      await broadcastPhaseChange(ctx, lobbyId, phase, opts);
     },
 
     getPromptsForLobby(lobbyId: string, playerIds: string[]): string[] {

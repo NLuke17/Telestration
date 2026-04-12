@@ -1,6 +1,6 @@
 import prisma from '../prisma/client';
-import { getCurrentRound, getAssignedFlipbook } from './gameService';
-import { logInfo, logError } from '../utils/logger';
+import { getAssignedFlipbook, deriveExpectedPhaseFromChainWave } from './gameService';
+import { logDebug, logError } from '../utils/logger';
 
 /**
  * Complete game state for a specific user in a lobby
@@ -107,10 +107,9 @@ export async function getGameState(roomCode: string, userId: string) {
       throw new Error('ROUND_NOT_FOUND');
     }
 
-    // Determine current phase from flipbooks
-    const flipbookStates = currentRound.flipbooks.map(fb => fb.state);
-    const majorityState = getMajorityState(flipbookStates);
-    const currentPhase = majorityState || 'DRAWING';
+    const playerCount = lobby.players.length;
+    const chainWave = currentRound.chainWave ?? 0;
+    const currentPhase = deriveExpectedPhaseFromChainWave(chainWave, playerCount);
 
     // Get user's own flipbook
     const myFlipbook = currentRound.flipbooks.find(fb => fb.authorId === userId);
@@ -131,27 +130,37 @@ export async function getGameState(roomCode: string, userId: string) {
 
         if (assignedFlipbook) {
           myRole = currentPhase.toLowerCase();
-          
-          // Check if user has already submitted to this flipbook
+
           if (currentPhase === 'DRAWING') {
             hasSubmitted = assignedFlipbook.drawings.some((d: any) => d.authorId === userId);
           } else {
             hasSubmitted = assignedFlipbook.guesses.some((g: any) => g.authorId === userId);
           }
         } else {
-          // No assignment means user has completed all work for this phase
           myRole = currentPhase.toLowerCase();
-          hasSubmitted = true;
+          const ids = lobby.players.map((p) => p.id);
+          const idx = ids.indexOf(userId);
+          if (idx < 0) {
+            hasSubmitted = true;
+          } else if (currentPhase === 'DRAWING' && chainWave >= 1 && chainWave < playerCount) {
+            const tid = ids[(idx + chainWave) % playerCount];
+            const tb = currentRound.flipbooks.find((fb) => fb.authorId === tid);
+            hasSubmitted = tb ? tb.drawings.some((d: { authorId: string }) => d.authorId === userId) : true;
+          } else if (currentPhase === 'GUESSING' && chainWave >= 1 && chainWave < playerCount) {
+            const tid = ids[(idx + chainWave) % playerCount];
+            const tb = currentRound.flipbooks.find((fb) => fb.authorId === tid);
+            hasSubmitted = tb ? tb.guesses.some((g: { authorId: string }) => g.authorId === userId) : true;
+          } else {
+            hasSubmitted = true;
+          }
         }
       } catch (error) {
-        // If assignment fails, user might not be in the game
         myRole = null;
         hasSubmitted = false;
       }
     } else if (currentPhase === 'VOTING') {
-      myRole = 'voting';
-      // TODO: Check if user has voted
-      hasSubmitted = false;
+      myRole = 'recap';
+      hasSubmitted = true;
     }
 
     // Calculate submission counts
@@ -164,23 +173,24 @@ export async function getGameState(roomCode: string, userId: string) {
       0
     );
 
-    // Calculate expected counts
-    const playerCount = lobby.players.length;
     const flipbookCount = currentRound.flipbooks.length;
-    const expectedDrawings = flipbookCount * (playerCount - 1); // Each flipbook gets (n-1) drawings
-    const expectedGuesses = flipbookCount * (playerCount - 1); // Each flipbook gets (n-1) guesses
+    const expectedDrawings = flipbookCount * Math.max(0, playerCount - 1);
+    const expectedGuesses = flipbookCount * Math.max(0, playerCount - 1);
 
-    // Calculate phase timer (would need to be stored or calculated)
-    // For now, return null - this should be managed by phase start timestamps
-    const endsAt = null;
+    const endsAtMs = currentRound.phaseDeadline
+      ? new Date(currentRound.phaseDeadline).getTime()
+      : null;
 
-    logInfo('Game state retrieved', {
+    logDebug('game_state', {
+      roomCode: lobby.roomCode,
       lobbyId: lobby.id,
       userId,
       roundId: currentRound.id,
+      chainWave,
       phase: currentPhase,
       myRole,
       hasSubmitted,
+      assignedFlipbookId: assignedFlipbook?.id ?? null,
     });
 
     return {
@@ -188,7 +198,9 @@ export async function getGameState(roomCode: string, userId: string) {
       roundId: currentRound.id,
       roundNumber: currentRound.number,
       phase: currentPhase,
-      endsAt,
+      endsAt: endsAtMs,
+      chainWave,
+      maxChainWave: Math.max(0, playerCount - 1),
       myFlipbookId,
       myRole,
       hasSubmitted,
@@ -216,29 +228,4 @@ export async function getGameState(roomCode: string, userId: string) {
     logError('Failed to get game state', { roomCode, userId, error: error.message });
     throw error;
   }
-}
-
-/**
- * Helper to determine the majority state of flipbooks
- * (in case flipbooks are in different states during transition)
- */
-function getMajorityState(states: string[]): 'DRAWING' | 'GUESSING' | 'VOTING' {
-  if (states.length === 0) return 'DRAWING';
-
-  const counts: Record<string, number> = {};
-  states.forEach(state => {
-    counts[state] = (counts[state] || 0) + 1;
-  });
-
-  let maxCount = 0;
-  let majorityState: 'DRAWING' | 'GUESSING' | 'VOTING' = 'DRAWING';
-  
-  for (const [state, count] of Object.entries(counts)) {
-    if (count > maxCount) {
-      maxCount = count;
-      majorityState = state as 'DRAWING' | 'GUESSING' | 'VOTING';
-    }
-  }
-
-  return majorityState;
 }

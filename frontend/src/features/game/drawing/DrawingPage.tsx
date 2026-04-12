@@ -25,14 +25,17 @@ const DrawingPage: React.FC = () => {
     const navigate = useNavigate();
     const canvasRef = useRef<ReactSketchCanvasRef>(null);
     const { user } = useAuth();
+
+    useEffect(() => {
+        sessionStorage.removeItem('telestration.expectDrawAfterPromptWait');
+    }, []);
     
     // Get userId from auth context or localStorage for guest users
     const userId = user?.id || localStorage.getItem('userId') || '';
-    
-    console.log('[DrawingPage] userId:', userId);
-    
+
     // First, get lobby to get lobbyId
-    const { lobby } = useLobby(roomCode || '', userId);
+    const { lobby, error: lobbyError } = useLobby(roomCode || '', userId);
+    const sync = roomCode && userId ? { roomCode, userId } : undefined;
     
     // Canvas state
     const [penColor, setPenColor] = useState("#000000");
@@ -41,8 +44,20 @@ const DrawingPage: React.FC = () => {
     const sizes = [5, 10, 15, 20, 25, 30];
     
     // Game state - pass lobbyId to useGameState
-    const gameState = useGameState(lobby?.id);
+    const gameState = useGameState(lobby?.id, sync);
     const timer = usePhaseTimer(gameState.phaseEndsAt);
+
+    useEffect(() => {
+        if (gameState.phase === 'VOTING' && roomCode) {
+            navigate(`/game/${roomCode}/countdown?phase=VOTING`, { replace: true });
+        }
+    }, [gameState.phase, roomCode, navigate]);
+
+    useEffect(() => {
+        if (lobbyError?.toLowerCase().includes('delete')) {
+            navigate('/', { replace: true });
+        }
+    }, [lobbyError, navigate]);
     
     // Assignment state
     const [assignment, setAssignment] = useState<any>(null);
@@ -104,7 +119,7 @@ const DrawingPage: React.FC = () => {
             console.log('Drawing submitted successfully');
             
             // Navigate to waiting page or show success message
-            navigate(`/game/${roomCode}/waiting`);
+            navigate(`/game/${roomCode}/waiting`, { replace: true });
         } catch (err: any) {
             console.error('Failed to submit drawing:', err);
             setError(err.message || 'Failed to submit drawing');
@@ -137,9 +152,16 @@ const DrawingPage: React.FC = () => {
     }
 
     // Get the prompt to display
-    const promptToDisplay = assignment.prompt || 'Draw something!';
-    const currentPage = gameState.roundNumber || 1;
-    const totalPages = 4; // This should come from game config
+    const promptToDisplay =
+        (assignment as { drawFromText?: string }).drawFromText ||
+        assignment.prompt ||
+        'Draw something!';
+    const currentPage =
+        gameState.chainWave != null && gameState.maxChainWave != null && gameState.maxChainWave > 0
+            ? Math.min(gameState.chainWave, gameState.maxChainWave)
+            : gameState.roundNumber || 1;
+    const totalPages =
+        gameState.maxChainWave != null && gameState.maxChainWave > 0 ? gameState.maxChainWave : 4;
 
     return (
         <div className="flex flex-col justify-center items-center gap-8 h-screen">
