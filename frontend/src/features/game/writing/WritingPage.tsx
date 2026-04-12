@@ -9,6 +9,7 @@ import { useGameState, usePhaseTimer, useLobby } from '../../../hooks/useGameSta
 import { getAssignedFlipbook } from '../../../services/api/gameApi';
 import { getGameState } from '../../../services/api/lobbyApi';
 import { useAuth } from '../../../contexts/AuthContext';
+import { AnimatedSketchDisplay } from '../../../components/game/AnimatedSketchDisplay';
 
 const WritingPage: React.FC = () => {
     const { roomCode } = useParams<{ roomCode: string }>();
@@ -18,8 +19,6 @@ const WritingPage: React.FC = () => {
     
     // Get userId from auth context or localStorage for guest users
     const userId = user?.id || localStorage.getItem('userId') || '';
-    
-    console.log('[WritingPage] userId:', userId);
     
     // First, get lobby to get lobbyId
     const { lobby, error: lobbyError } = useLobby(roomCode || '', userId);
@@ -66,11 +65,6 @@ const WritingPage: React.FC = () => {
                     // Check if the flipbook has an empty prompt (initial prompt writing)
                     const hasEmptyPrompt = !result.flipbook.prompt || result.flipbook.prompt.trim().length === 0;
                     setIsInitialPrompt(hasEmptyPrompt);
-                    console.log('[WritingPage] Assignment received:', {
-                        flipbookId: result.flipbook.id,
-                        hasPrompt: !hasEmptyPrompt,
-                        isInitialPrompt: hasEmptyPrompt
-                    });
                 } else {
                     const state = await getGameState(roomCode, userId);
                     if (state.phase !== 'GUESSING') {
@@ -98,7 +92,6 @@ const WritingPage: React.FC = () => {
                         prompt: mine.prompt || '',
                         isOwn: true,
                     });
-                    console.log('[WritingPage] Initial prompt on own flipbook', { flipbookId: mine.id });
                 }
             } catch (err: any) {
                 console.error('Failed to fetch assignment:', err);
@@ -188,28 +181,59 @@ const WritingPage: React.FC = () => {
     const totalPages =
         gameState.maxChainWave != null && gameState.maxChainWave > 0 ? gameState.maxChainWave : 4;
 
+    const latestDrawing = !isInitialPrompt ? assignment.latestDrawingData : null;
+
     return (
-        <div className="flex justify-center items-center h-screen">
-            <Container width='900px' height='500px' padding='5em' className='flex flex-col justify-between items-center border-2 border-dark-grey rounded-lg'>
-                <div className='flex w-full justify-between'>
-                    <PageCounter pageNum={currentPage.toString()} totalPages={totalPages.toString()} className='text-heading-3'/>
-                    <TimerDisplay 
-                        minutesLeft={timer.minutes.toString().padStart(2, '0')} 
-                        secondsLeft={timer.seconds.toString().padStart(2, '0')} 
-                        className='text-heading-3'
+        <div className="flex justify-center items-center min-h-screen p-4">
+            <Container
+                width="920px"
+                height="auto"
+                padding="3em"
+                className="flex flex-col gap-6 border-2 border-dark-grey rounded-lg"
+            >
+                <div className="flex w-full justify-between">
+                    <PageCounter
+                        pageNum={currentPage.toString()}
+                        totalPages={totalPages.toString()}
+                        className="text-heading-3"
+                    />
+                    <TimerDisplay
+                        minutesLeft={timer.minutes.toString().padStart(2, '0')}
+                        secondsLeft={timer.seconds.toString().padStart(2, '0')}
+                        className="text-heading-3"
                     />
                 </div>
-                <div className="text-heading-1">{isInitialPrompt ? 'Write your prompt!' : 'What did you see?'}</div>
-                <div className="flex items-center justify-center w-full gap-8">
-                    <InputField 
-                        id='sentence'
+
+                <div className="text-heading-1 text-center">
+                    {isInitialPrompt ? 'Write your prompt!' : 'What did you see?'}
+                </div>
+
+                {!isInitialPrompt && latestDrawing && (
+                    <div className="flex flex-col gap-2 w-full">
+                        <div className="text-xs uppercase text-gray-500">Drawing to describe</div>
+                        <AnimatedSketchDisplay
+                            drawingData={latestDrawing}
+                            width="100%"
+                            height="300px"
+                            strokeDelayMs={85}
+                        />
+                    </div>
+                )}
+
+                <div className="flex flex-col sm:flex-row items-center justify-center w-full gap-4">
+                    <InputField
+                        id="sentence"
                         label=""
-                        placeholder={isInitialPrompt ? "e.g., 'A cat riding a skateboard'" : "Type your guess here!"}
+                        placeholder={
+                            isInitialPrompt
+                                ? "e.g., 'A cat riding a skateboard'"
+                                : 'Type your guess here!'
+                        }
                         value={sentence}
                         onChange={setSentence}
-                        className='w-full'
+                        className="w-full flex-1"
                     />
-                    <Button 
+                    <Button
                         label={isSubmitting ? 'Submitting...' : 'Done'}
                         disabled={!(sentence.length > 0) || isSubmitting}
                         onClick={handleSubmit}

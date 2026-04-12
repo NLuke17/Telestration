@@ -15,6 +15,9 @@ export interface AssignmentResponse {
       type: 'PROMPT' | 'DRAWING' | 'GUESS';
       content: string;
     };
+    /** Resolved vector JSON (`exportPaths`) for the latest drawing on this flipbook (guess phase). */
+    latestDrawingData?: string | null;
+    drawFromText?: string;
   };
 }
 

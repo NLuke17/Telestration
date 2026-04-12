@@ -5,6 +5,7 @@ import Button from '../../../components/common/Button';
 import { useAuth } from '../../../contexts/AuthContext';
 import { endLobby, getGameState } from '../../../services/api/lobbyApi';
 import { getFlipbookPresentation, type FlipbookPresentationResponse } from '../../../services/api/gameApi';
+import { AnimatedSketchDisplay, parseCanvasPathsJson } from '../../../components/game/AnimatedSketchDisplay';
 
 const RECAP_MS = 14000;
 
@@ -151,14 +152,27 @@ const RecapPage: React.FC = () => {
                                 </div>
                             );
                         }
+                        const sketch = parseCanvasPathsJson(entry.drawingData);
                         return (
                             <div key={entry.id} className="rounded-lg border border-dark-grey p-4 bg-green-50">
                                 <div className="text-xs uppercase text-gray-500">
                                     Drawing — {entry.authorUsername}
                                 </div>
-                                <p className="text-body text-gray-600">
-                                    (Vector sketch — open in drawing view to replay paths in a future update.)
-                                </p>
+                                <div className="mt-3 flex justify-center">
+                                    {sketch ? (
+                                        <AnimatedSketchDisplay
+                                            drawingData={entry.drawingData}
+                                            width="560px"
+                                            height="320px"
+                                            strokeDelayMs={75}
+                                            className="max-w-full"
+                                        />
+                                    ) : (
+                                        <p className="text-body text-gray-600">
+                                            No stroke data for this drawing (older or invalid save).
+                                        </p>
+                                    )}
+                                </div>
                             </div>
                         );
                     })}

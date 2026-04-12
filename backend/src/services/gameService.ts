@@ -1,7 +1,7 @@
 import { randomUUID } from 'crypto';
 import prisma from '../prisma/client';
 import { logInfo, logError, logDebug } from '../utils/logger';
-import { persistGameDrawingPayload } from './drawingStorageService';
+import { persistGameDrawingPayload, resolveGameDrawingPayload } from './drawingStorageService';
 import {
   DRAWING_PHASE_DURATION_MS,
   GUESSING_PHASE_DURATION_MS,
@@ -440,7 +440,25 @@ export async function getAssignedFlipbook(
   const hasGuessed = flipbook.guesses.some((g) => g.authorId === userId);
   if (hasGuessed) return null;
 
-  return flipbook;
+  const guessLine = lastGuessText(flipbook);
+  const latestDrawingRow = await prisma.drawing.findFirst({
+    where: { flipbookId: flipbook.id },
+    orderBy: { order: 'desc' },
+  });
+  let latestDrawingData: string | null = null;
+  if (latestDrawingRow) {
+    try {
+      latestDrawingData = await resolveGameDrawingPayload(latestDrawingRow);
+    } catch {
+      latestDrawingData = null;
+    }
+  }
+
+  return {
+    ...flipbook,
+    drawFromText: guessLine && guessLine.trim().length > 0 ? guessLine : flipbook.prompt,
+    latestDrawingData,
+  };
 }
 
 /**
