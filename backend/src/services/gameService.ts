@@ -445,7 +445,6 @@ export async function checkPhaseCompletion(roundId: string, phase: 'DRAWING' | '
 /**
  * Generate initial prompt for a flipbook
  * Used as fallback when custom prompts are not provided
- * In production, you might want to use a prompt database or API
  */
 function generateInitialPrompt(username: string, index: number): string {
   const prompts = [
