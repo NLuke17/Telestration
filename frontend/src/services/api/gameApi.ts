@@ -3,6 +3,7 @@
  */
 
 import { httpClient } from './httpClient';
+import { authenticatedClient } from './authenticatedClient';
 import type { RoundDTO, FlipbookDTO } from '../../types/dto';
 
 export interface CurrentRoundResponse extends RoundDTO {}
@@ -115,4 +116,38 @@ export async function submitGuess(
     userId,
     text,
   });
+}
+
+export type SavedFlipbookSummary = {
+  id: string;
+  title: string | null;
+  prompt: string;
+  sourceFlipbookId: string | null;
+  sourceRoundId: string | null;
+  createdAt: string;
+};
+
+export type ListSavedFlipbooksResponse = {
+  savedFlipbooks: SavedFlipbookSummary[];
+  maxSaved: number;
+};
+
+/**
+ * List flipbooks saved to the signed-in user's library (requires JWT).
+ */
+export async function listSavedFlipbooks(): Promise<ListSavedFlipbooksResponse> {
+  return authenticatedClient.get<ListSavedFlipbooksResponse>('/game/saved-flipbooks');
+}
+
+/**
+ * Copy a game flipbook into the signed-in user's library (requires JWT). Max count enforced server-side.
+ */
+export async function saveFlipbookToLibrary(
+  flipbookId: string,
+  body?: { title?: string }
+): Promise<{ savedFlipbookId: string }> {
+  return authenticatedClient.post<{ savedFlipbookId: string }>(
+    `/game/flipbooks/${flipbookId}/save-to-library`,
+    body ?? {}
+  );
 }

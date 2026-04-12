@@ -13,6 +13,7 @@ import {
 import { submitDrawing, submitGuess, getCurrentRound, getAssignedFlipbook } from '../services/gameService';
 import { getGameFlipbookPresentation, getSavedFlipbookPresentation } from '../services/flipbookPresentationService';
 import { listSavedFlipbooksForUser, saveGameFlipbookToLibrary } from '../services/savedFlipbookService';
+import { MAX_SAVED_FLIPBOOKS_PER_USER } from '../config/constants';
 import { WSGatewayHandle } from '../ws/index';
 
 const router = express.Router();
@@ -93,7 +94,7 @@ router.get('/flipbooks/:flipbookId/presentation', validate(getFlipbookPresentati
   }
 });
 
-// Persist flipbook into the signed-in user's library (after lobby is FINISHED)
+// Persist flipbook into the signed-in user's library (recap / finished lobby; max count enforced in service)
 router.post(
   '/flipbooks/:flipbookId/save-to-library',
   authenticateJWT,
@@ -110,6 +111,12 @@ router.post(
       if (e.message === 'LOBBY_NOT_FINISHED') return res.status(409).json({ error: 'Game not finished yet' });
       if (e.message === 'NOT_IN_LOBBY') return res.status(403).json({ error: 'Not allowed' });
       if (e.message === 'FLIPBOOK_ALREADY_SAVED') return res.status(409).json({ error: 'Already saved to your library' });
+      if (e.message === 'LIBRARY_FULL') {
+        return res.status(403).json({
+          error: 'LIBRARY_FULL',
+          message: `You can save at most ${MAX_SAVED_FLIPBOOKS_PER_USER} flipbooks to your library.`,
+        });
+      }
       return res.status(500).json({ error: 'Failed to save flipbook' });
     }
   }
@@ -119,7 +126,10 @@ router.get('/saved-flipbooks', authenticateJWT, async (req: AuthRequest, res) =>
   try {
     const ownerId = req.user?.userId as string;
     const list = await listSavedFlipbooksForUser(ownerId);
-    return res.json({ savedFlipbooks: list });
+    return res.json({
+      savedFlipbooks: list,
+      maxSaved: MAX_SAVED_FLIPBOOKS_PER_USER,
+    });
   } catch {
     return res.status(500).json({ error: 'Failed to list saved flipbooks' });
   }

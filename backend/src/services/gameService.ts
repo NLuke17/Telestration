@@ -33,7 +33,8 @@ export async function startGame(lobbyId: string, customPrompts?: string[]) {
       throw new Error('LOBBY_NOT_FOUND');
     }
 
-    if (lobby.state !== 'WAITING') {
+    // FINISHED = previous game ended (e.g. host returned from recap); same room can start again.
+    if (lobby.state !== 'WAITING' && lobby.state !== 'FINISHED') {
       throw new Error('LOBBY_ALREADY_STARTED');
     }
 

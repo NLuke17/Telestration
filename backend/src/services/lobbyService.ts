@@ -32,7 +32,7 @@ export async function joinLobby(roomCodeRaw: string, userId: string) {
     });
 
     if (!lobby) throw new Error("LOBBY_NOT_FOUND");
-    if (lobby.state !== "WAITING") throw new Error("LOBBY_NOT_ACCEPTING");
+    if (lobby.state !== "WAITING" && lobby.state !== "FINISHED") throw new Error("LOBBY_NOT_ACCEPTING");
     if (lobby.players.some(p => p.id === userId)) throw new Error("ALREADY_IN_LOBBY");
 
     return prisma.lobby.update({
