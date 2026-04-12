@@ -3,7 +3,7 @@
  */
 
 import { httpClient } from './httpClient';
-import type { LobbySnapshot, GameStateDTO } from '../../types/dto';
+import type { LobbyRoomStateResponse, LobbySnapshot } from '../../types/dto';
 
 export interface CreateLobbyRequest {
   hostId: string;
@@ -67,8 +67,8 @@ export async function getLobby(roomCode: string): Promise<LobbySnapshot> {
 export async function getGameState(
   roomCode: string,
   userId: string
-): Promise<GameStateDTO> {
-  return httpClient.get<GameStateDTO>(`/lobby/${roomCode}/state?userId=${userId}`);
+): Promise<LobbyRoomStateResponse> {
+  return httpClient.get<LobbyRoomStateResponse>(`/lobby/${roomCode}/state?userId=${userId}`);
 }
 
 /**
@@ -102,8 +102,9 @@ export async function leaveLobby(
 }
 
 /**
- * Delete a lobby
+ * Delete a lobby (host only — backend checks userId matches host)
  */
-export async function deleteLobby(roomCode: string): Promise<{ message: string }> {
-  return httpClient.delete<{ message: string }>(`/lobby/${roomCode}`);
+export async function deleteLobby(roomCode: string, userId: string): Promise<{ message: string }> {
+  const q = new URLSearchParams({ userId });
+  return httpClient.delete<{ message: string }>(`/lobby/${roomCode}?${q.toString()}`);
 }

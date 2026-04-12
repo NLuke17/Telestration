@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Container from '../../../components/common/Container';
 import InputField from '../../../components/common/InputField';
 import Button from '../../../components/common/Button';
@@ -7,6 +7,7 @@ import TimerDisplay from '../../../components/game/TimerDisplay';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useGameState, usePhaseTimer, useLobby } from '../../../hooks/useGameState';
 import { getAssignedFlipbook } from '../../../services/api/gameApi';
+import { getGameState } from '../../../services/api/lobbyApi';
 import { useAuth } from '../../../contexts/AuthContext';
 
 const WritingPage: React.FC = () => {
@@ -21,10 +22,11 @@ const WritingPage: React.FC = () => {
     console.log('[WritingPage] userId:', userId);
     
     // First, get lobby to get lobbyId
-    const { lobby } = useLobby(roomCode || '', userId);
+    const { lobby, error: lobbyError } = useLobby(roomCode || '', userId);
+    const sync = roomCode && userId ? { roomCode, userId } : undefined;
     
     // Game state - pass lobbyId to useGameState
-    const gameState = useGameState(lobby?.id);
+    const gameState = useGameState(lobby?.id, sync);
     const timer = usePhaseTimer(gameState.phaseEndsAt);
     
     // Assignment state
@@ -33,11 +35,27 @@ const WritingPage: React.FC = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [isInitialPrompt, setIsInitialPrompt] = useState(false);
+    const submitLockRef = useRef(false);
+
+    useEffect(() => {
+        if (gameState.phase === 'DRAWING' && roomCode) {
+            navigate(`/game/${roomCode}/countdown?phase=DRAWING`, { replace: true });
+        }
+        if (gameState.phase === 'VOTING' && roomCode) {
+            navigate(`/game/${roomCode}/countdown?phase=VOTING`, { replace: true });
+        }
+    }, [gameState.phase, roomCode, navigate]);
+
+    useEffect(() => {
+        if (lobbyError?.toLowerCase().includes('delete')) {
+            navigate('/', { replace: true });
+        }
+    }, [lobbyError, navigate]);
 
     // Fetch assignment when component mounts
     useEffect(() => {
         const fetchAssignment = async () => {
-            if (!gameState.roundId || !userId) return;
+            if (!gameState.roundId || !userId || !roomCode) return;
             
             try {
                 setIsLoading(true);
@@ -54,10 +72,33 @@ const WritingPage: React.FC = () => {
                         isInitialPrompt: hasEmptyPrompt
                     });
                 } else {
-                    // No assignment means this is the first round - write initial prompt on own flipbook
+                    const state = await getGameState(roomCode, userId);
+                    if (state.phase !== 'GUESSING') {
+                        if (roomCode) {
+                            if (state.phase === 'DRAWING') {
+                                navigate(`/game/${roomCode}/countdown?phase=DRAWING`, { replace: true });
+                            } else if (state.phase === 'VOTING') {
+                                navigate(`/game/${roomCode}/countdown?phase=VOTING`, { replace: true });
+                            }
+                        }
+                        return;
+                    }
+                    const mine = state.flipbooks?.find((f) => f.authorId === userId);
+                    if (mine?.prompt?.trim()) {
+                        navigate(`/game/${roomCode}/waiting`, { replace: true });
+                        return;
+                    }
+                    if (!mine?.id) {
+                        setError('Could not find your flipbook in this round.');
+                        return;
+                    }
                     setIsInitialPrompt(true);
-                    setAssignment({ id: null, isOwn: true });
-                    console.log('[WritingPage] No assignment - initial prompt');
+                    setAssignment({
+                        id: mine.id,
+                        prompt: mine.prompt || '',
+                        isOwn: true,
+                    });
+                    console.log('[WritingPage] Initial prompt on own flipbook', { flipbookId: mine.id });
                 }
             } catch (err: any) {
                 console.error('Failed to fetch assignment:', err);
@@ -69,8 +110,10 @@ const WritingPage: React.FC = () => {
 
         if (gameState.roundId && gameState.phase === 'GUESSING') {
             fetchAssignment();
+        } else if (gameState.phase && gameState.phase !== 'GUESSING') {
+            setIsLoading(false);
         }
-    }, [gameState.roundId, gameState.phase, userId]);
+    }, [gameState.roundId, gameState.phase, userId, roomCode, navigate]);
 
     // Handle phase complete
     useEffect(() => {
@@ -84,20 +127,32 @@ const WritingPage: React.FC = () => {
             console.error('Missing required data for submission');
             return;
         }
+        if (!assignment.id) {
+            setError('Missing flipbook; please refresh the page.');
+            return;
+        }
+        if (submitLockRef.current) {
+            return;
+        }
 
         try {
+            submitLockRef.current = true;
             setIsSubmitting(true);
             
             // Submit via WebSocket
             gameState.submitGuess(assignment.id, sentence.trim());
             
             console.log('Guess submitted successfully');
+
+            if (isInitialPrompt) {
+                sessionStorage.setItem('telestration.expectDrawAfterPromptWait', '1');
+            }
             
-            // Navigate to waiting page
-            navigate(`/game/${roomCode}/waiting`);
+            navigate(`/game/${roomCode}/waiting`, { replace: true });
         } catch (err: any) {
             console.error('Failed to submit guess:', err);
             setError(err.message || 'Failed to submit guess');
+            submitLockRef.current = false;
         } finally {
             setIsSubmitting(false);
         }
@@ -126,8 +181,12 @@ const WritingPage: React.FC = () => {
         );
     }
 
-    const currentPage = gameState.roundNumber || 1;
-    const totalPages = 4; // This should come from game config
+    const currentPage =
+        gameState.chainWave != null && gameState.maxChainWave != null && gameState.maxChainWave > 0
+            ? Math.min(gameState.chainWave, gameState.maxChainWave)
+            : gameState.roundNumber || 1;
+    const totalPages =
+        gameState.maxChainWave != null && gameState.maxChainWave > 0 ? gameState.maxChainWave : 4;
 
     return (
         <div className="flex justify-center items-center h-screen">

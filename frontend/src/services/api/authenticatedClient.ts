@@ -3,7 +3,7 @@
  * Use this when you want auth tokens automatically added to requests
  */
 
-import { httpClient, HttpError } from './httpClient';
+import { HttpError } from './httpClient';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 

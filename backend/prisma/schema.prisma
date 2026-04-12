@@ -30,6 +30,7 @@ model User {
   drawings      Drawing[]
   guesses       Guess[]
   refreshTokens RefreshToken[]
+  savedFlipbooks SavedFlipbook[]
 }
 
 model RefreshToken {
@@ -64,7 +65,11 @@ model Round{
   id          String     @id @default(uuid())
   number      Int
   createdAt   DateTime   @default(now())
-  
+  /// 0 = collect initial prompts on own flipbook; 1..N-1 = draw/guess chain; N = recap (VOTING) / finished chain
+  chainWave   Int        @default(0)
+  /// Server-authoritative end time for the current phase (used by clients for countdown).
+  phaseDeadline DateTime?
+
   // Relations
   lobby       Lobby      @relation(fields: [lobbyId], references: [id], onDelete: Cascade)
   lobbyId     String
@@ -90,16 +95,68 @@ model Flipbook {
 }
 
 model Drawing {
-  id          String   @id @default(uuid())
-  drawingData String   // Store JSON string or URL to image
-  order       Int      // Position in the flipbook sequence
-  createdAt   DateTime @default(now())
+  id            String              @id @default(uuid())
+  /// Full vector payload when small; null when stored in blob storage (see storageKey).
+  drawingData   String?             @db.Text
+  storageKind   DrawingStorageKind  @default(INLINE)
+  /// Opaque relative key (e.g. game/{flipbookId}/{drawingId}.json). Swap backing store (S3, etc.) without schema changes.
+  storageKey    String?             @unique
+  byteLength    Int?
+  order         Int // Position in the flipbook sequence
+  createdAt     DateTime            @default(now())
 
   // Relations
-  flipbook    Flipbook @relation(fields: [flipbookId], references: [id], onDelete: Cascade)
-  flipbookId  String
-  author      User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  authorId    String
+  flipbook   Flipbook @relation(fields: [flipbookId], references: [id], onDelete: Cascade)
+  flipbookId String
+  author     User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  authorId   String
+}
+
+/// User-owned copy of a completed flipbook (opt-in at end of game). Independent of lobby lifecycle.
+model SavedFlipbook {
+  id               String   @id @default(uuid())
+  ownerId          String
+  sourceFlipbookId String?
+  sourceRoundId    String?
+  prompt           String
+  title            String?
+  createdAt        DateTime @default(now())
+
+  owner    User            @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  drawings SavedDrawing[]
+  guesses  SavedGuess[]
+
+  @@unique([ownerId, sourceFlipbookId])
+  @@index([ownerId])
+}
+
+model SavedDrawing {
+  id              String             @id @default(uuid())
+  savedFlipbookId String
+  order           Int
+  authorId        String
+  authorUsername  String
+  drawingData     String?            @db.Text
+  storageKind     DrawingStorageKind @default(INLINE)
+  storageKey      String?            @unique
+  byteLength      Int?
+
+  savedFlipbook SavedFlipbook @relation(fields: [savedFlipbookId], references: [id], onDelete: Cascade)
+
+  @@index([savedFlipbookId])
+}
+
+model SavedGuess {
+  id              String   @id @default(uuid())
+  savedFlipbookId String
+  order           Int
+  text            String
+  authorId        String
+  authorUsername  String
+
+  savedFlipbook SavedFlipbook @relation(fields: [savedFlipbookId], references: [id], onDelete: Cascade)
+
+  @@index([savedFlipbookId])
 }
 
 model Guess {
@@ -126,4 +183,9 @@ enum FlipbookState {
   DRAWING
   GUESSING
   VOTING
+}
+
+enum DrawingStorageKind {
+  INLINE
+  LOCAL_FILE
 }

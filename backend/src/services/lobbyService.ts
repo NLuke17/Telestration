@@ -74,17 +74,27 @@ export async function leaveLobby(roomCodeRaw: string, userId: string) {
     return lobby;
 }
 
-export async function deleteLobby(roomCodeRaw: string) {
-    const roomCode = roomCodeRaw.toUpperCase();
-    try {
-         const deleted = await prisma.lobby.delete({ where: { roomCode } });
-        return deleted.id;
-    } catch (error: any) {
-        if (error.code === 'P2025') {
-            throw new Error("LOBBY_NOT_FOUND");
-        }
-        throw error;
+export async function deleteLobby(roomCodeRaw: string, actingUserId: string) {
+  const roomCode = roomCodeRaw.toUpperCase();
+  const lobby = await prisma.lobby.findUnique({
+    where: { roomCode },
+    select: { id: true, hostId: true },
+  });
+  if (!lobby) {
+    throw new Error('LOBBY_NOT_FOUND');
+  }
+  if (lobby.hostId !== actingUserId) {
+    throw new Error('FORBIDDEN_NOT_HOST');
+  }
+  try {
+    const deleted = await prisma.lobby.delete({ where: { roomCode } });
+    return deleted.id;
+  } catch (error: any) {
+    if (error.code === 'P2025') {
+      throw new Error('LOBBY_NOT_FOUND');
     }
+    throw error;
+  }
 }
 
 export async function startLobby(roomCodeRaw: string, customPrompts?: string[]) {

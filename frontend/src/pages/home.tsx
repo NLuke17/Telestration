@@ -1,8 +1,6 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 
 export default function Home() {
-    const navigate = useNavigate();
     const [backendMessage, setBackendMessage] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
 

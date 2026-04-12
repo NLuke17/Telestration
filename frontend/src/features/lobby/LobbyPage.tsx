@@ -4,7 +4,7 @@ import Button from '../../components/common/Button';
 import { useParams, useNavigate } from 'react-router-dom';
 import InitialAvatar from '../../components/common/Avatar';
 import { useLobby, useGameState } from '../../hooks/useGameState';
-import { startLobby } from '../../services/api/lobbyApi';
+import { startLobby, deleteLobby } from '../../services/api/lobbyApi';
 import { useAuth } from '../../contexts/AuthContext';
 
 const MIN_PLAYERS = 2;
@@ -15,14 +15,17 @@ const LobbyPage: React.FC = () => {
     const { user } = useAuth();
     
     // Get userId from auth context
-    const userId = user?.id || '';
+    const userId = user?.id || localStorage.getItem('userId') || '';
+    const sync = roomCode && userId ? { roomCode, userId } : undefined;
     
     // Use custom hooks for lobby state
     const { lobby, isConnected, error, wsStatus } = useLobby(roomCode || '', userId);
-    const gameState = useGameState(lobby?.id);
+    const gameState = useGameState(lobby?.id, sync);
     
     const [isStarting, setIsStarting] = useState(false);
     const [startError, setStartError] = useState<string | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [deleteError, setDeleteError] = useState<string | null>(null);
 
     // Handle game started event - redirect to countdown
     React.useEffect(() => {
@@ -34,8 +37,7 @@ const LobbyPage: React.FC = () => {
         
         if (gameState.roundId && gameState.phase) {
             console.log('[LobbyPage] Game started, navigating to countdown page with phase:', gameState.phase);
-            // Navigate to countdown page with phase as URL parameter
-            navigate(`/game/${roomCode}/countdown?phase=${gameState.phase}`);
+            navigate(`/game/${roomCode}/countdown?phase=${gameState.phase}`, { replace: true });
         }
     }, [gameState.roundId, gameState.phase, gameState.roundNumber, navigate, roomCode]);
 
@@ -46,7 +48,7 @@ const LobbyPage: React.FC = () => {
             // If we have game state, redirect to countdown with phase
             if (gameState.roundId && gameState.phase) {
                 console.log('[LobbyPage] Redirecting to countdown for game in progress with phase:', gameState.phase);
-                navigate(`/game/${roomCode}/countdown?phase=${gameState.phase}`);
+                navigate(`/game/${roomCode}/countdown?phase=${gameState.phase}`, { replace: true });
             }
         }
     }, [lobby, gameState, navigate, roomCode]);
@@ -59,6 +61,22 @@ const LobbyPage: React.FC = () => {
             }, 2000);
         }
     }, [error, navigate]);
+
+    const handleDeleteLobby = async () => {
+        if (!roomCode || !userId || lobby?.host.id !== userId) return;
+        if (!window.confirm('Delete this room for everyone? This cannot be undone.')) return;
+        setIsDeleting(true);
+        setDeleteError(null);
+        try {
+            await deleteLobby(roomCode, userId);
+            navigate('/', { replace: true });
+        } catch (err: unknown) {
+            const msg = err instanceof Error ? err.message : 'Failed to delete lobby';
+            setDeleteError(msg);
+        } finally {
+            setIsDeleting(false);
+        }
+    };
 
     const handleShare = async () => {
         if (!roomCode) return;
@@ -95,14 +113,15 @@ const LobbyPage: React.FC = () => {
             console.log('[LobbyPage] Calling startLobby API...');
             const result = await startLobby(roomCode);
             console.log('[LobbyPage] startLobby API response:', result);
-            
-            // Wait a moment for WebSocket events to arrive, then navigate
-            // Default to GUESSING phase for initial prompt writing
+
+            const allPrefilled =
+                result.flipbooks?.every((fb) => (fb.prompt || '').trim().length > 0) ?? false;
+            const startPhase = allPrefilled ? 'DRAWING' : 'GUESSING';
+
             setTimeout(() => {
-                const phase = gameState.phase || 'GUESSING';
-                console.log('[LobbyPage] Host navigating to countdown page with phase:', phase);
-                navigate(`/game/${roomCode}/countdown?phase=${phase}`);
-            }, 500);
+                console.log('[LobbyPage] Host navigating to countdown, phase:', startPhase);
+                navigate(`/game/${roomCode}/countdown?phase=${startPhase}`);
+            }, 400);
             
             // The game:started event will be received via WebSocket for other players
             // and handled by the useEffect above
@@ -206,6 +225,19 @@ const LobbyPage: React.FC = () => {
                             className="w-fit py-3 mt-2 self-center" 
                             onClick={handleShare}
                         />
+                        {isHost && (
+                            <>
+                                <Button
+                                    label={isDeleting ? 'Deleting…' : 'Delete room'}
+                                    className="w-fit py-3 mt-2 self-center border border-red-300 text-red-700"
+                                    onClick={() => void handleDeleteLobby()}
+                                    disabled={isDeleting}
+                                />
+                                {deleteError && (
+                                    <p className="text-red-600 text-sm text-center max-w-xs">{deleteError}</p>
+                                )}
+                            </>
+                        )}
                         {isGameInProgress && (
                             <p className="text-blue-600 text-sm text-center mt-4">
                                 Game in progress... Loading game page...

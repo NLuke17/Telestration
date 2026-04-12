@@ -1,9 +1,97 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import Container from '../../../components/common/Container';
-import { useGameState } from '../../../hooks/useGameState';
+import { useGameState, useLobby } from '../../../hooks/useGameState';
+import { getGameState } from '../../../services/api/lobbyApi';
+import { useAuth } from '../../../contexts/AuthContext';
+
+const PROMPT_WAIT_FLAG = 'telestration.expectDrawAfterPromptWait';
+
+/** Only send players who still owe a drawing for this wave; others stay here until the phase advances. */
+function shouldRedirectToDraw(s: { phase: string; hasSubmitted?: boolean }): boolean {
+    return s.phase === 'DRAWING' && s.hasSubmitted !== true;
+}
+
+function shouldRedirectToGuess(s: { phase: string; hasSubmitted?: boolean }): boolean {
+    return s.phase === 'GUESSING' && s.hasSubmitted !== true;
+}
 
 const WaitingPage: React.FC = () => {
-    const gameState = useGameState();
+    const { roomCode } = useParams<{ roomCode: string }>();
+    const navigate = useNavigate();
+    const { user } = useAuth();
+    const userId = user?.id || localStorage.getItem('userId') || '';
+
+    const { lobby, error: lobbyError } = useLobby(roomCode || '', userId);
+    const sync = roomCode && userId ? { roomCode, userId } : undefined;
+    const gameState = useGameState(lobby?.id, sync);
+
+    const [phaseFromApi, setPhaseFromApi] = useState<string | null>(null);
+    const prevWsPhaseRef = useRef<string | null>(null);
+
+    useEffect(() => {
+        if (lobbyError?.toLowerCase().includes('delete')) {
+            navigate('/', { replace: true });
+        }
+    }, [lobbyError, navigate]);
+
+    useEffect(() => {
+        if (!roomCode || !userId) return;
+
+        let cancelled = false;
+
+        const check = async () => {
+            try {
+                const s = await getGameState(roomCode, userId);
+                if (cancelled) return;
+
+                if (s.phase) {
+                    setPhaseFromApi(s.phase);
+                }
+
+                if (s.phase === 'VOTING') {
+                    navigate(`/game/${roomCode}/countdown?phase=VOTING`, { replace: true });
+                    return;
+                }
+
+                if (shouldRedirectToDraw(s)) {
+                    sessionStorage.removeItem(PROMPT_WAIT_FLAG);
+                    navigate(`/game/${roomCode}/countdown?phase=DRAWING`, { replace: true });
+                    return;
+                }
+                if (shouldRedirectToGuess(s)) {
+                    navigate(`/game/${roomCode}/countdown?phase=GUESSING`, { replace: true });
+                    return;
+                }
+            } catch (e) {
+                console.error('[WaitingPage] getGameState failed', e);
+            }
+        };
+
+        void check();
+        const id = setInterval(check, 2000);
+
+        return () => {
+            cancelled = true;
+            clearInterval(id);
+        };
+    }, [roomCode, userId, navigate]);
+
+    useEffect(() => {
+        if (!roomCode || !gameState.phase) return;
+        const prev = prevWsPhaseRef.current;
+        if (prev === 'GUESSING' && gameState.phase === 'DRAWING') {
+            sessionStorage.removeItem(PROMPT_WAIT_FLAG);
+            navigate(`/game/${roomCode}/countdown?phase=DRAWING`, { replace: true });
+        } else if (prev === 'DRAWING' && gameState.phase === 'GUESSING') {
+            navigate(`/game/${roomCode}/countdown?phase=GUESSING`, { replace: true });
+        } else if (gameState.phase === 'VOTING' && prev !== 'VOTING') {
+            navigate(`/game/${roomCode}/countdown?phase=VOTING`, { replace: true });
+        }
+        prevWsPhaseRef.current = gameState.phase;
+    }, [gameState.phase, roomCode, navigate]);
+
+    const displayPhase = gameState.phase ?? phaseFromApi;
 
     return (
         <div className="flex flex-col justify-center items-center h-screen bg-gray-50">
@@ -15,9 +103,9 @@ const WaitingPage: React.FC = () => {
             >
                 <h1 className="text-heading-1">Waiting for other players...</h1>
                 
-                {gameState.phase && (
+                {displayPhase && (
                     <p className="text-heading-3 text-gray-600">
-                        Current Phase: {gameState.phase}
+                        Current Phase: {displayPhase}
                     </p>
                 )}
                 
@@ -35,7 +123,7 @@ const WaitingPage: React.FC = () => {
                 
                 <p className="text-body text-center max-w-md">
                     Please wait while other players complete their submissions.
-                    You'll be redirected automatically when everyone is ready.
+                    You&apos;ll be redirected automatically when everyone is ready.
                 </p>
             </Container>
         </div>
