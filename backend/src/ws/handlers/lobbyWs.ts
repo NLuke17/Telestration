@@ -8,6 +8,13 @@ import { logInfo, logError, logWarn } from '../../utils/logger';
 import { normalizeRoomCode } from '../../utils/roomCode';
 import { handleDrawingSubmission, handleGuessSubmission } from './gameWs';
 import { deriveExpectedPhaseFromChainWave } from '../../services/gameService';
+import {
+  buildRecapSyncMessage,
+  broadcastRecapSync,
+  getRecapState,
+  initRecapStateFromLobby,
+  recapRevealNext,
+} from '../state/recapTracker';
 
 export function registerLobbyHandlers(ctx: WSContext) {
   ctx.wss.on('connection', (ws: WebSocket & { isAlive?: boolean }) => {
@@ -57,6 +64,7 @@ function createHandlerMap(ctx: WSContext, conn: ClientConn): Map<string, Message
   handlers.set('lobby:submit_prompt', (msg) => handlePromptSubmission(ctx, conn, msg as any));
   handlers.set('game:submit_drawing', (msg) => handleDrawingSubmission(ctx, conn, msg as any));
   handlers.set('game:submit_guess', (msg) => handleGuessSubmission(ctx, conn, msg as any));
+  handlers.set('recap:reveal_next', () => handleRecapRevealNext(ctx, conn));
 
   return handlers;
 }
@@ -140,6 +148,16 @@ async function handleLobbyConnect(
           phase: currentPhase,
           endsAt,
         });
+
+        if (currentPhase === 'VOTING') {
+          if (!getRecapState(snapshot.id)) {
+            await initRecapStateFromLobby(snapshot.id);
+          }
+          const recapMsg = buildRecapSyncMessage(snapshot.id);
+          if (recapMsg) {
+            send(conn, recapMsg as any);
+          }
+        }
 
         logInfo('Sent current game state to connecting player', {
           connId: conn.connId,
@@ -254,6 +272,40 @@ async function handlePromptSubmission(
       type: 'error',
       error: 'PROMPT_SUBMISSION_FAILED',
       message: error.message || 'Failed to submit prompt',
+    });
+  }
+}
+
+async function handleRecapRevealNext(ctx: WSContext, conn: ClientConn): Promise<void> {
+  if (!conn.lobbyId || !conn.userId) {
+    send(conn, { type: 'error', error: 'NOT_AUTHENTICATED', message: 'Not authenticated' });
+    return;
+  }
+
+  const lobbyId = conn.lobbyId;
+
+  try {
+    const lobby = await ctx.prisma.lobby.findUnique({
+      where: { id: lobbyId },
+      select: { hostId: true },
+    });
+    if (!lobby || lobby.hostId !== conn.userId) {
+      send(conn, {
+        type: 'error',
+        error: 'NOT_HOST',
+        message: 'Only the lobby host can reveal the next recap step',
+      });
+      return;
+    }
+
+    await recapRevealNext(lobbyId);
+    broadcastRecapSync(lobbyId);
+  } catch (error: any) {
+    logError('recap:reveal_next failed', { lobbyId, error: error.message });
+    send(conn, {
+      type: 'error',
+      error: 'RECAP_REVEAL_FAILED',
+      message: error.message || 'Reveal failed',
     });
   }
 }

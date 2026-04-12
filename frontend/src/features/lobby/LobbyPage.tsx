@@ -160,7 +160,10 @@ const LobbyPage: React.FC = () => {
     const isHost = lobby?.host.id === userId;
     const playerCount = lobby?.players.length || 0;
     const hasMinimumPlayers = playerCount >= MIN_PLAYERS;
-    const canStart = isHost && hasMinimumPlayers && lobby?.state === 'WAITING';
+    const canStart =
+        isHost &&
+        hasMinimumPlayers &&
+        (lobby?.state === 'WAITING' || lobby?.state === 'FINISHED');
     const isGameInProgress = lobby?.state === 'IN_PROGRESS';
 
     return (

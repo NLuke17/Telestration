@@ -2,6 +2,8 @@ import { randomUUID } from 'crypto';
 import prisma from '../prisma/client';
 import { logInfo, logError } from '../utils/logger';
 import { persistLibraryDrawingPayload, resolveGameDrawingPayload } from './drawingStorageService';
+import { deriveExpectedPhaseFromChainWave } from './gameService';
+import { MAX_SAVED_FLIPBOOKS_PER_USER } from '../config/constants';
 import { Prisma } from '../generated/prisma';
 
 /**
@@ -24,9 +26,14 @@ export async function saveGameFlipbookToLibrary(
         include: { author: { select: { id: true, username: true } } },
       },
       round: {
-        include: {
+        select: {
+          id: true,
+          chainWave: true,
           lobby: {
-            include: { players: { select: { id: true } } },
+            select: {
+              state: true,
+              players: { select: { id: true } },
+            },
           },
         },
       },
@@ -37,7 +44,15 @@ export async function saveGameFlipbookToLibrary(
     throw new Error('FLIPBOOK_NOT_FOUND');
   }
 
-  if (flipbook.round.lobby.state !== 'FINISHED') {
+  const lobbyState = flipbook.round.lobby.state;
+  const playerCount = flipbook.round.lobby.players.length;
+  const chainWave = flipbook.round.chainWave ?? 0;
+  const currentPhase = deriveExpectedPhaseFromChainWave(chainWave, playerCount);
+  const lobbyAllowsSave =
+    lobbyState === 'FINISHED' ||
+    (lobbyState === 'IN_PROGRESS' && currentPhase === 'VOTING');
+
+  if (!lobbyAllowsSave) {
     throw new Error('LOBBY_NOT_FINISHED');
   }
 
@@ -48,6 +63,11 @@ export async function saveGameFlipbookToLibrary(
 
   try {
     return await prisma.$transaction(async (tx) => {
+      const existingCount = await tx.savedFlipbook.count({ where: { ownerId } });
+      if (existingCount >= MAX_SAVED_FLIPBOOKS_PER_USER) {
+        throw new Error('LIBRARY_FULL');
+      }
+
       const saved = await tx.savedFlipbook.create({
         data: {
           ownerId,
@@ -101,7 +121,11 @@ export async function saveGameFlipbookToLibrary(
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
       throw new Error('FLIPBOOK_ALREADY_SAVED');
     }
-    logError('saveGameFlipbookToLibrary failed', { ownerId, sourceFlipbookId, error: (e as Error).message });
+    const msg = e instanceof Error ? e.message : '';
+    if (msg === 'LIBRARY_FULL') {
+      throw e;
+    }
+    logError('saveGameFlipbookToLibrary failed', { ownerId, sourceFlipbookId, error: msg });
     throw e;
   }
 }

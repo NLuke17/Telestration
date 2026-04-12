@@ -10,6 +10,7 @@ import {
   tryAdvanceInitialPromptsIfReady,
 } from '../../services/gameService';
 import { logInfo, logError } from '../../utils/logger';
+import { initRecapStateFromLobby, broadcastRecapSync } from '../state/recapTracker';
 
 /**
  * Handle drawing submission
@@ -240,11 +241,19 @@ export async function broadcastPhaseChange(
     });
   }
 
+  if (phase === 'VOTING') {
+    await initRecapStateFromLobby(lobbyId);
+  }
+
   broadcast(connections, {
     type: 'game:phase_changed',
     phase,
     endsAt,
   });
+
+  if (phase === 'VOTING') {
+    broadcastRecapSync(lobbyId);
+  }
 
   logInfo('Broadcasted phase change', { lobbyId, phase, endsAt, connectionCount: connections.length });
 }

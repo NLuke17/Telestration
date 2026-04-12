@@ -5,6 +5,7 @@ import { registerLobbyHandlers, broadcastLobbySnapshot, broadcastPresence } from
 import { broadcastGameStarted, broadcastPhaseChange } from './handlers/gameWs';
 import { broadcast } from './core/wsUtils';
 import { logInfo } from '../utils/logger';
+import { clearRecapState } from './state/recapTracker';
 
 export interface WSGatewayHandle {
   notifyLobbyUpdated(lobbyId: string): Promise<void>;
@@ -49,6 +50,7 @@ export function setupWebSocket(server: Server): WSGatewayHandle {
 
     async notifyLobbyDeleted(lobbyId: string): Promise<void> {
       ctx.prompts.clearPrompts(lobbyId);
+      clearRecapState(lobbyId);
 
       // Get all connections before removing them
       const connections = ctx.registry.getLobbyConnections(lobbyId);
