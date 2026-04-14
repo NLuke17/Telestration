@@ -4,6 +4,7 @@ import { send, broadcast } from '../core/wsUtils';
 import {
   submitDrawing,
   submitGuess,
+  revokePhaseSubmission,
   getCurrentRound,
   checkPhaseCompletion,
   advanceRoundIfChainPhaseComplete,
@@ -11,6 +12,55 @@ import {
 } from '../../services/gameService';
 import { logInfo, logError } from '../../utils/logger';
 import { initRecapStateFromLobby, broadcastRecapSync } from '../state/recapTracker';
+
+/**
+ * Broadcast guess_submitted + advance phase when applicable (shared by WS and HTTP submit).
+ */
+export async function runGuessSubmissionSideEffects(
+  ctx: WSContext,
+  lobbyId: string,
+  flipbookId: string,
+  userId: string,
+  guess: unknown
+): Promise<void> {
+  const connections = ctx.registry.getLobbyConnections(lobbyId);
+  broadcast(connections, {
+    type: 'game:guess_submitted',
+    flipbookId,
+    userId,
+  });
+
+  const isInitialPrompt = (guess as { isInitialPrompt?: boolean }).isInitialPrompt === true;
+
+  if (isInitialPrompt) {
+    const { advanced, endsAt } = await tryAdvanceInitialPromptsIfReady(lobbyId);
+    if (advanced && endsAt != null) {
+      logInfo('All initial prompts submitted, advancing to DRAWING phase', {
+        lobbyId,
+      });
+      await broadcastPhaseChange(ctx, lobbyId, 'DRAWING', { endsAt });
+    }
+  } else {
+    const round = await getCurrentRound(lobbyId);
+    const isPhaseComplete = await checkPhaseCompletion(round.id, 'GUESSING');
+
+    if (isPhaseComplete) {
+      const result = await advanceRoundIfChainPhaseComplete(lobbyId, 'GUESSING');
+      if (result.advanced) {
+        await broadcastPhaseChange(ctx, result.lobbyId, result.newPhase, { endsAt: result.endsAt });
+      }
+    }
+
+    logInfo('Guess submitted', {
+      lobbyId,
+      flipbookId,
+      userId,
+      guessId: (guess as { id?: string }).id,
+      isPhaseComplete,
+    });
+  }
+}
+
 
 /**
  * Handle drawing submission
@@ -92,45 +142,7 @@ export async function handleGuessSubmission(
 
   try {
     const guess = await submitGuess(msg.flipbookId, userId, msg.text);
-
-    // Notify the lobby that a guess was submitted
-    const connections = ctx.registry.getLobbyConnections(lobbyId);
-    broadcast(connections, {
-      type: 'game:guess_submitted',
-      flipbookId: msg.flipbookId,
-      userId,
-    });
-
-    // Check if this was an initial prompt submission
-    const isInitialPrompt = (guess as any).isInitialPrompt === true;
-
-    if (isInitialPrompt) {
-      const { advanced, endsAt } = await tryAdvanceInitialPromptsIfReady(lobbyId);
-      if (advanced && endsAt != null) {
-        logInfo('All initial prompts submitted, advancing to DRAWING phase', {
-          lobbyId,
-        });
-        await broadcastPhaseChange(ctx, lobbyId, 'DRAWING', { endsAt });
-      }
-    } else {
-      const round = await getCurrentRound(lobbyId);
-      const isPhaseComplete = await checkPhaseCompletion(round.id, 'GUESSING');
-
-      if (isPhaseComplete) {
-        const result = await advanceRoundIfChainPhaseComplete(lobbyId, 'GUESSING');
-        if (result.advanced) {
-          await broadcastPhaseChange(ctx, result.lobbyId, result.newPhase, { endsAt: result.endsAt });
-        }
-      }
-
-      logInfo('Guess submitted', {
-        lobbyId,
-        flipbookId: msg.flipbookId,
-        userId,
-        guessId: (guess as any).id,
-        isPhaseComplete,
-      });
-    }
+    await runGuessSubmissionSideEffects(ctx, lobbyId, msg.flipbookId, userId, guess);
   } catch (error: any) {
     logError('Failed to submit guess', {
       lobbyId,
@@ -148,6 +160,45 @@ export async function handleGuessSubmission(
       type: 'error',
       error: errCode,
       message: error.message || 'Failed to submit guess',
+    });
+  }
+}
+
+/**
+ * Let a player pull back their submission so they can edit (and so phase completion excludes them until they resubmit).
+ */
+export async function handleRevokeSubmission(
+  ctx: WSContext,
+  conn: ClientConn,
+  msg: { type: 'game:revoke_submission'; flipbookId: string }
+): Promise<void> {
+  if (!conn.lobbyId || !conn.userId) {
+    send(conn, { type: 'error', error: 'NOT_AUTHENTICATED', message: 'Not authenticated' });
+    return;
+  }
+
+  const lobbyId = conn.lobbyId;
+  const userId = conn.userId;
+
+  try {
+    await revokePhaseSubmission(msg.flipbookId, userId);
+    const connections = ctx.registry.getLobbyConnections(lobbyId);
+    broadcast(connections, {
+      type: 'game:submission_revoked',
+      flipbookId: msg.flipbookId,
+      userId,
+    });
+  } catch (error: any) {
+    logError('Failed to revoke submission', {
+      lobbyId,
+      flipbookId: msg.flipbookId,
+      userId,
+      error: error.message,
+    });
+    send(conn, {
+      type: 'error',
+      error: 'REVOKE_SUBMISSION_FAILED',
+      message: error.message || 'Failed to revoke submission',
     });
   }
 }

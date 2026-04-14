@@ -58,6 +58,11 @@ router.get('/:roomCode/state', validate(getGameStateSchema), async (req, res) =>
     const roomCode = typeof req.params.roomCode === 'string' ? req.params.roomCode : req.params.roomCode[0];
     const { userId } = req.query;
 
+    const wsHandlePre = getWSHandle(req);
+    if (wsHandlePre) {
+      await wsHandlePre.processPhaseDeadlines();
+    }
+
     const repair = await tryAdvanceInitialPromptsIfReadyByRoomCode(roomCode);
     if (repair.advanced) {
       logInfo('GET /lobby/:roomCode/state repaired initial prompts → DRAWING', {

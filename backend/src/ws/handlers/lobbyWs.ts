@@ -6,7 +6,7 @@ import { parseEnvelope, routeMessage, MessageHandler } from '../core/wsRouter';
 import { WSClientMessage } from '../../types/ws';
 import { logInfo, logError, logWarn } from '../../utils/logger';
 import { normalizeRoomCode } from '../../utils/roomCode';
-import { handleDrawingSubmission, handleGuessSubmission } from './gameWs';
+import { handleDrawingSubmission, handleGuessSubmission, handleRevokeSubmission } from './gameWs';
 import { deriveExpectedPhaseFromChainWave } from '../../services/gameService';
 import {
   buildRecapSyncMessage,
@@ -64,6 +64,7 @@ function createHandlerMap(ctx: WSContext, conn: ClientConn): Map<string, Message
   handlers.set('lobby:submit_prompt', (msg) => handlePromptSubmission(ctx, conn, msg as any));
   handlers.set('game:submit_drawing', (msg) => handleDrawingSubmission(ctx, conn, msg as any));
   handlers.set('game:submit_guess', (msg) => handleGuessSubmission(ctx, conn, msg as any));
+  handlers.set('game:revoke_submission', (msg) => handleRevokeSubmission(ctx, conn, msg as any));
   handlers.set('recap:reveal_next', () => handleRecapRevealNext(ctx, conn));
 
   return handlers;

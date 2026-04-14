@@ -10,7 +10,13 @@ import {
   saveFlipbookToLibrarySchema,
   getSavedFlipbookPresentationSchema,
 } from '../validation/game.validation';
-import { submitDrawing, submitGuess, getCurrentRound, getAssignedFlipbook } from '../services/gameService';
+import {
+  submitDrawing,
+  submitGuess,
+  getCurrentRound,
+  getAssignedFlipbook,
+  getLobbyIdForFlipbook,
+} from '../services/gameService';
 import { getGameFlipbookPresentation, getSavedFlipbookPresentation } from '../services/flipbookPresentationService';
 import { listSavedFlipbooksForUser, saveGameFlipbookToLibrary } from '../services/savedFlipbookService';
 import { MAX_SAVED_FLIPBOOKS_PER_USER } from '../config/constants';
@@ -159,7 +165,13 @@ router.post('/flipbooks/:flipbookId/guesses', validate(submitGuessSchema), async
     const { userId, text } = req.body;
 
     const guess = await submitGuess(flipbookId, userId, text);
-    
+
+    const lobbyId = await getLobbyIdForFlipbook(flipbookId);
+    const wsHandle = getWSHandle(req);
+    if (lobbyId && wsHandle) {
+      await wsHandle.notifyGuessSubmittedEffects(lobbyId, flipbookId, userId, guess);
+    }
+
     return res.status(201).json(guess);
   } catch (e: any) {
     if (e.message === 'FLIPBOOK_NOT_FOUND') return res.status(404).json({ error: 'Flipbook not found' });

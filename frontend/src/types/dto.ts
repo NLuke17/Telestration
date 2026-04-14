@@ -61,6 +61,10 @@ export interface LobbyRoomStateResponse {
   hasSubmitted?: boolean;
   assignedFlipbookId?: string | null;
   assignedPrompt?: string | null;
+  /** Target flipbook for the current chain step (even after you have submitted). */
+  workFlipbookId?: string | null;
+  /** Caption / last guess line for the drawing step (when applicable). */
+  workFlipbookDrawFromText?: string | null;
   counts?: {
     submittedDrawings: number;
     expectedDrawings: number;

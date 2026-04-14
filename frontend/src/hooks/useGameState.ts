@@ -302,19 +302,26 @@ export function usePhaseTimer(phaseEndsAt: number | null) {
       return;
     }
 
-    const updateTimer = () => {
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+    const tick = () => {
       const now = Date.now();
       const remaining = Math.max(0, phaseEndsAt - now);
       setTimeRemaining(remaining);
+      if (remaining <= 0) {
+        return;
+      }
+      const delay = remaining <= 3000 ? 200 : 1000;
+      timeoutId = window.setTimeout(tick, delay);
     };
 
-    // Update immediately
-    updateTimer();
+    tick();
 
-    // Update every second
-    const interval = setInterval(updateTimer, 1000);
-
-    return () => clearInterval(interval);
+    return () => {
+      if (timeoutId !== undefined) {
+        clearTimeout(timeoutId);
+      }
+    };
   }, [phaseEndsAt]);
 
   const minutes = Math.floor(timeRemaining / 60000);

@@ -12,7 +12,7 @@ import {
   type SavedFlipbookSummary,
 } from '../../../services/api/gameApi';
 import { HttpError } from '../../../services/api/httpClient';
-import { AnimatedSketchDisplay, parseCanvasPathsJson } from '../../../components/game/AnimatedSketchDisplay';
+import { AnimatedSketchDisplay } from '../../../components/game/AnimatedSketchDisplay';
 import { useLobby, useWebSocket } from '../../../hooks/useGameState';
 import { getWSClient } from '../../../services/ws/wsClient';
 
@@ -320,27 +320,20 @@ const RecapPage: React.FC = () => {
                                 </div>
                             );
                         }
-                        const sketch = parseCanvasPathsJson(entry.drawingData);
                         return (
                             <div key={`${entry.id}-${flipbookIndex}-${entryCount}`} className="rounded-lg border border-dark-grey p-4 bg-green-50">
                                 <div className="text-xs uppercase text-gray-500">
                                     Drawing — {entry.authorUsername}
                                 </div>
                                 <div className="mt-3 flex justify-center">
-                                    {sketch ? (
-                                        <AnimatedSketchDisplay
-                                            drawingData={entry.drawingData}
-                                            width="560px"
-                                            height="320px"
-                                            strokeDelayMs={75}
-                                            className="max-w-full"
-                                            replayNonce={entryCount + flipbookIndex + i}
-                                        />
-                                    ) : (
-                                        <p className="text-body text-gray-600">
-                                            No stroke data for this drawing (older or invalid save).
-                                        </p>
-                                    )}
+                                    <AnimatedSketchDisplay
+                                        drawingData={entry.drawingData}
+                                        width="560px"
+                                        height="320px"
+                                        strokeDelayMs={75}
+                                        className="max-w-full"
+                                        replayNonce={entryCount + flipbookIndex + i}
+                                    />
                                 </div>
                             </div>
                         );
