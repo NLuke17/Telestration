@@ -2,7 +2,9 @@
  * HTTP client for making API requests
  */
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+import { resolveApiBaseUrl, withApiPrefix } from '../../config/runtimeUrls';
+
+const API_BASE_URL = resolveApiBaseUrl();
 
 export interface ApiError {
   error: string;
@@ -30,7 +32,7 @@ async function request<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const url = `${API_BASE_URL}${endpoint}`;
+  const url = `${API_BASE_URL}${withApiPrefix(endpoint)}`;
   
   const config: RequestInit = {
     ...options,

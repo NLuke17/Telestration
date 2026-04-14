@@ -99,7 +99,7 @@ export function useLobby(roomCode: string, userId?: string) {
 
       client.subscribe<{ type: 'lobby:deleted'; lobbyId: string }>(
         'lobby:deleted',
-        (msg) => {
+        () => {
           setError('Lobby has been deleted');
           setIsConnected(false);
         }
