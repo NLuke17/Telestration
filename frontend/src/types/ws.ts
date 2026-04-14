@@ -24,6 +24,7 @@ export type WSClientMessage =
   | { type: 'lobby:submit_prompt'; prompt: string }
   | { type: 'game:submit_drawing'; flipbookId: string; drawingData: string }
   | { type: 'game:submit_guess'; flipbookId: string; text: string }
+  | { type: 'game:revoke_submission'; flipbookId: string }
   | { type: 'recap:reveal_next' };
 
 /**
@@ -47,6 +48,7 @@ export type WSServerMessage =
   | { type: 'game:phase_complete'; phase: 'DRAWING' | 'GUESSING' }
   | { type: 'game:drawing_submitted'; flipbookId: string; userId: string }
   | { type: 'game:guess_submitted'; flipbookId: string; userId: string }
+  | { type: 'game:submission_revoked'; flipbookId: string; userId: string }
   | { type: 'game:round_complete'; roundId: string }
   | {
       type: 'recap:sync';

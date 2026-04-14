@@ -2,6 +2,64 @@ import prisma from '../prisma/client';
 import { getAssignedFlipbook, deriveExpectedPhaseFromChainWave } from './gameService';
 import { logDebug, logError } from '../utils/logger';
 
+function lastGuessLine(
+  guesses: { order: number; text: string }[]
+): string | null {
+  if (!guesses.length) return null;
+  const sorted = [...guesses].sort((a, b) => a.order - b.order);
+  const t = sorted[sorted.length - 1]?.text?.trim();
+  return t && t.length > 0 ? t : null;
+}
+
+type RoundForState = {
+  chainWave: number | null;
+  flipbooks: Array<{
+    id: string;
+    authorId: string;
+    prompt: string | null;
+    drawings: { authorId: string }[];
+    guesses: { order: number; text: string; authorId: string }[];
+  }>;
+};
+
+function computeWorkFlipbookContext(
+  round: RoundForState,
+  playerIds: string[],
+  userId: string,
+  phase: 'DRAWING' | 'GUESSING'
+): { workFlipbookId: string | null; workFlipbookDrawFromText: string | null } {
+  const N = playerIds.length;
+  const w = round.chainWave ?? 0;
+
+  if (phase === 'DRAWING' && w === 0) {
+    return { workFlipbookId: null, workFlipbookDrawFromText: null };
+  }
+  if (phase === 'GUESSING' && w === 0) {
+    const mine = round.flipbooks.find((fb) => fb.authorId === userId);
+    return { workFlipbookId: mine?.id ?? null, workFlipbookDrawFromText: null };
+  }
+  if (w < 1 || w >= N) {
+    return { workFlipbookId: null, workFlipbookDrawFromText: null };
+  }
+  const idx = playerIds.indexOf(userId);
+  if (idx < 0) {
+    return { workFlipbookId: null, workFlipbookDrawFromText: null };
+  }
+  const tid = playerIds[(idx + w) % N];
+  const tb = round.flipbooks.find((fb) => fb.authorId === tid);
+  if (!tb) {
+    return { workFlipbookId: null, workFlipbookDrawFromText: null };
+  }
+  const guessLine = lastGuessLine(tb.guesses);
+  const drawFrom =
+    guessLine && guessLine.length > 0
+      ? guessLine
+      : tb.prompt && tb.prompt.trim().length > 0
+        ? tb.prompt.trim()
+        : null;
+  return { workFlipbookId: tb.id, workFlipbookDrawFromText: drawFrom };
+}
+
 /**
  * Complete game state for a specific user in a lobby
  * Returns everything the client needs in one call
@@ -36,6 +94,7 @@ export async function getGameState(roomCode: string, userId: string) {
                     id: true, 
                     authorId: true,
                     order: true,
+                    text: true,
                     createdAt: true 
                   },
                 },
@@ -119,8 +178,37 @@ export async function getGameState(roomCode: string, userId: string) {
     let assignedFlipbook: any = null;
     let myRole: string | null = null;
     let hasSubmitted = false;
+    let workFlipbookId: string | null = null;
+    let workFlipbookDrawFromText: string | null = null;
 
     if (currentPhase === 'DRAWING' || currentPhase === 'GUESSING') {
+      const playerIds = lobby.players.map((p) => p.id);
+      const workCtx = computeWorkFlipbookContext(
+        currentRound as RoundForState,
+        playerIds,
+        userId,
+        currentPhase
+      );
+      workFlipbookId = workCtx.workFlipbookId;
+      workFlipbookDrawFromText = workCtx.workFlipbookDrawFromText;
+
+      const fallbackHasSubmitted = (): boolean => {
+        const idx = playerIds.indexOf(userId);
+        if (idx < 0) return true;
+        if (!workFlipbookId) {
+          return currentPhase === 'GUESSING' && chainWave === 0 ? false : true;
+        }
+        const tb = currentRound.flipbooks.find((fb) => fb.id === workFlipbookId);
+        if (!tb) return true;
+        if (currentPhase === 'DRAWING') {
+          return tb.drawings.some((d: { authorId: string }) => d.authorId === userId);
+        }
+        if (chainWave === 0) {
+          return !!(tb.prompt && tb.prompt.trim().length > 0);
+        }
+        return tb.guesses.some((g: { authorId: string }) => g.authorId === userId);
+      };
+
       try {
         assignedFlipbook = await getAssignedFlipbook(
           currentRound.id,
@@ -138,25 +226,11 @@ export async function getGameState(roomCode: string, userId: string) {
           }
         } else {
           myRole = currentPhase.toLowerCase();
-          const ids = lobby.players.map((p) => p.id);
-          const idx = ids.indexOf(userId);
-          if (idx < 0) {
-            hasSubmitted = true;
-          } else if (currentPhase === 'DRAWING' && chainWave >= 1 && chainWave < playerCount) {
-            const tid = ids[(idx + chainWave) % playerCount];
-            const tb = currentRound.flipbooks.find((fb) => fb.authorId === tid);
-            hasSubmitted = tb ? tb.drawings.some((d: { authorId: string }) => d.authorId === userId) : true;
-          } else if (currentPhase === 'GUESSING' && chainWave >= 1 && chainWave < playerCount) {
-            const tid = ids[(idx + chainWave) % playerCount];
-            const tb = currentRound.flipbooks.find((fb) => fb.authorId === tid);
-            hasSubmitted = tb ? tb.guesses.some((g: { authorId: string }) => g.authorId === userId) : true;
-          } else {
-            hasSubmitted = true;
-          }
+          hasSubmitted = fallbackHasSubmitted();
         }
       } catch (error) {
-        myRole = null;
-        hasSubmitted = false;
+        myRole = currentPhase.toLowerCase();
+        hasSubmitted = fallbackHasSubmitted();
       }
     } else if (currentPhase === 'VOTING') {
       myRole = 'recap';
@@ -190,8 +264,13 @@ export async function getGameState(roomCode: string, userId: string) {
       phase: currentPhase,
       myRole,
       hasSubmitted,
-      assignedFlipbookId: assignedFlipbook?.id ?? null,
+      assignedFlipbookId: assignedFlipbook?.id ?? workFlipbookId,
+      workFlipbookId,
     });
+
+    const workFb = workFlipbookId
+      ? currentRound.flipbooks.find((fb) => fb.id === workFlipbookId)
+      : null;
 
     return {
       ...baseState,
@@ -204,8 +283,10 @@ export async function getGameState(roomCode: string, userId: string) {
       myFlipbookId,
       myRole,
       hasSubmitted,
-      assignedFlipbookId: assignedFlipbook?.id || null,
-      assignedPrompt: assignedFlipbook?.prompt || null,
+      assignedFlipbookId: assignedFlipbook?.id || workFlipbookId || null,
+      assignedPrompt: assignedFlipbook?.prompt || workFb?.prompt || null,
+      workFlipbookId,
+      workFlipbookDrawFromText,
       counts: {
         submittedDrawings: totalDrawings,
         expectedDrawings,

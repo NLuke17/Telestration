@@ -112,6 +112,14 @@ export async function startGame(lobbyId: string, customPrompts?: string[]) {
   }
 }
 
+export async function getLobbyIdForFlipbook(flipbookId: string): Promise<string | null> {
+  const row = await prisma.flipbook.findUnique({
+    where: { id: flipbookId },
+    select: { round: { select: { lobbyId: true } } },
+  });
+  return row?.round?.lobbyId ?? null;
+}
+
 /**
  * Get the current round for a lobby
  */
@@ -184,6 +192,36 @@ export async function submitDrawing(
       throw new Error('CANNOT_DRAW_OWN_FLIPBOOK');
     }
 
+    const existing = await prisma.drawing.findFirst({
+      where: { flipbookId, authorId: userId },
+      orderBy: { order: 'desc' },
+    });
+
+    if (existing) {
+      const persisted = await persistGameDrawingPayload(flipbookId, existing.id, drawingData);
+      const drawing = await prisma.drawing.update({
+        where: { id: existing.id },
+        data: {
+          drawingData: persisted.drawingData,
+          storageKind: persisted.storageKind,
+          storageKey: persisted.storageKey,
+          byteLength: persisted.byteLength,
+        },
+        include: {
+          author: { select: { id: true, username: true, profilePicture: true } },
+        },
+      });
+
+      logInfo('Drawing updated (resubmit)', {
+        flipbookId,
+        userId,
+        drawingId: drawing.id,
+        order: existing.order,
+      });
+
+      return drawing;
+    }
+
     // Calculate the next order number
     const lastDrawing = flipbook.drawings[0];
     const lastGuess = flipbook.guesses[0];
@@ -239,6 +277,7 @@ export async function submitGuess(
       include: {
         drawings: { orderBy: { order: 'desc' }, take: 1 },
         guesses: { orderBy: { order: 'desc' }, take: 1 },
+        round: { select: { chainWave: true } },
       },
     });
 
@@ -250,17 +289,26 @@ export async function submitGuess(
       throw new Error('FLIPBOOK_NOT_ACCEPTING_GUESSES');
     }
 
-    if (
-      flipbook.authorId === userId &&
-      flipbook.prompt &&
-      flipbook.prompt.trim().length > 0
-    ) {
-      throw new Error('INITIAL_PROMPT_ALREADY_SUBMITTED');
+    const isInitialPrompt = !flipbook.prompt || flipbook.prompt.trim().length === 0;
+    const chainWave = flipbook.round?.chainWave ?? 0;
+
+    if (flipbook.authorId === userId && !isInitialPrompt) {
+      if (chainWave !== 0) {
+        throw new Error('INITIAL_PROMPT_ALREADY_SUBMITTED');
+      }
+      await prisma.flipbook.update({
+        where: { id: flipbookId },
+        data: { prompt: text.trim() },
+      });
+      logInfo('Initial prompt updated (resubmit)', {
+        flipbookId,
+        userId,
+        prompt: text.trim(),
+      });
+      return { id: flipbookId, text: text.trim(), isInitialPrompt: true };
     }
 
     // Special case: If flipbook has no prompt, this is the initial prompt submission (player writes on their own)
-    const isInitialPrompt = !flipbook.prompt || flipbook.prompt.trim().length === 0;
-    
     if (isInitialPrompt) {
       // Allow writing initial prompt on own flipbook
       if (flipbook.authorId !== userId) {
@@ -285,6 +333,28 @@ export async function submitGuess(
     // Normal guessing: Prevent guessing on your own flipbook
     if (flipbook.authorId === userId) {
       throw new Error('CANNOT_GUESS_OWN_FLIPBOOK');
+    }
+
+    const existingGuess = await prisma.guess.findFirst({
+      where: { flipbookId, authorId: userId },
+      orderBy: { order: 'desc' },
+    });
+
+    if (existingGuess) {
+      const guess = await prisma.guess.update({
+        where: { id: existingGuess.id },
+        data: { text },
+        include: {
+          author: { select: { id: true, username: true, profilePicture: true } },
+        },
+      });
+      logInfo('Guess updated (resubmit)', {
+        flipbookId,
+        userId,
+        guessId: guess.id,
+        order: existingGuess.order,
+      });
+      return guess;
     }
 
     // Calculate the next order number
@@ -337,6 +407,59 @@ export function deriveExpectedPhaseFromChainWave(
   if (chainWave <= 0) return 'GUESSING';
   if (chainWave >= N) return 'VOTING';
   return chainWave % 2 === 1 ? 'DRAWING' : 'GUESSING';
+}
+
+/**
+ * Remove this user's submission on the given flipbook so they can edit again.
+ * Initial prompts (wave 0, own book) are not cleared here — the client edits locally and resubmits an update.
+ */
+export async function revokePhaseSubmission(flipbookId: string, userId: string): Promise<void> {
+  const flipbook = await prisma.flipbook.findUnique({
+    where: { id: flipbookId },
+    include: {
+      round: {
+        include: {
+          lobby: {
+            include: {
+              players: { select: { id: true }, orderBy: { createdAt: 'asc' } },
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!flipbook) {
+    throw new Error('FLIPBOOK_NOT_FOUND');
+  }
+
+  const N = flipbook.round.lobby.players.length;
+  const w = flipbook.round.chainWave ?? 0;
+  const phase = deriveExpectedPhaseFromChainWave(w, N);
+
+  if (phase === 'VOTING') {
+    throw new Error('REVOKE_NOT_ALLOWED');
+  }
+
+  if (phase === 'DRAWING') {
+    if (flipbook.state !== 'DRAWING') {
+      throw new Error('REVOKE_NOT_ALLOWED');
+    }
+    await prisma.drawing.deleteMany({ where: { flipbookId, authorId: userId } });
+    logInfo('Drawing submission revoked', { flipbookId, userId });
+    return;
+  }
+
+  if (phase === 'GUESSING') {
+    if (flipbook.state !== 'GUESSING') {
+      throw new Error('REVOKE_NOT_ALLOWED');
+    }
+    if (w === 0 && flipbook.authorId === userId) {
+      return;
+    }
+    await prisma.guess.deleteMany({ where: { flipbookId, authorId: userId } });
+    logInfo('Guess submission revoked', { flipbookId, userId });
+  }
 }
 
 function lastGuessText(flipbook: { guesses: { order: number; text: string }[] }): string | null {
@@ -794,30 +917,3 @@ export async function tryAdvanceInitialPromptsIfReadyByRoomCode(roomCodeRaw: str
   return { ...result, lobbyId: lobby.id };
 }
 
-/**
- * Generate initial prompt for a flipbook
- * Used as fallback when custom prompts are not provided
- * In production, you might want to use a prompt database or API
- */
-function generateInitialPrompt(username: string, index: number): string {
-  const prompts = [
-    'A cat wearing a top hat',
-    'A robot dancing in the rain',
-    'A dragon eating ice cream',
-    'A wizard casting a spell',
-    'A superhero flying over a city',
-    'An astronaut on the moon',
-    'A pirate searching for treasure',
-    'A ninja in a library',
-    'A detective solving a mystery',
-    'A chef cooking a meal',
-    'A knight fighting a dragon',
-    'A surfer riding a wave',
-    'A scientist in a lab',
-    'A musician playing guitar',
-    'A firefighter saving a cat',
-    'A teacher in a classroom',
-  ];
-
-  return prompts[index % prompts.length];
-}

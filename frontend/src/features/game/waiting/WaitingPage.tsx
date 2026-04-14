@@ -7,13 +7,13 @@ import { useAuth } from '../../../contexts/AuthContext';
 
 const PROMPT_WAIT_FLAG = 'telestration.expectDrawAfterPromptWait';
 
-/** Only send players who still owe a drawing for this wave; others stay here until the phase advances. */
+/** Only send players who still owe work for this wave (`hasSubmitted` must be explicitly false). */
 function shouldRedirectToDraw(s: { phase: string; hasSubmitted?: boolean }): boolean {
-    return s.phase === 'DRAWING' && s.hasSubmitted !== true;
+    return s.phase === 'DRAWING' && s.hasSubmitted === false;
 }
 
 function shouldRedirectToGuess(s: { phase: string; hasSubmitted?: boolean }): boolean {
-    return s.phase === 'GUESSING' && s.hasSubmitted !== true;
+    return s.phase === 'GUESSING' && s.hasSubmitted === false;
 }
 
 const WaitingPage: React.FC = () => {

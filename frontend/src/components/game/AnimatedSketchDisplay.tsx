@@ -90,8 +90,11 @@ export const AnimatedSketchDisplay: React.FC<AnimatedSketchDisplayProps> = ({
     useLayoutEffect(() => {
         const canvas = ref.current;
         clearTimers();
-        if (!canvas || !paths?.length) {
-            canvas?.clearCanvas();
+        if (!canvas) {
+            return;
+        }
+        if (!paths?.length) {
+            canvas.clearCanvas();
             return;
         }
 
@@ -115,10 +118,6 @@ export const AnimatedSketchDisplay: React.FC<AnimatedSketchDisplayProps> = ({
 
         return () => clearTimers();
     }, [paths, strokeDelayMs, replayNonce, clearTimers]);
-
-    if (!paths?.length) {
-        return null;
-    }
 
     return (
         <div
