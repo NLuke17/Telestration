@@ -1,0 +1,35 @@
+# Copy to terraform.tfvars (do not commit secrets here; tfvars is gitignored if you add it).
+aws_region = "us-east-1"
+
+# Optional: cost alerts (confirm email subscription in AWS Budgets).
+budget_amount               = "90"
+budget_notification_emails  = ["you@example.com"]
+
+# Optional: GitHub Actions OIDC (no long-lived AWS keys in GitHub).
+# enable_github_oidc = true
+# github_org         = "YourGitHubOrgOrUser"
+# github_repo        = "Telestration"
+
+# Optional: smaller Fargate task to save a few dollars.
+# fargate_cpu    = 256
+# fargate_memory = 512
+
+# Fargate CPU arch: ARM64 (default) matches `docker build` on Apple Silicon.
+# Use X86_64 if your ECR image is linux/amd64 only (e.g. GitHub Actions without buildx arm).
+# fargate_cpu_architecture = "X86_64"
+
+# After terraform apply: upload the UI (bucket starts empty — `aws s3 ls` shows nothing until you sync).
+# From repo root:
+#   cd frontend && npm ci && npm run build
+#   aws s3 sync dist/ "s3://$(terraform -chdir=infra output -raw frontend_s3_bucket)/" --delete
+# From infra/ (no -chdir):
+#   aws s3 sync ../frontend/dist/ "s3://$(terraform output -raw frontend_s3_bucket)/" --delete
+# Then: aws cloudfront create-invalidation --distribution-id "$(terraform -chdir=infra output -raw cloudfront_distribution_id)" --paths "/*"
+
+# Backend ECS failing / high "failure count"? (Do not paste <placeholders> in zsh — use real names or outputs.)
+# Logs (from repo root, set AWS_REGION if needed):
+#   aws logs tail "/ecs/telestration-backend" --follow --region us-east-1
+# Service + recent events:
+#   aws ecs describe-services --cluster telestration-cluster --services telestration-backend --region us-east-1
+# After changing DATABASE_URL in Secrets Manager, redeploy tasks:
+#   aws ecs update-service --cluster telestration-cluster --service telestration-backend --force-new-deployment --region us-east-1

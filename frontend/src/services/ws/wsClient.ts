@@ -3,8 +3,7 @@
  */
 
 import type { WSClientMessage, WSServerMessage, WSMessageHandler } from '../../types/ws';
-
-const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:8000/ws';
+import { resolveWebSocketUrl } from '../../config/runtimeUrls';
 const RECONNECT_DELAY = 3000; // 3 seconds
 const HEARTBEAT_INTERVAL = 30000; // 30 seconds
 
@@ -29,10 +28,11 @@ export class WSClient {
     }
 
     this.setStatus('connecting');
-    console.log('[WSClient] Connecting to', WS_URL);
+    const wsUrl = resolveWebSocketUrl();
+    console.log('[WSClient] Connecting to', wsUrl);
 
     try {
-      this.ws = new WebSocket(WS_URL);
+      this.ws = new WebSocket(wsUrl);
 
       this.ws.onopen = () => {
         console.log('[WSClient] Connected');

@@ -73,6 +73,7 @@ web_modules/
 .env
 .env.*
 !.env.example
+!**/.env.example
 
 # parcel-bundler cache (https://parceljs.org/)
 .cache
@@ -152,6 +153,16 @@ Thumbs.db
 **/dist/
 
 docker-compose.override.yml
+
+# Terraform — variable files may contain secrets / account-specific values
+*.tfvars
+!*.tfvars.example
+# State and downloaded providers (never commit; tfstate can contain DB passwords, etc.)
+**/.terraform/
+*.tfstate
+*.tfstate.*
+.terraform.tfstate.lock.info
+*.tfplan
 
 # Local drawing blob storage (dev); production should use object storage + same relative keys
 backend/data/drawings/

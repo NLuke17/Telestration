@@ -3,9 +3,10 @@
  * Use this when you want auth tokens automatically added to requests
  */
 
+import { resolveApiBaseUrl, withApiPrefix } from '../../config/runtimeUrls';
 import { HttpError } from './httpClient';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+const API_BASE_URL = resolveApiBaseUrl();
 
 /**
  * Get access token from localStorage
@@ -22,7 +23,7 @@ async function authenticatedRequest<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const url = `${API_BASE_URL}${endpoint}`;
+  const url = `${API_BASE_URL}${withApiPrefix(endpoint)}`;
   const accessToken = getAccessToken();
 
   if (!accessToken) {
