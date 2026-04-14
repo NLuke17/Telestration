@@ -13,6 +13,8 @@ const HOST = process.env.HOST || '0.0.0.0';
 const app = express();
 const server = http.createServer(app);
 
+app.set('trust proxy', 1);
+
 app.use(cors());
 app.use(express.json());
 
@@ -20,11 +22,11 @@ app.use(express.json());
 const wsHandle: WSGatewayHandle = setupWebSocket(server);
 app.set('wsHandle', wsHandle);
 
-// Register routes
-app.use('/auth', authRoutes);
-app.use('/health', healthRoutes);
-app.use('/lobby', lobbyRoutes);
-app.use('/game', gameRoutes);
+// REST API under /api so the same hostname can serve the SPA (e.g. /lobby/:code) and JSON (e.g. /api/lobby/:code).
+app.use('/api/auth', authRoutes);
+app.use('/api/health', healthRoutes);
+app.use('/api/lobby', lobbyRoutes);
+app.use('/api/game', gameRoutes);
 
 app.get('/', (_, res) => {
     res.json({ message: 'Telestration backend is running!' });

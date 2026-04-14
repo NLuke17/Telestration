@@ -1,6 +1,8 @@
 import express from 'express';
 import { createLobby, joinLobby, getLobbySnapshot, deleteLobby, startLobby, endLobby, leaveLobby } from "../services/lobbyService";
 import { getGameState } from "../services/gameStateService";
+import { tryAdvanceInitialPromptsIfReadyByRoomCode } from "../services/gameService";
+import { logInfo } from "../utils/logger";
 import { validate } from "../middleware/validate";
 import { createLobbySchema, joinLobbySchema, getLobbySchema, deleteLobbySchema, startLobbySchema, endLobbySchema, leaveLobbySchema, getGameStateSchema } from "../validation/lobby.validation";
 import { WSGatewayHandle } from "../ws/index";
@@ -55,8 +57,27 @@ router.get('/:roomCode/state', validate(getGameStateSchema), async (req, res) =>
   try {
     const roomCode = typeof req.params.roomCode === 'string' ? req.params.roomCode : req.params.roomCode[0];
     const { userId } = req.query;
-    
+
+    const wsHandlePre = getWSHandle(req);
+    if (wsHandlePre) {
+      await wsHandlePre.processPhaseDeadlines();
+    }
+
+    const repair = await tryAdvanceInitialPromptsIfReadyByRoomCode(roomCode);
+    if (repair.advanced) {
+      logInfo('GET /lobby/:roomCode/state repaired initial prompts → DRAWING', {
+        roomCode,
+        lobbyId: repair.lobbyId,
+        endsAt: repair.endsAt,
+      });
+    }
     const state = await getGameState(roomCode, userId as string);
+
+    const wsHandle = getWSHandle(req);
+    if (repair.advanced && repair.endsAt != null && repair.lobbyId && wsHandle) {
+      await wsHandle.notifyPhaseChange(repair.lobbyId, 'DRAWING', { endsAt: repair.endsAt });
+    }
+
     return res.json(state);
   } catch (e: any) {
     if (e.message === "LOBBY_NOT_FOUND") return res.status(404).json({ error: "Lobby not found" });
@@ -167,21 +188,24 @@ router.post('/:roomCode/leave', validate(leaveLobbySchema), async (req, res) => 
   }
 });
 
-// Delete a lobby
+// Delete a lobby (host only — pass ?userId= matching lobby host)
 router.delete('/:roomCode', validate(deleteLobbySchema), async (req, res) => {
   try {
     const roomCode = typeof req.params.roomCode === 'string' ? req.params.roomCode : req.params.roomCode[0];
-    const lobbyId = await deleteLobby(roomCode);
-    
-    // Notify WebSocket clients
+    const userId = req.query.userId as string;
+    const lobbyId = await deleteLobby(roomCode, userId);
+
     const wsHandle = getWSHandle(req);
     if (wsHandle) {
       await wsHandle.notifyLobbyDeleted(lobbyId);
     }
-    
+
     return res.json({ message: "Lobby deleted" });
   } catch (e: any) {
     if (e.message === "LOBBY_NOT_FOUND") return res.status(404).json({ error: "Lobby not found" });
+    if (e.message === "FORBIDDEN_NOT_HOST") {
+      return res.status(403).json({ error: "Only the host can delete this lobby" });
+    }
     return res.status(500).json({ error: "Failed to delete lobby" });
   }
 });

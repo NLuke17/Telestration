@@ -9,7 +9,11 @@ export const WS_RECONNECT_GRACE_MS = 10000; // 10 seconds
 export const DRAWING_PHASE_DURATION_MS = 90000; // 90 seconds
 export const GUESSING_PHASE_DURATION_MS = 45000; // 45 seconds
 export const VOTING_PHASE_DURATION_MS = 30000; // 30 seconds
+/** Auto-advance each flipbook during the end-of-game recap (client may also advance manually). */
+export const RECAP_FLIPBOOK_DURATION_MS = 14000;
 
 // Game configuration
 export const MIN_PLAYERS_TO_START = 2;
 export const MAX_ROUNDS = 5;
+/** Max flipbooks each user may copy into their library (JWT accounts). */
+export const MAX_SAVED_FLIPBOOKS_PER_USER = 10;

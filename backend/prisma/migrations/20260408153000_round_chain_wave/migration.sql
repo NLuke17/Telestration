@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "Round" ADD COLUMN "chainWave" INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE "Round" ADD COLUMN "phaseDeadline" TIMESTAMP(3);

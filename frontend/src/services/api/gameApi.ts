@@ -3,6 +3,7 @@
  */
 
 import { httpClient } from './httpClient';
+import { authenticatedClient } from './authenticatedClient';
 import type { RoundDTO, FlipbookDTO } from '../../types/dto';
 
 export interface CurrentRoundResponse extends RoundDTO {}
@@ -15,6 +16,9 @@ export interface AssignmentResponse {
       type: 'PROMPT' | 'DRAWING' | 'GUESS';
       content: string;
     };
+    /** Resolved vector JSON (`exportPaths`) for the latest drawing on this flipbook (guess phase). */
+    latestDrawingData?: string | null;
+    drawFromText?: string;
   };
 }
 
@@ -48,6 +52,42 @@ export async function getAssignedFlipbook(
   );
 }
 
+export type FlipbookPresentationResponse = {
+  flipbook: {
+    id: string;
+    prompt: string;
+    author: { id: string; username: string; profilePicture?: string | null };
+  };
+  timeline: Array<
+    | { kind: 'prompt'; text: string }
+    | {
+        kind: 'drawing';
+        id: string;
+        order: number;
+        authorId: string;
+        authorUsername: string;
+        drawingData: string;
+      }
+    | {
+        kind: 'guess';
+        id: string;
+        order: number;
+        authorId: string;
+        authorUsername: string;
+        text: string;
+      }
+  >;
+};
+
+export async function getFlipbookPresentation(
+  flipbookId: string,
+  userId: string
+): Promise<FlipbookPresentationResponse> {
+  return httpClient.get<FlipbookPresentationResponse>(
+    `/game/flipbooks/${flipbookId}/presentation?userId=${encodeURIComponent(userId)}`
+  );
+}
+
 /**
  * Submit a drawing (deprecated - prefer WebSocket)
  * Kept for backward compatibility
@@ -76,4 +116,38 @@ export async function submitGuess(
     userId,
     text,
   });
+}
+
+export type SavedFlipbookSummary = {
+  id: string;
+  title: string | null;
+  prompt: string;
+  sourceFlipbookId: string | null;
+  sourceRoundId: string | null;
+  createdAt: string;
+};
+
+export type ListSavedFlipbooksResponse = {
+  savedFlipbooks: SavedFlipbookSummary[];
+  maxSaved: number;
+};
+
+/**
+ * List flipbooks saved to the signed-in user's library (requires JWT).
+ */
+export async function listSavedFlipbooks(): Promise<ListSavedFlipbooksResponse> {
+  return authenticatedClient.get<ListSavedFlipbooksResponse>('/game/saved-flipbooks');
+}
+
+/**
+ * Copy a game flipbook into the signed-in user's library (requires JWT). Max count enforced server-side.
+ */
+export async function saveFlipbookToLibrary(
+  flipbookId: string,
+  body?: { title?: string }
+): Promise<{ savedFlipbookId: string }> {
+  return authenticatedClient.post<{ savedFlipbookId: string }>(
+    `/game/flipbooks/${flipbookId}/save-to-library`,
+    body ?? {}
+  );
 }

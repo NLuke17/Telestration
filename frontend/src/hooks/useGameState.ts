@@ -65,46 +65,47 @@ export function useLobby(roomCode: string, userId?: string) {
       return;
     }
 
+    const client = getWSClient();
+
     // Connect to lobby
-    ws.send('lobby:connect', { roomCode, userId });
+    client.send('lobby:connect', { roomCode, userId });
 
     // Subscribe to lobby events
     const unsubscribers = [
-      ws.subscribe<{ type: 'lobby:connected'; roomCode: string; lobbyId: string }>(
+      client.subscribe<{ type: 'lobby:connected'; roomCode: string; lobbyId: string }>(
         'lobby:connected',
         (msg) => {
-          console.log('Connected to lobby:', msg.lobbyId);
+          if (!msg.lobbyId || !msg.roomCode) {
+            return;
+          }
           setIsConnected(true);
           setError(null);
         }
       ),
 
-      ws.subscribe<{ type: 'lobby:snapshot'; snapshot: LobbySnapshot }>(
+      client.subscribe<{ type: 'lobby:snapshot'; snapshot: LobbySnapshot }>(
         'lobby:snapshot',
         (msg) => {
-          console.log('Lobby snapshot received:', msg.snapshot);
           setLobby(msg.snapshot);
         }
       ),
 
-      ws.subscribe<{ type: 'lobby:presence'; connectedUserIds: string[] }>(
+      client.subscribe<{ type: 'lobby:presence'; connectedUserIds: string[] }>(
         'lobby:presence',
         (msg) => {
-          console.log('Presence updated:', msg.connectedUserIds);
           setConnectedUserIds(msg.connectedUserIds);
         }
       ),
 
-      ws.subscribe<{ type: 'lobby:deleted'; lobbyId: string }>(
+      client.subscribe<{ type: 'lobby:deleted'; lobbyId: string }>(
         'lobby:deleted',
-        (msg) => {
-          console.log('Lobby deleted:', msg.lobbyId);
+        () => {
           setError('Lobby has been deleted');
           setIsConnected(false);
         }
       ),
 
-      ws.subscribe<{ type: 'error'; error: string; message?: string }>(
+      client.subscribe<{ type: 'error'; error: string; message?: string }>(
         'error',
         (msg) => {
           console.error('WebSocket error:', msg.error, msg.message);
@@ -116,9 +117,25 @@ export function useLobby(roomCode: string, userId?: string) {
     // Cleanup
     return () => {
       unsubscribers.forEach((unsub) => unsub());
-      ws.send('lobby:disconnect');
+      client.send('lobby:disconnect');
     };
-  }, [ws, roomCode, userId]);
+  }, [ws.isConnected, roomCode, userId]);
+
+  useEffect(() => {
+    if (!roomCode) {
+      return;
+    }
+    const client = getWSClient();
+    const notifyLeave = () => {
+      if (client.isConnected()) {
+        client.send('lobby:disconnect');
+      }
+    };
+    window.addEventListener('pagehide', notifyLeave);
+    return () => {
+      window.removeEventListener('pagehide', notifyLeave);
+    };
+  }, [roomCode]);
 
   const submitPrompt = useCallback((prompt: string) => {
     ws.send('lobby:submit_prompt', { prompt });
@@ -139,56 +156,109 @@ export function useLobby(roomCode: string, userId?: string) {
   };
 }
 
+export type GameStateSync = { roomCode: string; userId: string };
+
 /**
  * Hook for managing game state during gameplay
+ * @param sync Optional HTTP poll to hydrate `phase` / `phaseEndsAt` / `roundId` (e.g. after refresh or if WS missed `phase_changed`).
  */
-export function useGameState(lobbyId?: string) {
+export function useGameState(lobbyId?: string, sync?: GameStateSync) {
   const [roundId, setRoundId] = useState<string | null>(null);
   const [roundNumber, setRoundNumber] = useState<number>(0);
   const [phase, setPhase] = useState<'DRAWING' | 'GUESSING' | 'VOTING' | null>(null);
   const [phaseEndsAt, setPhaseEndsAt] = useState<number | null>(null);
+  const [chainWave, setChainWave] = useState<number | null>(null);
+  const [maxChainWave, setMaxChainWave] = useState<number | null>(null);
   const [isPhaseComplete, setIsPhaseComplete] = useState(false);
   const ws = useWebSocket();
 
   useEffect(() => {
-    if (!ws.isConnected || !lobbyId) {
+    // Poll must not depend on lobby?.id — that snapshot can arrive after game start, which would
+    // block phase/endsAt hydration and leave players stuck on GUESSING with no timer.
+    if (!ws.isConnected || !sync?.roomCode || !sync.userId) {
       return;
     }
 
-    // Subscribe to game events
+    let cancelled = false;
+
+    const tick = async () => {
+      try {
+        const { getGameState } = await import('../services/api/lobbyApi');
+        const s = await getGameState(sync.roomCode, sync.userId);
+        if (cancelled) return;
+        if (s.state !== 'IN_PROGRESS' || !s.roundId) {
+          return;
+        }
+        setRoundId(s.roundId);
+        if (typeof s.roundNumber === 'number') {
+          setRoundNumber(s.roundNumber);
+        }
+        if (s.phase === 'DRAWING' || s.phase === 'GUESSING' || s.phase === 'VOTING') {
+          setPhase(s.phase);
+        }
+        if (typeof s.endsAt === 'number') {
+          setPhaseEndsAt(s.endsAt);
+        }
+        if (typeof s.chainWave === 'number') {
+          setChainWave(s.chainWave);
+        }
+        if (typeof s.maxChainWave === 'number') {
+          setMaxChainWave(s.maxChainWave);
+        }
+      } catch {
+        /* ignore */
+      }
+    };
+
+    void tick();
+    const id = setInterval(tick, 1500);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, [ws.isConnected, sync?.roomCode, sync?.userId]);
+
+  useEffect(() => {
+    if (!ws.isConnected) {
+      return;
+    }
+    if (!lobbyId && !sync?.roomCode) {
+      return;
+    }
+
+    const client = getWSClient();
+
+    // Subscribe to game events (use singleton + stable deps — `ws` object identity changes every render
+    // and was re-registering handlers so one server broadcast hit multiple listeners.)
     const unsubscribers = [
-      ws.subscribe<{ type: 'game:started'; roundId: string; roundNumber: number }>(
+      client.subscribe<{ type: 'game:started'; roundId: string; roundNumber: number }>(
         'game:started',
         (msg) => {
-          console.log('Game started:', msg);
           setRoundId(msg.roundId);
           setRoundNumber(msg.roundNumber);
           setIsPhaseComplete(false);
         }
       ),
 
-      ws.subscribe<{ type: 'game:phase_changed'; phase: 'DRAWING' | 'GUESSING' | 'VOTING'; endsAt: number }>(
+      client.subscribe<{ type: 'game:phase_changed'; phase: 'DRAWING' | 'GUESSING' | 'VOTING'; endsAt: number }>(
         'game:phase_changed',
         (msg) => {
-          console.log('Phase changed:', msg);
           setPhase(msg.phase);
           setPhaseEndsAt(msg.endsAt);
           setIsPhaseComplete(false);
         }
       ),
 
-      ws.subscribe<{ type: 'game:phase_complete'; phase: 'DRAWING' | 'GUESSING' }>(
+      client.subscribe<{ type: 'game:phase_complete'; phase: 'DRAWING' | 'GUESSING' }>(
         'game:phase_complete',
-        (msg) => {
-          console.log('Phase complete:', msg);
+        () => {
           setIsPhaseComplete(true);
         }
       ),
 
-      ws.subscribe<{ type: 'game:round_complete'; roundId: string }>(
+      client.subscribe<{ type: 'game:round_complete'; roundId: string }>(
         'game:round_complete',
-        (msg) => {
-          console.log('Round complete:', msg);
+        () => {
           setIsPhaseComplete(true);
         }
       ),
@@ -197,7 +267,7 @@ export function useGameState(lobbyId?: string) {
     return () => {
       unsubscribers.forEach((unsub) => unsub());
     };
-  }, [ws, lobbyId]);
+  }, [ws.isConnected, lobbyId, sync?.roomCode]);
 
   const submitDrawing = useCallback((flipbookId: string, drawingData: string) => {
     ws.send('game:submit_drawing', { flipbookId, drawingData });
@@ -212,6 +282,8 @@ export function useGameState(lobbyId?: string) {
     roundNumber,
     phase,
     phaseEndsAt,
+    chainWave,
+    maxChainWave,
     isPhaseComplete,
     submitDrawing,
     submitGuess,
@@ -230,19 +302,26 @@ export function usePhaseTimer(phaseEndsAt: number | null) {
       return;
     }
 
-    const updateTimer = () => {
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+    const tick = () => {
       const now = Date.now();
       const remaining = Math.max(0, phaseEndsAt - now);
       setTimeRemaining(remaining);
+      if (remaining <= 0) {
+        return;
+      }
+      const delay = remaining <= 3000 ? 200 : 1000;
+      timeoutId = window.setTimeout(tick, delay);
     };
 
-    // Update immediately
-    updateTimer();
+    tick();
 
-    // Update every second
-    const interval = setInterval(updateTimer, 1000);
-
-    return () => clearInterval(interval);
+    return () => {
+      if (timeoutId !== undefined) {
+        clearTimeout(timeoutId);
+      }
+    };
   }, [phaseEndsAt]);
 
   const minutes = Math.floor(timeRemaining / 60000);
@@ -269,28 +348,26 @@ export function usePromptTracker(lobbyId?: string) {
       return;
     }
 
-    // Subscribe to prompt events
+    const client = getWSClient();
+
     const unsubscribers = [
-      ws.subscribe<{ type: 'lobby:prompt_submitted'; userId: string; username: string }>(
+      client.subscribe<{ type: 'lobby:prompt_submitted'; userId: string; username: string }>(
         'lobby:prompt_submitted',
         (msg) => {
-          console.log('Prompt submitted by:', msg.username);
           setSubmittedUserIds((prev) => new Set(prev).add(msg.userId));
         }
       ),
 
-      ws.subscribe<{ type: 'lobby:all_prompts_ready'; promptCount: number }>(
+      client.subscribe<{ type: 'lobby:all_prompts_ready'; promptCount: number }>(
         'lobby:all_prompts_ready',
-        (msg) => {
-          console.log('All prompts ready:', msg.promptCount);
+        () => {
           setAllPromptsReady(true);
         }
       ),
 
-      ws.subscribe<{ type: 'game:started' }>(
+      client.subscribe<{ type: 'game:started'; roundId: string; roundNumber: number }>(
         'game:started',
         () => {
-          // Reset prompt tracker when game starts
           setSubmittedUserIds(new Set());
           setAllPromptsReady(false);
         }
@@ -300,7 +377,7 @@ export function usePromptTracker(lobbyId?: string) {
     return () => {
       unsubscribers.forEach((unsub) => unsub());
     };
-  }, [ws, lobbyId]);
+  }, [ws.isConnected, lobbyId]);
 
   return {
     submittedUserIds,

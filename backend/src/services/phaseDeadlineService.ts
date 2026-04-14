@@ -1,0 +1,160 @@
+import prisma from '../prisma/client';
+import { logDebug, logError, logInfo, logWarn } from '../utils/logger';
+import { pickRandomFallbackPrompt } from '../config/prompts';
+import type { WSContext } from '../ws/context/wsContext';
+import { broadcastPhaseChange } from '../ws/handlers/gameWs';
+import {
+  advanceRoundIfChainPhaseComplete,
+  deriveExpectedPhaseFromChainWave,
+  submitDrawing,
+  submitGuess,
+  tryAdvanceInitialPromptsIfReady,
+} from './gameService';
+
+const EMPTY_DRAWING_JSON = '[]';
+
+/**
+ * When `phaseDeadline` has passed, fill any missing submissions and advance the round once.
+ * Idempotent with respect to already-submitted players (upserts / skips).
+ */
+export async function processExpiredPhaseDeadlines(ctx: WSContext): Promise<void> {
+  const lobbies = await prisma.lobby.findMany({
+    where: { state: 'IN_PROGRESS' },
+    select: { id: true },
+  });
+
+  for (const { id: lobbyId } of lobbies) {
+    try {
+      await processLobbyPhaseDeadlineIfStale(ctx, lobbyId);
+    } catch (e: any) {
+      logError('processExpiredPhaseDeadlines lobby tick failed', {
+        lobbyId,
+        error: e?.message,
+      });
+    }
+  }
+}
+
+async function processLobbyPhaseDeadlineIfStale(ctx: WSContext, lobbyId: string): Promise<void> {
+  const round = await prisma.round.findFirst({
+    where: { lobbyId },
+    orderBy: { number: 'desc' },
+    include: {
+      lobby: {
+        include: {
+          players: { select: { id: true }, orderBy: { createdAt: 'asc' } },
+        },
+      },
+    },
+  });
+
+  if (!round?.phaseDeadline) {
+    return;
+  }
+
+  if (round.phaseDeadline.getTime() > Date.now()) {
+    return;
+  }
+
+  const N = round.lobby.players.length;
+  const w = round.chainWave ?? 0;
+  const phase = deriveExpectedPhaseFromChainWave(w, N);
+
+  if (phase === 'VOTING') {
+    await prisma.round.update({
+      where: { id: round.id },
+      data: { phaseDeadline: null },
+    });
+    logDebug('phase_deadline_cleared_voting', { lobbyId, roundId: round.id });
+    return;
+  }
+
+  if (w === 0 && phase === 'GUESSING') {
+    const flipbooks = await prisma.flipbook.findMany({
+      where: { roundId: round.id },
+      select: { id: true, prompt: true },
+    });
+    for (const fb of flipbooks) {
+      if (!fb.prompt?.trim()) {
+        await prisma.flipbook.update({
+          where: { id: fb.id },
+          data: { prompt: pickRandomFallbackPrompt() },
+        });
+      }
+    }
+    const init = await tryAdvanceInitialPromptsIfReady(lobbyId);
+    if (init.advanced && init.endsAt != null) {
+      await broadcastPhaseChange(ctx, lobbyId, 'DRAWING', { endsAt: init.endsAt });
+      logInfo('Phase deadline: initial prompts filled, advanced to DRAWING', { lobbyId });
+    }
+    return;
+  }
+
+  if (w < 1 || w > N - 1) {
+    return;
+  }
+
+  const playerIds = round.lobby.players.map((p) => p.id);
+  const flipbooks = await prisma.flipbook.findMany({
+    where: { roundId: round.id },
+    select: { id: true, authorId: true },
+  });
+
+  if (phase === 'DRAWING') {
+    for (let i = 0; i < playerIds.length; i++) {
+      const userId = playerIds[i];
+      const targetAuthorId = playerIds[(i + w) % N];
+      const targetFb = flipbooks.find((f) => f.authorId === targetAuthorId);
+      if (!targetFb) continue;
+
+      const existing = await prisma.drawing.count({
+        where: { flipbookId: targetFb.id, authorId: userId },
+      });
+      if (existing > 0) continue;
+
+      try {
+        await submitDrawing(targetFb.id, userId, EMPTY_DRAWING_JSON);
+      } catch (e: any) {
+        logWarn('Phase deadline auto-drawing failed', {
+          lobbyId,
+          flipbookId: targetFb.id,
+          userId,
+          error: e?.message,
+        });
+      }
+    }
+  } else if (phase === 'GUESSING') {
+    for (let i = 0; i < playerIds.length; i++) {
+      const userId = playerIds[i];
+      const targetAuthorId = playerIds[(i + w) % N];
+      const targetFb = flipbooks.find((f) => f.authorId === targetAuthorId);
+      if (!targetFb) continue;
+
+      const existing = await prisma.guess.count({
+        where: { flipbookId: targetFb.id, authorId: userId },
+      });
+      if (existing > 0) continue;
+
+      try {
+        await submitGuess(targetFb.id, userId, pickRandomFallbackPrompt());
+      } catch (e: any) {
+        logWarn('Phase deadline auto-guess failed', {
+          lobbyId,
+          flipbookId: targetFb.id,
+          userId,
+          error: e?.message,
+        });
+      }
+    }
+  }
+
+  const result = await advanceRoundIfChainPhaseComplete(lobbyId, phase);
+  if (result.advanced) {
+    await broadcastPhaseChange(ctx, result.lobbyId, result.newPhase, { endsAt: result.endsAt });
+    logInfo('Phase deadline: chain advanced', {
+      lobbyId,
+      fromPhase: phase,
+      newPhase: result.newPhase,
+    });
+  }
+}

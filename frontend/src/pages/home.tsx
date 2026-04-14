@@ -1,16 +1,15 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { resolveApiBaseUrl } from "../config/runtimeUrls";
 
 export default function Home() {
-    const navigate = useNavigate();
     const [backendMessage, setBackendMessage] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
 
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-
     const fetchBackend = async () => {
         try {
-            const response = await fetch(`${API_URL}`);
+            const base = resolveApiBaseUrl();
+            const healthUrl = `${base}/api/health`;
+            const response = await fetch(healthUrl);
             const data = await response.json();
             setBackendMessage(data);
         } catch (error) {

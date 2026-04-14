@@ -1,4 +1,5 @@
 import express from "express";
+// @ts-ignore - express-rate-limit v8.x includes types, TS server cache issue
 import rateLimit from "express-rate-limit"; 
 import { createUser, listUsers, loginUser, refreshUserToken, logoutUser, logoutAllDevices, deleteUserAccount } from "../services/authService";
 import { validate } from "../middleware/validate";

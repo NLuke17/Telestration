@@ -1,8 +1,66 @@
 import { WSContext } from '../context/wsContext';
 import { ClientConn } from '../core/clientConn';
 import { send, broadcast } from '../core/wsUtils';
-import { submitDrawing, submitGuess, getCurrentRound, checkPhaseCompletion } from '../../services/gameService';
+import {
+  submitDrawing,
+  submitGuess,
+  revokePhaseSubmission,
+  getCurrentRound,
+  checkPhaseCompletion,
+  advanceRoundIfChainPhaseComplete,
+  tryAdvanceInitialPromptsIfReady,
+} from '../../services/gameService';
 import { logInfo, logError } from '../../utils/logger';
+import { initRecapStateFromLobby, broadcastRecapSync } from '../state/recapTracker';
+
+/**
+ * Broadcast guess_submitted + advance phase when applicable (shared by WS and HTTP submit).
+ */
+export async function runGuessSubmissionSideEffects(
+  ctx: WSContext,
+  lobbyId: string,
+  flipbookId: string,
+  userId: string,
+  guess: unknown
+): Promise<void> {
+  const connections = ctx.registry.getLobbyConnections(lobbyId);
+  broadcast(connections, {
+    type: 'game:guess_submitted',
+    flipbookId,
+    userId,
+  });
+
+  const isInitialPrompt = (guess as { isInitialPrompt?: boolean }).isInitialPrompt === true;
+
+  if (isInitialPrompt) {
+    const { advanced, endsAt } = await tryAdvanceInitialPromptsIfReady(lobbyId);
+    if (advanced && endsAt != null) {
+      logInfo('All initial prompts submitted, advancing to DRAWING phase', {
+        lobbyId,
+      });
+      await broadcastPhaseChange(ctx, lobbyId, 'DRAWING', { endsAt });
+    }
+  } else {
+    const round = await getCurrentRound(lobbyId);
+    const isPhaseComplete = await checkPhaseCompletion(round.id, 'GUESSING');
+
+    if (isPhaseComplete) {
+      const result = await advanceRoundIfChainPhaseComplete(lobbyId, 'GUESSING');
+      if (result.advanced) {
+        await broadcastPhaseChange(ctx, result.lobbyId, result.newPhase, { endsAt: result.endsAt });
+      }
+    }
+
+    logInfo('Guess submitted', {
+      lobbyId,
+      flipbookId,
+      userId,
+      guessId: (guess as { id?: string }).id,
+      isPhaseComplete,
+    });
+  }
+}
+
 
 /**
  * Handle drawing submission
@@ -17,40 +75,43 @@ export async function handleDrawingSubmission(
     return;
   }
 
+  // Snapshot: `leaveLobby` / lobby delete can clear `conn.lobbyId` while we await DB work below.
+  const lobbyId = conn.lobbyId;
+  const userId = conn.userId;
+
   try {
-    const drawing = await submitDrawing(msg.flipbookId, conn.userId, msg.drawingData);
+    const drawing = await submitDrawing(msg.flipbookId, userId, msg.drawingData);
 
     // Notify the lobby that a drawing was submitted
-    const connections = ctx.registry.getLobbyConnections(conn.lobbyId);
+    const connections = ctx.registry.getLobbyConnections(lobbyId);
     broadcast(connections, {
       type: 'game:drawing_submitted',
       flipbookId: msg.flipbookId,
-      userId: conn.userId,
+      userId,
     });
 
-    // Check if all players have finished this phase
-    const round = await getCurrentRound(conn.lobbyId);
+    const round = await getCurrentRound(lobbyId);
     const isPhaseComplete = await checkPhaseCompletion(round.id, 'DRAWING');
 
     if (isPhaseComplete) {
-      broadcast(connections, {
-        type: 'game:phase_complete',
-        phase: 'DRAWING',
-      });
+      const result = await advanceRoundIfChainPhaseComplete(lobbyId, 'DRAWING');
+      if (result.advanced) {
+        await broadcastPhaseChange(ctx, result.lobbyId, result.newPhase, { endsAt: result.endsAt });
+      }
     }
 
     logInfo('Drawing submitted', {
-      lobbyId: conn.lobbyId,
+      lobbyId,
       flipbookId: msg.flipbookId,
-      userId: conn.userId,
+      userId,
       drawingId: drawing.id,
       isPhaseComplete,
     });
   } catch (error: any) {
     logError('Failed to submit drawing', {
-      lobbyId: conn.lobbyId,
+      lobbyId,
       flipbookId: msg.flipbookId,
-      userId: conn.userId,
+      userId,
       error: error.message,
     });
 
@@ -75,81 +136,69 @@ export async function handleGuessSubmission(
     return;
   }
 
+  // Snapshot: `leaveLobby` / lobby delete can clear `conn.lobbyId` while we await `submitGuess`.
+  const lobbyId = conn.lobbyId;
+  const userId = conn.userId;
+
   try {
-    const guess = await submitGuess(msg.flipbookId, conn.userId, msg.text);
-
-    // Notify the lobby that a guess was submitted
-    const connections = ctx.registry.getLobbyConnections(conn.lobbyId);
-    broadcast(connections, {
-      type: 'game:guess_submitted',
-      flipbookId: msg.flipbookId,
-      userId: conn.userId,
-    });
-
-    // Check if this was an initial prompt submission
-    const isInitialPrompt = (guess as any).isInitialPrompt === true;
-
-    if (isInitialPrompt) {
-      // Check if all players have submitted their initial prompts
-      const prisma = (await import('../../prisma/client')).default;
-      const round = await getCurrentRound(conn.lobbyId);
-      const flipbooks = await prisma.flipbook.findMany({
-        where: { roundId: round.id },
-        select: { prompt: true },
-      });
-
-      // All flipbooks should have non-empty prompts
-      const allPromptsSubmitted = flipbooks.every(
-        (fb) => fb.prompt && fb.prompt.trim().length > 0
-      );
-
-      if (allPromptsSubmitted) {
-        logInfo('All initial prompts submitted, advancing to DRAWING phase', {
-          lobbyId: conn.lobbyId,
-          roundId: round.id,
-        });
-
-        // Advance all flipbooks to DRAWING state
-        await prisma.flipbook.updateMany({
-          where: { roundId: round.id },
-          data: { state: 'DRAWING' },
-        });
-
-        // Broadcast phase change to DRAWING
-        await broadcastPhaseChange(ctx, conn.lobbyId, 'DRAWING');
-      }
-    } else {
-      // Normal guess submission - check if all players have finished this phase
-      const round = await getCurrentRound(conn.lobbyId);
-      const isPhaseComplete = await checkPhaseCompletion(round.id, 'GUESSING');
-
-      if (isPhaseComplete) {
-        broadcast(connections, {
-          type: 'game:phase_complete',
-          phase: 'GUESSING',
-        });
-      }
-
-      logInfo('Guess submitted', {
-        lobbyId: conn.lobbyId,
-        flipbookId: msg.flipbookId,
-        userId: conn.userId,
-        guessId: (guess as any).id,
-        isPhaseComplete,
-      });
-    }
+    const guess = await submitGuess(msg.flipbookId, userId, msg.text);
+    await runGuessSubmissionSideEffects(ctx, lobbyId, msg.flipbookId, userId, guess);
   } catch (error: any) {
     logError('Failed to submit guess', {
-      lobbyId: conn.lobbyId,
+      lobbyId,
       flipbookId: msg.flipbookId,
-      userId: conn.userId,
+      userId,
       error: error.message,
     });
 
+    const errCode =
+      error.message === 'INITIAL_PROMPT_ALREADY_SUBMITTED'
+        ? 'INITIAL_PROMPT_ALREADY_SUBMITTED'
+        : 'GUESS_SUBMISSION_FAILED';
+
     send(conn, {
       type: 'error',
-      error: 'GUESS_SUBMISSION_FAILED',
+      error: errCode,
       message: error.message || 'Failed to submit guess',
+    });
+  }
+}
+
+/**
+ * Let a player pull back their submission so they can edit (and so phase completion excludes them until they resubmit).
+ */
+export async function handleRevokeSubmission(
+  ctx: WSContext,
+  conn: ClientConn,
+  msg: { type: 'game:revoke_submission'; flipbookId: string }
+): Promise<void> {
+  if (!conn.lobbyId || !conn.userId) {
+    send(conn, { type: 'error', error: 'NOT_AUTHENTICATED', message: 'Not authenticated' });
+    return;
+  }
+
+  const lobbyId = conn.lobbyId;
+  const userId = conn.userId;
+
+  try {
+    await revokePhaseSubmission(msg.flipbookId, userId);
+    const connections = ctx.registry.getLobbyConnections(lobbyId);
+    broadcast(connections, {
+      type: 'game:submission_revoked',
+      flipbookId: msg.flipbookId,
+      userId,
+    });
+  } catch (error: any) {
+    logError('Failed to revoke submission', {
+      lobbyId,
+      flipbookId: msg.flipbookId,
+      userId,
+      error: error.message,
+    });
+    send(conn, {
+      type: 'error',
+      error: 'REVOKE_SUBMISSION_FAILED',
+      message: error.message || 'Failed to revoke submission',
     });
   }
 }
@@ -202,17 +251,17 @@ export async function broadcastGameStarted(
 }
 
 /**
- * Broadcast phase change with timer
+ * Broadcast phase change with timer. Persists `phaseDeadline` on the current round when present.
  */
 export async function broadcastPhaseChange(
   ctx: WSContext,
   lobbyId: string,
-  phase: 'DRAWING' | 'GUESSING' | 'VOTING'
+  phase: 'DRAWING' | 'GUESSING' | 'VOTING',
+  opts?: { endsAt?: number }
 ): Promise<void> {
   const connections = ctx.registry.getLobbyConnections(lobbyId);
 
-  // Calculate phase duration based on constants
-  const { DRAWING_PHASE_DURATION_MS, GUESSING_PHASE_DURATION_MS, VOTING_PHASE_DURATION_MS } = 
+  const { DRAWING_PHASE_DURATION_MS, GUESSING_PHASE_DURATION_MS, VOTING_PHASE_DURATION_MS } =
     await import('../../config/constants');
 
   let duration: number;
@@ -228,13 +277,34 @@ export async function broadcastPhaseChange(
       break;
   }
 
-  const endsAt = Date.now() + duration;
+  const endsAt = opts?.endsAt ?? Date.now() + duration;
+
+  const prisma = (await import('../../prisma/client')).default;
+  const round = await prisma.round.findFirst({
+    where: { lobbyId },
+    orderBy: { number: 'desc' },
+    select: { id: true },
+  });
+  if (round) {
+    await prisma.round.update({
+      where: { id: round.id },
+      data: { phaseDeadline: new Date(endsAt) },
+    });
+  }
+
+  if (phase === 'VOTING') {
+    await initRecapStateFromLobby(lobbyId);
+  }
 
   broadcast(connections, {
     type: 'game:phase_changed',
     phase,
     endsAt,
   });
+
+  if (phase === 'VOTING') {
+    broadcastRecapSync(lobbyId);
+  }
 
   logInfo('Broadcasted phase change', { lobbyId, phase, endsAt, connectionCount: connections.length });
 }

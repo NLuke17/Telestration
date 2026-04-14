@@ -1,12 +1,25 @@
 import express from 'express';
 import { validate } from '../middleware/validate';
-import { 
-  submitDrawingSchema, 
-  submitGuessSchema, 
+import { authenticateJWT, AuthRequest } from '../middleware/authMiddleware';
+import {
+  submitDrawingSchema,
+  submitGuessSchema,
   getCurrentRoundSchema,
-  getAssignedFlipbookSchema
+  getAssignedFlipbookSchema,
+  getFlipbookPresentationSchema,
+  saveFlipbookToLibrarySchema,
+  getSavedFlipbookPresentationSchema,
 } from '../validation/game.validation';
-import { submitDrawing, submitGuess, getCurrentRound, getAssignedFlipbook } from '../services/gameService';
+import {
+  submitDrawing,
+  submitGuess,
+  getCurrentRound,
+  getAssignedFlipbook,
+  getLobbyIdForFlipbook,
+} from '../services/gameService';
+import { getGameFlipbookPresentation, getSavedFlipbookPresentation } from '../services/flipbookPresentationService';
+import { listSavedFlipbooksForUser, saveGameFlipbookToLibrary } from '../services/savedFlipbookService';
+import { MAX_SAVED_FLIPBOOKS_PER_USER } from '../config/constants';
 import { WSGatewayHandle } from '../ws/index';
 
 const router = express.Router();
@@ -73,6 +86,78 @@ router.post('/flipbooks/:flipbookId/drawings', validate(submitDrawingSchema), as
   }
 });
 
+// Full flipbook timeline for replay (drawing payloads resolved from DB or blob storage)
+router.get('/flipbooks/:flipbookId/presentation', validate(getFlipbookPresentationSchema), async (req, res) => {
+  try {
+    const flipbookId = typeof req.params.flipbookId === 'string' ? req.params.flipbookId : req.params.flipbookId[0];
+    const userId = req.query.userId as string;
+    const data = await getGameFlipbookPresentation(flipbookId, userId);
+    return res.json(data);
+  } catch (e: any) {
+    if (e.message === 'FLIPBOOK_NOT_FOUND') return res.status(404).json({ error: 'Flipbook not found' });
+    if (e.message === 'NOT_IN_LOBBY') return res.status(403).json({ error: 'Not allowed' });
+    return res.status(500).json({ error: 'Failed to load presentation' });
+  }
+});
+
+// Persist flipbook into the signed-in user's library (recap / finished lobby; max count enforced in service)
+router.post(
+  '/flipbooks/:flipbookId/save-to-library',
+  authenticateJWT,
+  validate(saveFlipbookToLibrarySchema),
+  async (req: AuthRequest, res) => {
+    try {
+      const flipbookId = typeof req.params.flipbookId === 'string' ? req.params.flipbookId : req.params.flipbookId[0];
+      const ownerId = req.user?.userId as string;
+      const title = (req.body as { title?: string }).title;
+      const saved = await saveGameFlipbookToLibrary(ownerId, flipbookId, title);
+      return res.status(201).json({ savedFlipbookId: saved.id });
+    } catch (e: any) {
+      if (e.message === 'FLIPBOOK_NOT_FOUND') return res.status(404).json({ error: 'Flipbook not found' });
+      if (e.message === 'LOBBY_NOT_FINISHED') return res.status(409).json({ error: 'Game not finished yet' });
+      if (e.message === 'NOT_IN_LOBBY') return res.status(403).json({ error: 'Not allowed' });
+      if (e.message === 'FLIPBOOK_ALREADY_SAVED') return res.status(409).json({ error: 'Already saved to your library' });
+      if (e.message === 'LIBRARY_FULL') {
+        return res.status(403).json({
+          error: 'LIBRARY_FULL',
+          message: `You can save at most ${MAX_SAVED_FLIPBOOKS_PER_USER} flipbooks to your library.`,
+        });
+      }
+      return res.status(500).json({ error: 'Failed to save flipbook' });
+    }
+  }
+);
+
+router.get('/saved-flipbooks', authenticateJWT, async (req: AuthRequest, res) => {
+  try {
+    const ownerId = req.user?.userId as string;
+    const list = await listSavedFlipbooksForUser(ownerId);
+    return res.json({
+      savedFlipbooks: list,
+      maxSaved: MAX_SAVED_FLIPBOOKS_PER_USER,
+    });
+  } catch {
+    return res.status(500).json({ error: 'Failed to list saved flipbooks' });
+  }
+});
+
+router.get(
+  '/saved-flipbooks/:savedId/presentation',
+  authenticateJWT,
+  validate(getSavedFlipbookPresentationSchema),
+  async (req: AuthRequest, res) => {
+    try {
+      const savedId = typeof req.params.savedId === 'string' ? req.params.savedId : req.params.savedId[0];
+      const ownerId = req.user?.userId as string;
+      const data = await getSavedFlipbookPresentation(savedId, ownerId);
+      return res.json(data);
+    } catch (e: any) {
+      if (e.message === 'SAVED_FLIPBOOK_NOT_FOUND') return res.status(404).json({ error: 'Not found' });
+      return res.status(500).json({ error: 'Failed to load saved flipbook' });
+    }
+  }
+);
+
 // Submit a guess (deprecated - use WebSocket instead)
 router.post('/flipbooks/:flipbookId/guesses', validate(submitGuessSchema), async (req, res) => {
   try {
@@ -80,7 +165,13 @@ router.post('/flipbooks/:flipbookId/guesses', validate(submitGuessSchema), async
     const { userId, text } = req.body;
 
     const guess = await submitGuess(flipbookId, userId, text);
-    
+
+    const lobbyId = await getLobbyIdForFlipbook(flipbookId);
+    const wsHandle = getWSHandle(req);
+    if (lobbyId && wsHandle) {
+      await wsHandle.notifyGuessSubmittedEffects(lobbyId, flipbookId, userId, guess);
+    }
+
     return res.status(201).json(guess);
   } catch (e: any) {
     if (e.message === 'FLIPBOOK_NOT_FOUND') return res.status(404).json({ error: 'Flipbook not found' });

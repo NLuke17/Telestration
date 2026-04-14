@@ -42,8 +42,35 @@ export const getAssignedFlipbookSchema = z.object({
     roundId: uuidSchema,
   }),
   query: z.object({
-    userId: uuidSchema,
+    userId: z.string().min(1).max(128),
     phase: z.enum(['DRAWING', 'GUESSING'], { message: 'Phase must be DRAWING or GUESSING' }),
+  }),
+});
+
+// GET /game/flipbooks/:flipbookId/presentation
+export const getFlipbookPresentationSchema = z.object({
+  params: z.object({
+    flipbookId: uuidSchema,
+  }),
+  query: z.object({
+    userId: uuidSchema,
+  }),
+});
+
+// POST /game/flipbooks/:flipbookId/save-to-library
+export const saveFlipbookToLibrarySchema = z.object({
+  params: z.object({
+    flipbookId: uuidSchema,
+  }),
+  body: z.object({
+    title: z.string().trim().max(120).optional(),
+  }),
+});
+
+// GET /game/saved-flipbooks/:savedId/presentation
+export const getSavedFlipbookPresentationSchema = z.object({
+  params: z.object({
+    savedId: uuidSchema,
   }),
 });
 

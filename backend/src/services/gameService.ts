@@ -1,5 +1,12 @@
+import { randomUUID } from 'crypto';
 import prisma from '../prisma/client';
-import { logInfo, logError } from '../utils/logger';
+import { logInfo, logError, logDebug } from '../utils/logger';
+import { persistGameDrawingPayload, resolveGameDrawingPayload } from './drawingStorageService';
+import {
+  DRAWING_PHASE_DURATION_MS,
+  GUESSING_PHASE_DURATION_MS,
+  VOTING_PHASE_DURATION_MS,
+} from '../config/constants';
 
 /**
  * Start a new game for a lobby
@@ -26,7 +33,8 @@ export async function startGame(lobbyId: string, customPrompts?: string[]) {
       throw new Error('LOBBY_NOT_FOUND');
     }
 
-    if (lobby.state !== 'WAITING') {
+    // FINISHED = previous game ended (e.g. host returned from recap); same room can start again.
+    if (lobby.state !== 'WAITING' && lobby.state !== 'FINISHED') {
       throw new Error('LOBBY_ALREADY_STARTED');
     }
 
@@ -56,6 +64,7 @@ export async function startGame(lobbyId: string, customPrompts?: string[]) {
         data: {
           number: nextRoundNumber,
           lobbyId,
+          chainWave: customPrompts ? 1 : 0,
         },
       });
 
@@ -103,6 +112,14 @@ export async function startGame(lobbyId: string, customPrompts?: string[]) {
   }
 }
 
+export async function getLobbyIdForFlipbook(flipbookId: string): Promise<string | null> {
+  const row = await prisma.flipbook.findUnique({
+    where: { id: flipbookId },
+    select: { round: { select: { lobbyId: true } } },
+  });
+  return row?.round?.lobbyId ?? null;
+}
+
 /**
  * Get the current round for a lobby
  */
@@ -116,7 +133,14 @@ export async function getCurrentRound(lobbyId: string) {
           author: { select: { id: true, username: true, profilePicture: true } },
           drawings: {
             orderBy: { order: 'asc' },
-            include: {
+            select: {
+              id: true,
+              order: true,
+              createdAt: true,
+              authorId: true,
+              storageKind: true,
+              storageKey: true,
+              byteLength: true,
               author: { select: { id: true, username: true, profilePicture: true } },
             },
           },
@@ -168,6 +192,36 @@ export async function submitDrawing(
       throw new Error('CANNOT_DRAW_OWN_FLIPBOOK');
     }
 
+    const existing = await prisma.drawing.findFirst({
+      where: { flipbookId, authorId: userId },
+      orderBy: { order: 'desc' },
+    });
+
+    if (existing) {
+      const persisted = await persistGameDrawingPayload(flipbookId, existing.id, drawingData);
+      const drawing = await prisma.drawing.update({
+        where: { id: existing.id },
+        data: {
+          drawingData: persisted.drawingData,
+          storageKind: persisted.storageKind,
+          storageKey: persisted.storageKey,
+          byteLength: persisted.byteLength,
+        },
+        include: {
+          author: { select: { id: true, username: true, profilePicture: true } },
+        },
+      });
+
+      logInfo('Drawing updated (resubmit)', {
+        flipbookId,
+        userId,
+        drawingId: drawing.id,
+        order: existing.order,
+      });
+
+      return drawing;
+    }
+
     // Calculate the next order number
     const lastDrawing = flipbook.drawings[0];
     const lastGuess = flipbook.guesses[0];
@@ -176,10 +230,16 @@ export async function submitDrawing(
       lastGuess?.order ?? 0
     ) + 1;
 
-    // Create the drawing
+    const drawingId = randomUUID();
+    const persisted = await persistGameDrawingPayload(flipbookId, drawingId, drawingData);
+
     const drawing = await prisma.drawing.create({
       data: {
-        drawingData,
+        id: drawingId,
+        drawingData: persisted.drawingData,
+        storageKind: persisted.storageKind,
+        storageKey: persisted.storageKey,
+        byteLength: persisted.byteLength,
         order: nextOrder,
         flipbookId,
         authorId: userId,
@@ -217,6 +277,7 @@ export async function submitGuess(
       include: {
         drawings: { orderBy: { order: 'desc' }, take: 1 },
         guesses: { orderBy: { order: 'desc' }, take: 1 },
+        round: { select: { chainWave: true } },
       },
     });
 
@@ -228,9 +289,26 @@ export async function submitGuess(
       throw new Error('FLIPBOOK_NOT_ACCEPTING_GUESSES');
     }
 
-    // Special case: If flipbook has no prompt, this is the initial prompt submission (player writes on their own)
     const isInitialPrompt = !flipbook.prompt || flipbook.prompt.trim().length === 0;
-    
+    const chainWave = flipbook.round?.chainWave ?? 0;
+
+    if (flipbook.authorId === userId && !isInitialPrompt) {
+      if (chainWave !== 0) {
+        throw new Error('INITIAL_PROMPT_ALREADY_SUBMITTED');
+      }
+      await prisma.flipbook.update({
+        where: { id: flipbookId },
+        data: { prompt: text.trim() },
+      });
+      logInfo('Initial prompt updated (resubmit)', {
+        flipbookId,
+        userId,
+        prompt: text.trim(),
+      });
+      return { id: flipbookId, text: text.trim(), isInitialPrompt: true };
+    }
+
+    // Special case: If flipbook has no prompt, this is the initial prompt submission (player writes on their own)
     if (isInitialPrompt) {
       // Allow writing initial prompt on own flipbook
       if (flipbook.authorId !== userId) {
@@ -255,6 +333,28 @@ export async function submitGuess(
     // Normal guessing: Prevent guessing on your own flipbook
     if (flipbook.authorId === userId) {
       throw new Error('CANNOT_GUESS_OWN_FLIPBOOK');
+    }
+
+    const existingGuess = await prisma.guess.findFirst({
+      where: { flipbookId, authorId: userId },
+      orderBy: { order: 'desc' },
+    });
+
+    if (existingGuess) {
+      const guess = await prisma.guess.update({
+        where: { id: existingGuess.id },
+        data: { text },
+        include: {
+          author: { select: { id: true, username: true, profilePicture: true } },
+        },
+      });
+      logInfo('Guess updated (resubmit)', {
+        flipbookId,
+        userId,
+        guessId: guess.id,
+        order: existingGuess.order,
+      });
+      return guess;
     }
 
     // Calculate the next order number
@@ -293,13 +393,84 @@ export async function submitGuess(
 }
 
 /**
+ * Derive the active play phase from `chainWave` and player count `N`.
+ * wave 0: everyone writes their prompt on their own book (GUESSING in UI).
+ * waves 1..N-1: odd = DRAWING, even = GUESSING (telephone chain).
+ * wave >= N: recap / voting.
+ */
+export function deriveExpectedPhaseFromChainWave(
+  chainWave: number,
+  playerCount: number
+): 'DRAWING' | 'GUESSING' | 'VOTING' {
+  const N = playerCount;
+  if (N < 1) return 'GUESSING';
+  if (chainWave <= 0) return 'GUESSING';
+  if (chainWave >= N) return 'VOTING';
+  return chainWave % 2 === 1 ? 'DRAWING' : 'GUESSING';
+}
+
+/**
+ * Remove this user's submission on the given flipbook so they can edit again.
+ * Initial prompts (wave 0, own book) are not cleared here — the client edits locally and resubmits an update.
+ */
+export async function revokePhaseSubmission(flipbookId: string, userId: string): Promise<void> {
+  const flipbook = await prisma.flipbook.findUnique({
+    where: { id: flipbookId },
+    include: {
+      round: {
+        include: {
+          lobby: {
+            include: {
+              players: { select: { id: true }, orderBy: { createdAt: 'asc' } },
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!flipbook) {
+    throw new Error('FLIPBOOK_NOT_FOUND');
+  }
+
+  const N = flipbook.round.lobby.players.length;
+  const w = flipbook.round.chainWave ?? 0;
+  const phase = deriveExpectedPhaseFromChainWave(w, N);
+
+  if (phase === 'VOTING') {
+    throw new Error('REVOKE_NOT_ALLOWED');
+  }
+
+  if (phase === 'DRAWING') {
+    if (flipbook.state !== 'DRAWING') {
+      throw new Error('REVOKE_NOT_ALLOWED');
+    }
+    await prisma.drawing.deleteMany({ where: { flipbookId, authorId: userId } });
+    logInfo('Drawing submission revoked', { flipbookId, userId });
+    return;
+  }
+
+  if (phase === 'GUESSING') {
+    if (flipbook.state !== 'GUESSING') {
+      throw new Error('REVOKE_NOT_ALLOWED');
+    }
+    if (w === 0 && flipbook.authorId === userId) {
+      return;
+    }
+    await prisma.guess.deleteMany({ where: { flipbookId, authorId: userId } });
+    logInfo('Guess submission revoked', { flipbookId, userId });
+  }
+}
+
+function lastGuessText(flipbook: { guesses: { order: number; text: string }[] }): string | null {
+  if (!flipbook.guesses.length) return null;
+  const sorted = [...flipbook.guesses].sort((a, b) => a.order - b.order);
+  return sorted[sorted.length - 1]?.text ?? null;
+}
+
+/**
  * Get the assigned flipbook for a player to work on
- * Players should NOT work on their own flipbook
- * 
- * @param roundId - The current round
- * @param userId - The player requesting assignment
- * @param phase - Current phase (DRAWING or GUESSING)
- * @returns The flipbook to work on, or null if player has completed all work
+ * Players should NOT work on their own flipbook (except initial prompt on own book).
  */
 export async function getAssignedFlipbook(
   roundId: string,
@@ -309,17 +480,29 @@ export async function getAssignedFlipbook(
   const round = await prisma.round.findUnique({
     where: { id: roundId },
     include: {
+      lobby: {
+        include: {
+          players: { select: { id: true, username: true, profilePicture: true }, orderBy: { createdAt: 'asc' } },
+        },
+      },
       flipbooks: {
         include: {
           author: { select: { id: true, username: true, profilePicture: true } },
           drawings: {
-            include: {
-              author: { select: { id: true, username: true } },
+            select: {
+              id: true,
+              authorId: true,
+              order: true,
+              createdAt: true,
             },
           },
           guesses: {
-            include: {
-              author: { select: { id: true, username: true } },
+            select: {
+              id: true,
+              authorId: true,
+              order: true,
+              text: true,
+              createdAt: true,
             },
           },
         },
@@ -331,40 +514,75 @@ export async function getAssignedFlipbook(
     throw new Error('ROUND_NOT_FOUND');
   }
 
-  // Filter flipbooks to find ones this player should work on
-  const availableFlipbooks = round.flipbooks.filter((flipbook) => {
-    if (phase === 'DRAWING') {
-      // Cannot work on your own flipbook during DRAWING
-      if (flipbook.authorId === userId) {
-        return false;
-      }
-      // Check if player has already drawn on this flipbook
-      const hasDrawn = flipbook.drawings.some((d) => d.authorId === userId);
-      return !hasDrawn;
-    } else if (phase === 'GUESSING') {
-      // Special case: If flipbook has no prompt, player writes on their OWN flipbook
-      if (!flipbook.prompt || flipbook.prompt.trim().length === 0) {
-        return flipbook.authorId === userId && flipbook.guesses.length === 0;
-      }
-      // Normal guessing: cannot work on your own flipbook
-      if (flipbook.authorId === userId) {
-        return false;
-      }
-      // Check if player has already guessed on this flipbook
-      const hasGuessed = flipbook.guesses.some((g) => g.authorId === userId);
-      return !hasGuessed;
-    }
+  const playerIds = round.lobby.players.map((p) => p.id);
+  const N = playerIds.length;
+  const w = round.chainWave;
+  const expected = deriveExpectedPhaseFromChainWave(w, N);
 
-    return false;
-  });
-
-  // Return the first available flipbook (or null if none available)
-  if (availableFlipbooks.length === 0) {
+  if (expected === 'VOTING' || expected !== phase) {
     return null;
   }
 
-  // Return the first available flipbook
-  return availableFlipbooks[0];
+  // Initial prompts: chainWave 0 — only your own flipbook while its prompt is still empty.
+  // Do not surface other players' books here: initial text lives on `prompt`, not in `guesses`,
+  // so the old "non-empty book + !hasGuessed" branch wrongly matched peers' books and made
+  // `getGameState` report hasSubmitted=false for players who had already submitted (3+ players).
+  if (w === 0) {
+    if (phase === 'DRAWING') {
+      return null;
+    }
+    const mine = round.flipbooks.find(
+      (fb) =>
+        fb.authorId === userId &&
+        (!fb.prompt || fb.prompt.trim().length === 0)
+    );
+    return mine ?? null;
+  }
+
+  // Telephone chain: at wave w, player index i works on author (i + w) mod N
+  const idx = playerIds.indexOf(userId);
+  if (idx < 0) {
+    return null;
+  }
+
+  const targetAuthorId = playerIds[(idx + w) % N];
+  const flipbook = round.flipbooks.find((fb) => fb.authorId === targetAuthorId);
+  if (!flipbook) {
+    return null;
+  }
+
+  if (phase === 'DRAWING') {
+    const hasDrawn = flipbook.drawings.some((d) => d.authorId === userId);
+    if (hasDrawn) return null;
+    const guessLine = lastGuessText(flipbook);
+    return {
+      ...flipbook,
+      drawFromText: guessLine && guessLine.trim().length > 0 ? guessLine : flipbook.prompt,
+    };
+  }
+
+  const hasGuessed = flipbook.guesses.some((g) => g.authorId === userId);
+  if (hasGuessed) return null;
+
+  const guessLine = lastGuessText(flipbook);
+  const latestDrawingRow = await prisma.drawing.findFirst({
+    where: { flipbookId: flipbook.id },
+    orderBy: { order: 'desc' },
+  });
+  let latestDrawingData: string | null = null;
+  if (latestDrawingRow) {
+    try {
+      latestDrawingData = await resolveGameDrawingPayload(latestDrawingRow);
+    } catch {
+      latestDrawingData = null;
+    }
+  }
+
+  return {
+    ...flipbook,
+    drawFromText: guessLine && guessLine.trim().length > 0 ? guessLine : flipbook.prompt,
+    latestDrawingData,
+  };
 }
 
 /**
@@ -402,7 +620,7 @@ export async function advanceFlipbookPhase(flipbookId: string) {
 }
 
 /**
- * Check if all players have submitted for current phase
+ * Check if all players have submitted for the current chain wave / phase.
  */
 export async function checkPhaseCompletion(roundId: string, phase: 'DRAWING' | 'GUESSING'): Promise<boolean> {
   const round = await prisma.round.findUnique({
@@ -410,8 +628,7 @@ export async function checkPhaseCompletion(roundId: string, phase: 'DRAWING' | '
     include: {
       flipbooks: {
         include: {
-          drawings: true,
-          guesses: true,
+          _count: { select: { drawings: true, guesses: true } },
         },
       },
       lobby: {
@@ -426,45 +643,277 @@ export async function checkPhaseCompletion(roundId: string, phase: 'DRAWING' | '
     throw new Error('ROUND_NOT_FOUND');
   }
 
-  const playerCount = round.lobby.players.length;
+  const N = round.lobby.players.length;
+  const w = round.chainWave;
 
-  // For each flipbook, check if enough submissions exist
-  for (const flipbook of round.flipbooks) {
-    const submissionCount =
-      phase === 'DRAWING' ? flipbook.drawings.length : flipbook.guesses.length;
-
-    // Each player should contribute once (except the original author)
-    if (submissionCount < playerCount - 1) {
-      return false;
-    }
+  if (w < 1 || w > N - 1) {
+    return false;
   }
 
-  return true;
+  const expected = deriveExpectedPhaseFromChainWave(w, N);
+  if (expected !== phase) {
+    return false;
+  }
+
+  if (phase === 'DRAWING') {
+    const needPerBook = (w + 1) / 2;
+    return round.flipbooks.every((fb) => fb._count.drawings >= needPerBook);
+  }
+
+  const needGuessesPerBook = w / 2;
+  return round.flipbooks.every((fb) => fb._count.guesses >= needGuessesPerBook);
+}
+
+export type AdvanceRoundResult =
+  | { advanced: false }
+  | {
+      advanced: true;
+      newPhase: 'DRAWING' | 'GUESSING' | 'VOTING';
+      lobbyId: string;
+      roundId: string;
+      endsAt: number;
+    };
+
+/**
+ * When every flipbook has the submissions required for the current wave, advance chainWave
+ * (or enter VOTING for recap). Uses optimistic locking on `chainWave` to avoid double advance.
+ */
+export async function advanceRoundIfChainPhaseComplete(
+  lobbyId: string,
+  completedPhase: 'DRAWING' | 'GUESSING'
+): Promise<AdvanceRoundResult> {
+  try {
+    return await prisma.$transaction(async (tx) => {
+      const round = await tx.round.findFirst({
+        where: { lobbyId },
+        orderBy: { number: 'desc' },
+        include: {
+          lobby: { include: { players: { select: { id: true }, orderBy: { createdAt: 'asc' } } } },
+          flipbooks: {
+            include: {
+              _count: { select: { drawings: true, guesses: true } },
+            },
+          },
+        },
+      });
+
+      if (!round) {
+        return { advanced: false };
+      }
+
+      const N = round.lobby.players.length;
+      const w = round.chainWave;
+
+      if (w < 1 || w > N - 1) {
+        return { advanced: false };
+      }
+
+      const expected = deriveExpectedPhaseFromChainWave(w, N);
+      if (expected !== completedPhase) {
+        return { advanced: false };
+      }
+
+      if (completedPhase === 'DRAWING') {
+        const need = (w + 1) / 2;
+        if (!round.flipbooks.every((fb) => fb._count.drawings >= need)) {
+          return { advanced: false };
+        }
+      } else {
+        const need = w / 2;
+        if (!round.flipbooks.every((fb) => fb._count.guesses >= need)) {
+          return { advanced: false };
+        }
+      }
+
+      const nextWave = w + 1;
+      const nextDeadlineDraw = new Date(Date.now() + DRAWING_PHASE_DURATION_MS);
+      const nextDeadlineGuess = new Date(Date.now() + GUESSING_PHASE_DURATION_MS);
+      const nextDeadlineVoting = new Date(Date.now() + VOTING_PHASE_DURATION_MS);
+
+      if (nextWave > N - 1) {
+        const upd = await tx.round.updateMany({
+          where: { id: round.id, chainWave: w },
+          data: {
+            chainWave: N,
+            phaseDeadline: nextDeadlineVoting,
+          },
+        });
+        if (upd.count === 0) {
+          return { advanced: false };
+        }
+
+        await tx.flipbook.updateMany({
+          where: { roundId: round.id },
+          data: { state: 'VOTING' },
+        });
+
+        return {
+          advanced: true,
+          newPhase: 'VOTING',
+          lobbyId,
+          roundId: round.id,
+          endsAt: nextDeadlineVoting.getTime(),
+        };
+      }
+
+      const nextPhase = deriveExpectedPhaseFromChainWave(nextWave, N) as 'DRAWING' | 'GUESSING';
+      const deadline = nextPhase === 'DRAWING' ? nextDeadlineDraw : nextDeadlineGuess;
+
+      const upd = await tx.round.updateMany({
+        where: { id: round.id, chainWave: w },
+        data: {
+          chainWave: nextWave,
+          phaseDeadline: deadline,
+        },
+      });
+      if (upd.count === 0) {
+        return { advanced: false };
+      }
+
+      await tx.flipbook.updateMany({
+        where: { roundId: round.id },
+        data: { state: nextPhase },
+      });
+
+      return {
+        advanced: true,
+        newPhase: nextPhase,
+        lobbyId,
+        roundId: round.id,
+        endsAt: deadline.getTime(),
+      };
+    });
+  } catch (error: any) {
+    logError('advanceRoundIfChainPhaseComplete failed', { lobbyId, error: error.message });
+    return { advanced: false };
+  }
 }
 
 /**
- * Generate initial prompt for a flipbook
- * Used as fallback when custom prompts are not provided
+ * If chainWave is 0 and every flipbook has a non-empty prompt (count matches lobby player count),
+ * advance to wave 1 (DRAWING). Idempotent — safe from HTTP polling and WS handlers.
  */
-function generateInitialPrompt(username: string, index: number): string {
-  const prompts = [
-    'A cat wearing a top hat',
-    'A robot dancing in the rain',
-    'A dragon eating ice cream',
-    'A wizard casting a spell',
-    'A superhero flying over a city',
-    'An astronaut on the moon',
-    'A pirate searching for treasure',
-    'A ninja in a library',
-    'A detective solving a mystery',
-    'A chef cooking a meal',
-    'A knight fighting a dragon',
-    'A surfer riding a wave',
-    'A scientist in a lab',
-    'A musician playing guitar',
-    'A firefighter saving a cat',
-    'A teacher in a classroom',
-  ];
+export async function tryAdvanceInitialPromptsIfReady(
+  lobbyId: string
+): Promise<{ advanced: boolean; endsAt?: number; skipReason?: string }> {
+  if (!lobbyId || typeof lobbyId !== 'string') {
+    logDebug('tryAdvanceInitialPromptsIfReady: invalid lobbyId', { lobbyId });
+    return { advanced: false, skipReason: 'no_lobby_id' };
+  }
 
-  return prompts[index % prompts.length];
+  const endsAt = Date.now() + DRAWING_PHASE_DURATION_MS;
+  try {
+    type TxOutcome =
+      | { advanced: true }
+      | { advanced: false; skipReason: string; meta?: Record<string, number | string> };
+
+    const outcome = await prisma.$transaction(
+      async (tx): Promise<TxOutcome> => {
+      const round = await tx.round.findFirst({
+        where: { lobbyId },
+        orderBy: { number: 'desc' },
+        select: { id: true, chainWave: true },
+      });
+      if (!round) {
+        return { advanced: false, skipReason: 'no_round' };
+      }
+      if (round.chainWave !== 0) {
+        return {
+          advanced: false,
+          skipReason: 'chain_wave_not_zero',
+          meta: { chainWave: round.chainWave },
+        };
+      }
+
+      const lobbyRow = await tx.lobby.findUnique({
+        where: { id: lobbyId },
+        select: { _count: { select: { players: true } } },
+      });
+      const playerCount = lobbyRow?._count.players ?? 0;
+
+      const flipbooks = await tx.flipbook.findMany({
+        where: { roundId: round.id },
+        select: { prompt: true },
+      });
+
+      if (playerCount < 2 || flipbooks.length !== playerCount) {
+        return {
+          advanced: false,
+          skipReason: 'player_or_flipbook_count_mismatch',
+          meta: { playerCount, flipbookCount: flipbooks.length },
+        };
+      }
+
+      const allPromptsSubmitted = flipbooks.every(
+        (fb) => fb.prompt && fb.prompt.trim().length > 0
+      );
+      if (!allPromptsSubmitted) {
+        const emptyCount = flipbooks.filter((fb) => !fb.prompt?.trim()).length;
+        return {
+          advanced: false,
+          skipReason: 'prompts_incomplete',
+          meta: { emptyFlipbooks: emptyCount },
+        };
+      }
+
+      const roundUpdated = await tx.round.updateMany({
+        where: { id: round.id, chainWave: 0 },
+        data: {
+          chainWave: 1,
+          phaseDeadline: new Date(endsAt),
+        },
+      });
+      if (roundUpdated.count === 0) {
+        return { advanced: false, skipReason: 'round_update_race_lost' };
+      }
+
+      await tx.flipbook.updateMany({
+        where: { roundId: round.id },
+        data: { state: 'DRAWING' },
+      });
+
+      return { advanced: true };
+    },
+      {
+        maxWait: 10_000,
+        timeout: 15_000,
+      }
+    );
+
+    if (outcome.advanced) {
+      logInfo('tryAdvanceInitialPromptsIfReady: advanced to DRAWING (wave 1)', {
+        lobbyId,
+        endsAt,
+      });
+      return { advanced: true, endsAt };
+    }
+
+    logDebug('tryAdvanceInitialPromptsIfReady: skipped', {
+      lobbyId,
+      skipReason: outcome.skipReason,
+      ...(outcome.meta ?? {}),
+    });
+    return { advanced: false, skipReason: outcome.skipReason };
+  } catch (error: any) {
+    logError('tryAdvanceInitialPromptsIfReady failed', { lobbyId, error: error.message });
+    return { advanced: false };
+  }
 }
+
+export async function tryAdvanceInitialPromptsIfReadyByRoomCode(roomCodeRaw: string): Promise<{
+  advanced: boolean;
+  endsAt?: number;
+  lobbyId?: string;
+}> {
+  const roomCode = roomCodeRaw.toUpperCase();
+  const lobby = await prisma.lobby.findUnique({
+    where: { roomCode },
+    select: { id: true, state: true },
+  });
+  if (!lobby || lobby.state !== 'IN_PROGRESS') {
+    return { advanced: false };
+  }
+  const result = await tryAdvanceInitialPromptsIfReady(lobby.id);
+  return { ...result, lobbyId: lobby.id };
+}
+
