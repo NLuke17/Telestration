@@ -1,14 +1,26 @@
 data "tls_certificate" "github" {
-  count = var.enable_github_oidc ? 1 : 0
+  count = var.enable_github_oidc && var.github_oidc_create_provider ? 1 : 0
   url   = "https://token.actions.githubusercontent.com"
 }
 
 resource "aws_iam_openid_connect_provider" "github" {
-  count = var.enable_github_oidc ? 1 : 0
+  count = var.enable_github_oidc && var.github_oidc_create_provider ? 1 : 0
 
   url             = "https://token.actions.githubusercontent.com"
   client_id_list  = ["sts.amazonaws.com"]
   thumbprint_list = [data.tls_certificate.github[0].certificates[0].sha1_fingerprint]
+}
+
+data "aws_iam_openid_connect_provider" "github_existing" {
+  count = var.enable_github_oidc && !var.github_oidc_create_provider ? 1 : 0
+
+  arn = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:oidc-provider/token.actions.githubusercontent.com"
+}
+
+locals {
+  github_oidc_provider_arn = !var.enable_github_oidc ? null : (
+    var.github_oidc_create_provider ? aws_iam_openid_connect_provider.github[0].arn : data.aws_iam_openid_connect_provider.github_existing[0].arn
+  )
 }
 
 data "aws_iam_policy_document" "github_oidc_trust" {
@@ -19,7 +31,7 @@ data "aws_iam_policy_document" "github_oidc_trust" {
 
     principals {
       type        = "Federated"
-      identifiers = [aws_iam_openid_connect_provider.github[0].arn]
+      identifiers = [local.github_oidc_provider_arn]
     }
 
     condition {
@@ -31,7 +43,7 @@ data "aws_iam_policy_document" "github_oidc_trust" {
     condition {
       test     = "StringLike"
       variable = "token.actions.githubusercontent.com:sub"
-      values   = ["repo:${var.github_org}/${var.github_repo}:ref:refs/heads/main"]
+      values   = ["repo:${var.github_org}/${var.github_repo}:ref:${var.github_actions_branch_ref}"]
     }
   }
 }

@@ -49,6 +49,18 @@ variable "enable_github_oidc" {
   default     = false
 }
 
+variable "github_oidc_create_provider" {
+  type        = bool
+  description = "Create the account-wide GitHub OIDC identity provider. Set false on the second environment in the same AWS account (AWS allows only one provider URL per account)."
+  default     = true
+}
+
+variable "github_actions_branch_ref" {
+  type        = string
+  description = "Git ref for this environment's deploy role trust, e.g. refs/heads/main or refs/heads/dev."
+  default     = "refs/heads/main"
+}
+
 variable "fargate_cpu" {
   type        = number
   description = "Fargate task CPU units (256 = 0.25 vCPU)."

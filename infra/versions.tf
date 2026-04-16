@@ -1,5 +1,9 @@
 terraform {
-  required_version = ">= 1.5.0"
+  required_version = ">= 1.11.0"
+
+  # After you create the state bucket (see tutorial), init with:
+  #   terraform init -backend-config=environments/dev.backend.hcl
+  backend "s3" {}
 
   required_providers {
     aws = {

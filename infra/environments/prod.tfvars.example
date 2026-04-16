@@ -1,0 +1,13 @@
+# Copy to prod.tfvars and replace YOUR_GITHUB_USER_OR_ORG / Telestration with your repo path.
+
+aws_region  = "us-east-1"
+project_name = "telestration-prod"
+
+# Match GitHub Actions ubuntu-latest (linux/amd64). Use ARM64 only if you build arm images in CI.
+fargate_cpu_architecture = "X86_64"
+
+enable_github_oidc          = true
+github_oidc_create_provider = true
+github_actions_branch_ref   = "refs/heads/main"
+github_org                  = "YOUR_GITHUB_USER_OR_ORG"
+github_repo                 = "Telestration"
