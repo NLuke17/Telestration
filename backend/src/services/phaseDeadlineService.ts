@@ -10,6 +10,7 @@ import {
   submitGuess,
   tryAdvanceInitialPromptsIfReady,
 } from './gameService';
+import { ensureFavoriteVotesForDeadline, finalizeFavoriteVoting } from './favoriteVotingService';
 
 const EMPTY_DRAWING_JSON = '[]';
 
@@ -61,11 +62,13 @@ async function processLobbyPhaseDeadlineIfStale(ctx: WSContext, lobbyId: string)
   const phase = deriveExpectedPhaseFromChainWave(w, N);
 
   if (phase === 'VOTING') {
-    await prisma.round.update({
-      where: { id: round.id },
-      data: { phaseDeadline: null },
-    });
-    logDebug('phase_deadline_cleared_voting', { lobbyId, roundId: round.id });
+    await ensureFavoriteVotesForDeadline(lobbyId);
+    const fin = await finalizeFavoriteVoting(ctx, lobbyId);
+    if (fin.success) {
+      const { broadcastLobbySnapshot } = await import('../ws/handlers/lobbyWs');
+      await broadcastLobbySnapshot(ctx, lobbyId);
+    }
+    logDebug('phase_deadline_favorite_voting', { lobbyId, roundId: round.id, finalized: fin.success });
     return;
   }
 

@@ -51,6 +51,9 @@ const WritingPage: React.FC = () => {
         if (gameState.phase === 'DRAWING' && roomCode) {
             navigate(`/game/${roomCode}/countdown?phase=DRAWING`, { replace: true });
         }
+        if (gameState.phase === 'RECAP' && roomCode) {
+            navigate(`/game/${roomCode}/countdown?phase=RECAP`, { replace: true });
+        }
         if (gameState.phase === 'VOTING' && roomCode) {
             navigate(`/game/${roomCode}/countdown?phase=VOTING`, { replace: true });
         }
@@ -155,6 +158,8 @@ const WritingPage: React.FC = () => {
                         if (roomCode) {
                             if (state.phase === 'DRAWING') {
                                 navigate(`/game/${roomCode}/countdown?phase=DRAWING`, { replace: true });
+                            } else if (state.phase === 'RECAP') {
+                                navigate(`/game/${roomCode}/countdown?phase=RECAP`, { replace: true });
                             } else if (state.phase === 'VOTING') {
                                 navigate(`/game/${roomCode}/countdown?phase=VOTING`, { replace: true });
                             }

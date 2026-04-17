@@ -50,7 +50,8 @@ export async function saveGameFlipbookToLibrary(
   const currentPhase = deriveExpectedPhaseFromChainWave(chainWave, playerCount);
   const lobbyAllowsSave =
     lobbyState === 'FINISHED' ||
-    (lobbyState === 'IN_PROGRESS' && currentPhase === 'VOTING');
+    (lobbyState === 'IN_PROGRESS' &&
+      (currentPhase === 'RECAP' || currentPhase === 'VOTING'));
 
   if (!lobbyAllowsSave) {
     throw new Error('LOBBY_NOT_FINISHED');

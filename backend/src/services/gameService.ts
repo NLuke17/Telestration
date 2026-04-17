@@ -5,7 +5,6 @@ import { persistGameDrawingPayload, resolveGameDrawingPayload } from './drawingS
 import {
   DRAWING_PHASE_DURATION_MS,
   GUESSING_PHASE_DURATION_MS,
-  VOTING_PHASE_DURATION_MS,
 } from '../config/constants';
 
 /**
@@ -392,20 +391,24 @@ export async function submitGuess(
   }
 }
 
+export type GameplayPhase = 'DRAWING' | 'GUESSING' | 'RECAP' | 'VOTING';
+
 /**
  * Derive the active play phase from `chainWave` and player count `N`.
  * wave 0: everyone writes their prompt on their own book (GUESSING in UI).
  * waves 1..N-1: odd = DRAWING, even = GUESSING (telephone chain).
- * wave >= N: recap / voting.
+ * wave N: host-driven recap.
+ * wave N+1: favorite voting (not your own flipbook).
  */
 export function deriveExpectedPhaseFromChainWave(
   chainWave: number,
   playerCount: number
-): 'DRAWING' | 'GUESSING' | 'VOTING' {
+): GameplayPhase {
   const N = playerCount;
   if (N < 1) return 'GUESSING';
   if (chainWave <= 0) return 'GUESSING';
-  if (chainWave >= N) return 'VOTING';
+  if (chainWave > N) return 'VOTING';
+  if (chainWave === N) return 'RECAP';
   return chainWave % 2 === 1 ? 'DRAWING' : 'GUESSING';
 }
 
@@ -437,7 +440,7 @@ export async function revokePhaseSubmission(flipbookId: string, userId: string):
   const w = flipbook.round.chainWave ?? 0;
   const phase = deriveExpectedPhaseFromChainWave(w, N);
 
-  if (phase === 'VOTING') {
+  if (phase === 'RECAP' || phase === 'VOTING') {
     throw new Error('REVOKE_NOT_ALLOWED');
   }
 
@@ -519,7 +522,7 @@ export async function getAssignedFlipbook(
   const w = round.chainWave;
   const expected = deriveExpectedPhaseFromChainWave(w, N);
 
-  if (expected === 'VOTING' || expected !== phase) {
+  if (expected === 'RECAP' || expected === 'VOTING' || expected !== phase) {
     return null;
   }
 
@@ -668,10 +671,10 @@ export type AdvanceRoundResult =
   | { advanced: false }
   | {
       advanced: true;
-      newPhase: 'DRAWING' | 'GUESSING' | 'VOTING';
+      newPhase: 'DRAWING' | 'GUESSING' | 'RECAP' | 'VOTING';
       lobbyId: string;
       roundId: string;
-      endsAt: number;
+      endsAt: number | null;
     };
 
 /**
@@ -728,14 +731,13 @@ export async function advanceRoundIfChainPhaseComplete(
       const nextWave = w + 1;
       const nextDeadlineDraw = new Date(Date.now() + DRAWING_PHASE_DURATION_MS);
       const nextDeadlineGuess = new Date(Date.now() + GUESSING_PHASE_DURATION_MS);
-      const nextDeadlineVoting = new Date(Date.now() + VOTING_PHASE_DURATION_MS);
 
       if (nextWave > N - 1) {
         const upd = await tx.round.updateMany({
           where: { id: round.id, chainWave: w },
           data: {
             chainWave: N,
-            phaseDeadline: nextDeadlineVoting,
+            phaseDeadline: null,
           },
         });
         if (upd.count === 0) {
@@ -749,10 +751,10 @@ export async function advanceRoundIfChainPhaseComplete(
 
         return {
           advanced: true,
-          newPhase: 'VOTING',
+          newPhase: 'RECAP',
           lobbyId,
           roundId: round.id,
-          endsAt: nextDeadlineVoting.getTime(),
+          endsAt: null,
         };
       }
 

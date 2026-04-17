@@ -24,7 +24,7 @@ export function getRecapState(lobbyId: string): RecapState | undefined {
 }
 
 /**
- * Build ordered flipbook ids for recap and reset cursor (call when entering VOTING).
+ * Build ordered flipbook ids for recap and reset cursor (call when entering RECAP).
  */
 export async function initRecapStateFromLobby(lobbyId: string): Promise<void> {
   const lobby = await prisma.lobby.findUnique({
