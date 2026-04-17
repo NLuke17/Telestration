@@ -45,7 +45,7 @@ jobs:
 
       - name: Build frontend
         working-directory: frontend
-        run: npm ci && node scripts/ci-install-rollup-native.cjs && npm run build
+        run: npm ci && node scripts/ci-install-native-bindings.cjs && npm run build
 
       - name: Upload frontend to S3
         run: |
