@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 /**
- * Rollup, lightningcss (Tailwind), and similar packages ship platform-specific optional dependencies.
- * When package-lock.json was generated on macOS, `npm ci` on Linux can omit the Linux binding
+ * Rollup, lightningcss, @tailwindcss/oxide, esbuild, etc. ship platform-specific optional deps.
+ * When package-lock.json was generated on macOS, `npm ci` on Linux can omit Linux bindings
  * (https://github.com/npm/cli/issues/4828). Install the correct optional packages after npm ci.
  *
  * IMPORTANT: Install all missing natives in ONE `npm install` invocation. Separate installs can
- * prune optional deps from each other ("removed 1 package"), breaking Rollup after LightningCSS.
+ * prune optional deps from each other ("removed 1 package").
  */
 const { execSync } = require('child_process');
 const fs = require('fs');
@@ -21,7 +21,7 @@ function isMusl() {
   }
 }
 
-/** Rollup optionalDependency keys match @rollup/rollup-* */
+/** Rollup optionalDependency keys: @rollup/rollup-linux-x64-gnu, etc. */
 function rollupLinuxOptionalKey() {
   const { platform, arch } = process;
   if (platform !== 'linux') return null;
@@ -31,13 +31,32 @@ function rollupLinuxOptionalKey() {
   return null;
 }
 
-/** lightningcss optionalDependency keys are lightningcss-linux-x64-gnu etc. */
+/** lightningcss optionalDependency keys: lightningcss-linux-x64-gnu, etc. */
 function lightningcssLinuxOptionalKey() {
   const { platform, arch } = process;
   if (platform !== 'linux') return null;
   const musl = isMusl();
   if (arch === 'x64') return musl ? 'lightningcss-linux-x64-musl' : 'lightningcss-linux-x64-gnu';
   if (arch === 'arm64') return musl ? 'lightningcss-linux-arm64-musl' : 'lightningcss-linux-arm64-gnu';
+  return null;
+}
+
+/** @tailwindcss/oxide optionalDependency keys (Tailwind v4 native engine). */
+function tailwindOxideLinuxOptionalKey() {
+  const { platform, arch } = process;
+  if (platform !== 'linux') return null;
+  const musl = isMusl();
+  if (arch === 'x64') return musl ? '@tailwindcss/oxide-linux-x64-musl' : '@tailwindcss/oxide-linux-x64-gnu';
+  if (arch === 'arm64') return musl ? '@tailwindcss/oxide-linux-arm64-musl' : '@tailwindcss/oxide-linux-arm64-gnu';
+  return null;
+}
+
+/** esbuild optionalDependency keys (@esbuild/linux-x64 — single package per arch). */
+function esbuildLinuxOptionalKey() {
+  const { platform, arch } = process;
+  if (platform !== 'linux') return null;
+  if (arch === 'x64') return '@esbuild/linux-x64';
+  if (arch === 'arm64') return '@esbuild/linux-arm64';
   return null;
 }
 
@@ -49,10 +68,11 @@ function optionalPackageJsonPath(optionalKey) {
   return path.join(frontendRoot, 'node_modules', optionalKey, 'package.json');
 }
 
-function collectMissing(parentPkgFolderName, resolveOptionalKey, label) {
-  const pkgJsonPath = path.join(frontendRoot, 'node_modules', parentPkgFolderName, 'package.json');
+/** @param {string[]} nodeModulesSegments e.g. ['rollup'] or ['@tailwindcss','oxide'] */
+function collectMissing(nodeModulesSegments, resolveOptionalKey, label) {
+  const pkgJsonPath = path.join(frontendRoot, 'node_modules', ...nodeModulesSegments, 'package.json');
   if (!fs.existsSync(pkgJsonPath)) {
-    console.warn(`[ci-install-native-bindings] skip ${label}: ${parentPkgFolderName} not installed`);
+    console.warn(`[ci-install-native-bindings] skip ${label}: ${nodeModulesSegments.join('/')} not installed`);
     return [];
   }
 
@@ -67,7 +87,7 @@ function collectMissing(parentPkgFolderName, resolveOptionalKey, label) {
 
   const ver = optionalDeps[optionalKey];
   if (!ver) {
-    console.error(`[ci-install-native-bindings] no optionalDependencies entry for ${optionalKey} in ${parentPkgFolderName}`);
+    console.error(`[ci-install-native-bindings] no optionalDependencies entry for ${optionalKey} in ${label}`);
     process.exit(1);
   }
 
@@ -82,8 +102,10 @@ function collectMissing(parentPkgFolderName, resolveOptionalKey, label) {
 }
 
 const specs = [
-  ...collectMissing('rollup', rollupLinuxOptionalKey, 'rollup'),
-  ...collectMissing('lightningcss', lightningcssLinuxOptionalKey, 'lightningcss'),
+  ...collectMissing(['rollup'], rollupLinuxOptionalKey, 'rollup'),
+  ...collectMissing(['lightningcss'], lightningcssLinuxOptionalKey, 'lightningcss'),
+  ...collectMissing(['@tailwindcss', 'oxide'], tailwindOxideLinuxOptionalKey, '@tailwindcss/oxide'),
+  ...collectMissing(['esbuild'], esbuildLinuxOptionalKey, 'esbuild'),
 ];
 
 if (specs.length === 0) {
