@@ -1,0 +1,16 @@
+# Copy to dev.tfvars. Same bucket for Terraform state as prod; second env must NOT recreate the GitHub OIDC provider.
+
+aws_region  = "us-east-1"
+project_name = "telestration-dev"
+
+fargate_cpu_architecture = "X86_64"
+
+enable_github_oidc          = true
+github_oidc_create_provider = false
+github_actions_branch_ref          = "refs/heads/dev"
+github_actions_github_environment  = "dev"
+github_org                         = "YOUR_GITHUB_USER_OR_ORG"
+github_repo                        = "Telestration"
+
+# Optional: smaller / cheaper for development
+# db_instance_class = "db.t4g.micro"

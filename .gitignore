@@ -166,6 +166,7 @@ docker-compose.override.yml
 
 # Local drawing blob storage (dev); production should use object storage + same relative keys
 backend/data/drawings/
+backend/data/avatars/
 
 .postman/
 postman/environments/*.postman_environment.json

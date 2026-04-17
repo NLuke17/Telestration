@@ -29,8 +29,11 @@ module "ecs" {
   fargate_memory              = var.fargate_memory
   fargate_cpu_architecture    = var.fargate_cpu_architecture
   enable_github_oidc          = var.enable_github_oidc
-  github_org                  = var.github_org
-  github_repo                 = var.github_repo
+  github_oidc_create_provider = var.github_oidc_create_provider
+  github_actions_branch_ref          = var.github_actions_branch_ref
+  github_actions_github_environment  = var.github_actions_github_environment
+  github_org                         = var.github_org
+  github_repo                        = var.github_repo
 }
 
 module "s3" {

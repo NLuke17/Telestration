@@ -12,6 +12,11 @@ import {
 } from '../../services/gameService';
 import { logInfo, logError } from '../../utils/logger';
 import { initRecapStateFromLobby, broadcastRecapSync } from '../state/recapTracker';
+import {
+  revokeFavoriteVote,
+  submitFavoriteVote,
+  tryFinalizeFavoriteVotingIfAllVoted,
+} from '../../services/favoriteVotingService';
 
 /**
  * Broadcast guess_submitted + advance phase when applicable (shared by WS and HTTP submit).
@@ -256,15 +261,15 @@ export async function broadcastGameStarted(
 export async function broadcastPhaseChange(
   ctx: WSContext,
   lobbyId: string,
-  phase: 'DRAWING' | 'GUESSING' | 'VOTING',
-  opts?: { endsAt?: number }
+  phase: 'DRAWING' | 'GUESSING' | 'RECAP' | 'VOTING',
+  opts?: { endsAt?: number | null }
 ): Promise<void> {
   const connections = ctx.registry.getLobbyConnections(lobbyId);
 
   const { DRAWING_PHASE_DURATION_MS, GUESSING_PHASE_DURATION_MS, VOTING_PHASE_DURATION_MS } =
     await import('../../config/constants');
 
-  let duration: number;
+  let duration = GUESSING_PHASE_DURATION_MS;
   switch (phase) {
     case 'DRAWING':
       duration = DRAWING_PHASE_DURATION_MS;
@@ -275,9 +280,20 @@ export async function broadcastPhaseChange(
     case 'VOTING':
       duration = VOTING_PHASE_DURATION_MS;
       break;
+    case 'RECAP':
+      break;
   }
 
-  const endsAt = opts?.endsAt ?? Date.now() + duration;
+  let endsAt: number | null;
+  if (opts && opts.endsAt !== undefined && opts.endsAt !== null) {
+    endsAt = opts.endsAt;
+  } else if (opts && opts.endsAt === null) {
+    endsAt = null;
+  } else if (phase === 'RECAP') {
+    endsAt = null;
+  } else {
+    endsAt = Date.now() + duration;
+  }
 
   const prisma = (await import('../../prisma/client')).default;
   const round = await prisma.round.findFirst({
@@ -288,11 +304,11 @@ export async function broadcastPhaseChange(
   if (round) {
     await prisma.round.update({
       where: { id: round.id },
-      data: { phaseDeadline: new Date(endsAt) },
+      data: { phaseDeadline: endsAt == null ? null : new Date(endsAt) },
     });
   }
 
-  if (phase === 'VOTING') {
+  if (phase === 'RECAP') {
     await initRecapStateFromLobby(lobbyId);
   }
 
@@ -302,9 +318,72 @@ export async function broadcastPhaseChange(
     endsAt,
   });
 
-  if (phase === 'VOTING') {
+  if (phase === 'RECAP') {
     broadcastRecapSync(lobbyId);
   }
 
   logInfo('Broadcasted phase change', { lobbyId, phase, endsAt, connectionCount: connections.length });
+}
+
+export async function handleSubmitFavoriteVote(
+  ctx: WSContext,
+  conn: ClientConn,
+  msg: { type: 'game:submit_vote'; flipbookId: string }
+): Promise<void> {
+  if (!conn.lobbyId || !conn.userId) {
+    send(conn, { type: 'error', error: 'NOT_AUTHENTICATED', message: 'Not authenticated' });
+    return;
+  }
+
+  const lobbyId = conn.lobbyId;
+  const userId = conn.userId;
+
+  const res = await submitFavoriteVote(lobbyId, userId, msg.flipbookId);
+  if (!res.ok) {
+    send(conn, {
+      type: 'error',
+      error: 'VOTE_FAILED',
+      message: res.error,
+    });
+    return;
+  }
+
+  const connections = ctx.registry.getLobbyConnections(lobbyId);
+  broadcast(connections, {
+    type: 'game:vote_submitted',
+    flipbookId: msg.flipbookId,
+    userId,
+  });
+
+  await tryFinalizeFavoriteVotingIfAllVoted(ctx, lobbyId);
+}
+
+export async function handleRevokeFavoriteVote(ctx: WSContext, conn: ClientConn): Promise<void> {
+  if (!conn.lobbyId || !conn.userId) {
+    send(conn, { type: 'error', error: 'NOT_AUTHENTICATED', message: 'Not authenticated' });
+    return;
+  }
+
+  const lobbyId = conn.lobbyId;
+  const userId = conn.userId;
+
+  try {
+    await revokeFavoriteVote(lobbyId, userId);
+    const connections = ctx.registry.getLobbyConnections(lobbyId);
+    broadcast(connections, {
+      type: 'game:vote_revoked',
+      userId,
+    });
+  } catch (error: any) {
+    logError('Failed to revoke vote', {
+      lobbyId,
+      userId,
+      error: error.message,
+    });
+    send(conn, {
+      type: 'error',
+      error: 'REVOKE_VOTE_FAILED',
+      message: error.message || 'Failed to revoke vote',
+    });
+  }
 }

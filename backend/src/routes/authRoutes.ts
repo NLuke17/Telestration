@@ -1,11 +1,13 @@
 import express from "express";
+import multer from "multer";
 // @ts-ignore - express-rate-limit v8.x includes types, TS server cache issue
 import rateLimit from "express-rate-limit"; 
-import { createUser, listUsers, loginUser, refreshUserToken, logoutUser, logoutAllDevices, deleteUserAccount } from "../services/authService";
+import { createUser, listUsers, loginUser, refreshUserToken, logoutUser, logoutAllDevices, deleteUserAccount, getUserProfile, updateUserProfilePictureUrl } from "../services/authService";
+import { persistUserAvatar } from "../services/avatarService";
 import { validate } from "../middleware/validate";
 import { createUserSchema, loginUserSchema, refreshTokenSchema } from "../validation/auth.validation";
 import { deleteAccountSchema } from "../validation/user.validation";
-import { authenticateJWT } from "../middleware/authMiddleware";
+import { authenticateJWT, AuthRequest } from "../middleware/authMiddleware";
 
 const router = express.Router();
 
@@ -34,6 +36,24 @@ const refreshLimiter = rateLimit({
   message: { message: "Too many refresh attempts, please try again later" },
   standardHeaders: true,
   legacyHeaders: false,
+});
+
+const avatarUploadLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 30,
+  message: { message: "Too many avatar uploads, try again later" },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const AVATAR_MAX_BYTES = 2 * 1024 * 1024;
+const avatarUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: AVATAR_MAX_BYTES + 4096 },
+  fileFilter: (_req, file, cb) => {
+    const ok = ["image/jpeg", "image/png", "image/webp"].includes(file.mimetype);
+    cb(null, ok);
+  },
 });
 
 router.post("/create-user", signupLimiter, validate(createUserSchema), async (req, res) => {
@@ -73,6 +93,51 @@ router.post("/refresh", refreshLimiter, validate(refreshTokenSchema), async (req
     return res.status(401).json({ message: error.message });
   }
 });
+
+router.get("/me", authenticateJWT, async (req: AuthRequest, res) => {
+  try {
+    const userId = req.user?.userId as string;
+    const profile = await getUserProfile(userId);
+    return res.status(200).json(profile);
+  } catch (error: any) {
+    if (error?.message === "User not found") {
+      return res.status(404).json({ message: "User not found" });
+    }
+    const message = error instanceof Error ? error.message : String(error);
+    return res.status(500).json({ message: "Failed to load profile", error: message });
+  }
+});
+
+router.post(
+  "/me/avatar",
+  avatarUploadLimiter,
+  authenticateJWT,
+  avatarUpload.single("avatar"),
+  async (req: AuthRequest, res) => {
+    try {
+      const file = req.file;
+      if (!file?.buffer?.length) {
+        return res.status(400).json({ message: "No image file (field name: avatar)" });
+      }
+      const userId = req.user?.userId as string;
+      const { publicUrl } = await persistUserAvatar(req, userId, file.buffer);
+      const profile = await updateUserProfilePictureUrl(userId, publicUrl);
+      return res.status(200).json(profile);
+    } catch (error: any) {
+      if (error?.message === "AVATAR_TOO_LARGE") {
+        return res.status(413).json({ message: "Image must be 2 MB or smaller" });
+      }
+      if (error?.message === "AVATAR_INVALID_IMAGE") {
+        return res.status(400).json({ message: "Only JPEG, PNG, or WebP images are allowed" });
+      }
+      if (error?.message === "AVATAR_PUBLIC_BASE_URL_REQUIRED_WITH_S3") {
+        return res.status(500).json({ message: "Server misconfiguration: AVATAR_PUBLIC_BASE_URL required when using S3" });
+      }
+      const message = error instanceof Error ? error.message : String(error);
+      return res.status(500).json({ message: "Failed to update avatar", error: message });
+    }
+  }
+);
 
 router.get("/all-users", authenticateJWT, async (_req, res) => {
   try {

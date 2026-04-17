@@ -49,6 +49,24 @@ variable "enable_github_oidc" {
   type = bool
 }
 
+variable "github_oidc_create_provider" {
+  type        = bool
+  description = "When enable_github_oidc is true, create aws_iam_openid_connect_provider. Set false if it already exists in this AWS account."
+  default     = true
+}
+
+variable "github_actions_branch_ref" {
+  type        = string
+  description = "OIDC sub ref, e.g. refs/heads/dev"
+  default     = "refs/heads/main"
+}
+
+variable "github_actions_github_environment" {
+  type        = string
+  description = "GitHub Environment slug for OIDC sub repo:...:environment:NAME; empty to trust only branch ref."
+  default     = ""
+}
+
 variable "github_org" {
   type    = string
   default = ""

@@ -49,6 +49,24 @@ variable "enable_github_oidc" {
   default     = false
 }
 
+variable "github_oidc_create_provider" {
+  type        = bool
+  description = "Create the account-wide GitHub OIDC identity provider. Set false on the second environment in the same AWS account (AWS allows only one provider URL per account)."
+  default     = true
+}
+
+variable "github_actions_branch_ref" {
+  type        = string
+  description = "Git ref for this environment's deploy role trust, e.g. refs/heads/main or refs/heads/dev."
+  default     = "refs/heads/main"
+}
+
+variable "github_actions_github_environment" {
+  type        = string
+  description = "GitHub Actions environment name (e.g. prod, dev) when the workflow job uses `environment:`. Must match Settings → Environments exactly. When set, IAM trust allows repo:...:environment:NAME (GitHub uses this instead of :ref:... for OIDC sub)."
+  default     = ""
+}
+
 variable "fargate_cpu" {
   type        = number
   description = "Fargate task CPU units (256 = 0.25 vCPU)."

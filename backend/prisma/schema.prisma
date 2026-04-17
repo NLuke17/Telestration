@@ -22,6 +22,13 @@ model User {
   loginAttempts Int @default(0) // Track failed login attempts
   lockedUntil   DateTime? // Account lockout timestamp
 
+  /// Votes received on this user's flipbooks across completed games.
+  totalVotesReceived Int @default(0)
+  /// Times this user finished 1st (ties count as 1st).
+  wins                 Int @default(0)
+  /// Completed games this user participated in.
+  gamesPlayed          Int @default(0)
+
   // Relations
   hostedLobbies Lobby[]     @relation("LobbyHost")
   lobbies       Lobby[]     @relation("LobbyPlayers")
@@ -31,6 +38,7 @@ model User {
   guesses       Guess[]
   refreshTokens RefreshToken[]
   savedFlipbooks SavedFlipbook[]
+  roundVotesCast RoundVote[] @relation("RoundVoteVoter")
 }
 
 model RefreshToken {
@@ -65,10 +73,12 @@ model Round{
   id          String     @id @default(uuid())
   number      Int
   createdAt   DateTime   @default(now())
-  /// 0 = collect initial prompts on own flipbook; 1..N-1 = draw/guess chain; N = recap (VOTING) / finished chain
+  /// 0 = collect initial prompts on own flipbook; 1..N-1 = draw/guess chain; N = host recap; N+1 = favorite voting.
   chainWave   Int        @default(0)
   /// Server-authoritative end time for the current phase (used by clients for countdown).
   phaseDeadline DateTime?
+  /// Populated when favorite voting finishes (rankings, vote counts).
+  votingResults Json?
 
   // Relations
   lobby       Lobby      @relation(fields: [lobbyId], references: [id], onDelete: Cascade)
@@ -76,6 +86,7 @@ model Round{
   flipbooks   Flipbook[]
   winner      User?      @relation("RoundWinner", fields: [winnerId], references: [id], onDelete: SetNull)
   winnerId    String?
+  roundVotes  RoundVote[]
 }
 
 model Flipbook {
@@ -92,6 +103,23 @@ model Flipbook {
   roundId     String
   drawings    Drawing[]
   guesses     Guess[]
+  roundVotes  RoundVote[]
+}
+
+/// One favorite vote per player per round (not your own flipbook).
+model RoundVote {
+  id         String   @id @default(uuid())
+  roundId    String
+  voterId    String
+  flipbookId String
+  createdAt  DateTime @default(now())
+
+  round    Round    @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  voter    User     @relation("RoundVoteVoter", fields: [voterId], references: [id], onDelete: Cascade)
+  flipbook Flipbook @relation(fields: [flipbookId], references: [id], onDelete: Cascade)
+
+  @@unique([roundId, voterId])
+  @@index([roundId])
 }
 
 model Drawing {

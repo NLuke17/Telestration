@@ -45,13 +45,24 @@ export interface GameStateDTO {
   };
 }
 
+export type VoteFlipbookCard = {
+  id: string;
+  authorId: string;
+  authorUsername: string;
+  prompt: string;
+  finalDrawingData: string | null;
+  votes: number;
+};
+
 /** Flat shape returned by GET /lobby/:roomCode/state (backend gameStateService) */
 export interface LobbyRoomStateResponse {
   lobbyId: string;
   roomCode: string;
   state: LobbySnapshot['state'];
-  phase: 'WAITING' | 'FINISHED' | 'DRAWING' | 'GUESSING' | 'VOTING';
+  phase: 'WAITING' | 'FINISHED' | 'DRAWING' | 'GUESSING' | 'RECAP' | 'VOTING';
   roundId: string | null;
+  myFlipbookId?: string | null;
+  myRole?: string | null;
   roundNumber?: number;
   /** Unix ms from server `Round.phaseDeadline` (countdown sync). */
   endsAt?: number | null;
@@ -82,6 +93,8 @@ export interface LobbyRoomStateResponse {
     guessCount: number;
     votes: number;
   }>;
+  voteFlipbooks?: VoteFlipbookCard[];
+  votingResults?: unknown;
   host: UserDTO;
   players: LobbyPlayerDTO[];
   createdAt: string | Date;

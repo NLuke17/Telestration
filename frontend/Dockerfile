@@ -18,5 +18,6 @@ COPY . .
 # Expose the port the app will run on
 EXPOSE 5173
 
-# Start the application in development mode with Vite
-CMD ["npm", "run", "dev"]
+# Sync node_modules with package.json on every start (needed when compose uses a
+# persistent /app/node_modules volume — otherwise new deps like gifenc stay missing).
+CMD ["sh", "-c", "npm install && npm run dev"]

@@ -18,3 +18,8 @@ output "github_actions_role_arn" {
   value       = try(aws_iam_role.github_actions[0].arn, null)
   description = "Null unless enable_github_oidc is true."
 }
+
+output "github_actions_role_name" {
+  value       = try(aws_iam_role.github_actions[0].name, null)
+  description = "Null unless enable_github_oidc is true. Use for attaching extra IAM policies at the root module."
+}

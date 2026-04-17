@@ -3,6 +3,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { HttpError } from '../services/api/httpClient';
 import { getWSClient, type ConnectionStatus } from '../services/ws/wsClient';
 import type { LobbySnapshot } from '../types/dto';
 import type { WSServerMessage } from '../types/ws';
@@ -165,7 +166,7 @@ export type GameStateSync = { roomCode: string; userId: string };
 export function useGameState(lobbyId?: string, sync?: GameStateSync) {
   const [roundId, setRoundId] = useState<string | null>(null);
   const [roundNumber, setRoundNumber] = useState<number>(0);
-  const [phase, setPhase] = useState<'DRAWING' | 'GUESSING' | 'VOTING' | null>(null);
+  const [phase, setPhase] = useState<'DRAWING' | 'GUESSING' | 'RECAP' | 'VOTING' | null>(null);
   const [phaseEndsAt, setPhaseEndsAt] = useState<number | null>(null);
   const [chainWave, setChainWave] = useState<number | null>(null);
   const [maxChainWave, setMaxChainWave] = useState<number | null>(null);
@@ -180,12 +181,30 @@ export function useGameState(lobbyId?: string, sync?: GameStateSync) {
     }
 
     let cancelled = false;
+    let pollId: ReturnType<typeof setInterval> | null = null;
+
+    const stopPolling = () => {
+      cancelled = true;
+      if (pollId != null) {
+        clearInterval(pollId);
+        pollId = null;
+      }
+    };
 
     const tick = async () => {
+      if (cancelled) {
+        return;
+      }
       try {
         const { getGameState } = await import('../services/api/lobbyApi');
         const s = await getGameState(sync.roomCode, sync.userId);
-        if (cancelled) return;
+        if (cancelled) {
+          return;
+        }
+        if (s.state === 'FINISHED') {
+          stopPolling();
+          return;
+        }
         if (s.state !== 'IN_PROGRESS' || !s.roundId) {
           return;
         }
@@ -193,11 +212,13 @@ export function useGameState(lobbyId?: string, sync?: GameStateSync) {
         if (typeof s.roundNumber === 'number') {
           setRoundNumber(s.roundNumber);
         }
-        if (s.phase === 'DRAWING' || s.phase === 'GUESSING' || s.phase === 'VOTING') {
+        if (s.phase === 'DRAWING' || s.phase === 'GUESSING' || s.phase === 'RECAP' || s.phase === 'VOTING') {
           setPhase(s.phase);
         }
         if (typeof s.endsAt === 'number') {
           setPhaseEndsAt(s.endsAt);
+        } else if (s.endsAt === null) {
+          setPhaseEndsAt(null);
         }
         if (typeof s.chainWave === 'number') {
           setChainWave(s.chainWave);
@@ -205,16 +226,17 @@ export function useGameState(lobbyId?: string, sync?: GameStateSync) {
         if (typeof s.maxChainWave === 'number') {
           setMaxChainWave(s.maxChainWave);
         }
-      } catch {
-        /* ignore */
+      } catch (e) {
+        if (e instanceof HttpError && e.status === 404) {
+          stopPolling();
+        }
       }
     };
 
     void tick();
-    const id = setInterval(tick, 1500);
+    pollId = setInterval(tick, 1500);
     return () => {
-      cancelled = true;
-      clearInterval(id);
+      stopPolling();
     };
   }, [ws.isConnected, sync?.roomCode, sync?.userId]);
 
@@ -240,14 +262,15 @@ export function useGameState(lobbyId?: string, sync?: GameStateSync) {
         }
       ),
 
-      client.subscribe<{ type: 'game:phase_changed'; phase: 'DRAWING' | 'GUESSING' | 'VOTING'; endsAt: number }>(
-        'game:phase_changed',
-        (msg) => {
-          setPhase(msg.phase);
-          setPhaseEndsAt(msg.endsAt);
-          setIsPhaseComplete(false);
-        }
-      ),
+      client.subscribe<{
+        type: 'game:phase_changed';
+        phase: 'DRAWING' | 'GUESSING' | 'RECAP' | 'VOTING';
+        endsAt: number | null;
+      }>('game:phase_changed', (msg) => {
+        setPhase(msg.phase);
+        setPhaseEndsAt(typeof msg.endsAt === 'number' ? msg.endsAt : null);
+        setIsPhaseComplete(false);
+      }),
 
       client.subscribe<{ type: 'game:phase_complete'; phase: 'DRAWING' | 'GUESSING' }>(
         'game:phase_complete',

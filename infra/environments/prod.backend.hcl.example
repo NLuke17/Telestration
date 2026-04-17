@@ -1,0 +1,8 @@
+# Backend bucket stores Terraform state only — NOT your ECS/RDS project_name.
+# Create one bucket, reuse it for prod + dev backend configs (different `key` only).
+
+bucket         = "telestration-tfstate-YOUR_SUFFIX"
+key            = "telestration/prod/terraform.tfstate"
+region         = "us-east-1"
+encrypt        = true
+use_lockfile   = true

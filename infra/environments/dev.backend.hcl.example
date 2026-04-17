@@ -1,0 +1,7 @@
+# Same bucket as prod.backend.hcl.example; different key.
+
+bucket         = "telestration-tfstate-YOUR_SUFFIX"
+key            = "telestration/dev/terraform.tfstate"
+region         = "us-east-1"
+encrypt        = true
+use_lockfile   = true

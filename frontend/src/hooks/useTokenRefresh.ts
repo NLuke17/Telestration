@@ -13,23 +13,29 @@ export const useTokenRefresh = () => {
   const intervalRef = useRef<number | null>(null);
 
   useEffect(() => {
-    if (isAuthenticated) {
-      // Set up automatic token refresh
-      intervalRef.current = setInterval(async () => {
-        try {
-          await refreshAccessToken();
-        } catch (error) {
-          console.error('Failed to refresh token:', error);
-          // If refresh fails, user will be logged out by the AuthContext
-        }
-      }, TOKEN_REFRESH_INTERVAL);
-
-      // Cleanup on unmount or when auth state changes
-      return () => {
-        if (intervalRef.current) {
-          clearInterval(intervalRef.current);
-        }
-      };
+    if (!isAuthenticated) {
+      return undefined;
     }
+
+    const run = async () => {
+      try {
+        await refreshAccessToken();
+      } catch (error) {
+        console.error('Failed to refresh token:', error);
+      }
+    };
+
+    // Rotate once on login / page load so a session that sat >15m still has a valid access token
+    void run();
+
+    intervalRef.current = window.setInterval(() => {
+      void run();
+    }, TOKEN_REFRESH_INTERVAL);
+
+    return () => {
+      if (intervalRef.current != null) {
+        clearInterval(intervalRef.current);
+      }
+    };
   }, [isAuthenticated, refreshAccessToken]);
 };

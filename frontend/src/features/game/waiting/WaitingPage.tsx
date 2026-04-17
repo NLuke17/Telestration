@@ -49,6 +49,10 @@ const WaitingPage: React.FC = () => {
                     setPhaseFromApi(s.phase);
                 }
 
+                if (s.phase === 'RECAP') {
+                    navigate(`/game/${roomCode}/countdown?phase=RECAP`, { replace: true });
+                    return;
+                }
                 if (s.phase === 'VOTING') {
                     navigate(`/game/${roomCode}/countdown?phase=VOTING`, { replace: true });
                     return;
@@ -85,6 +89,8 @@ const WaitingPage: React.FC = () => {
             navigate(`/game/${roomCode}/countdown?phase=DRAWING`, { replace: true });
         } else if (prev === 'DRAWING' && gameState.phase === 'GUESSING') {
             navigate(`/game/${roomCode}/countdown?phase=GUESSING`, { replace: true });
+        } else if (gameState.phase === 'RECAP' && prev !== 'RECAP') {
+            navigate(`/game/${roomCode}/countdown?phase=RECAP`, { replace: true });
         } else if (gameState.phase === 'VOTING' && prev !== 'VOTING') {
             navigate(`/game/${roomCode}/countdown?phase=VOTING`, { replace: true });
         }

@@ -6,6 +6,7 @@ import authRoutes from './routes/authRoutes';
 import healthRoutes from './routes/healthRoutes';
 import lobbyRoutes from './routes/lobbyRoutes';
 import gameRoutes from './routes/gameRoutes';
+import mediaRoutes from './routes/mediaRoutes';
 
 const PORT = Number(process.env.PORT || 8000);
 const HOST = process.env.HOST || '0.0.0.0';
@@ -24,6 +25,7 @@ app.set('wsHandle', wsHandle);
 
 // REST API under /api so the same hostname can serve the SPA (e.g. /lobby/:code) and JSON (e.g. /api/lobby/:code).
 app.use('/api/auth', authRoutes);
+app.use('/api/media', mediaRoutes);
 app.use('/api/health', healthRoutes);
 app.use('/api/lobby', lobbyRoutes);
 app.use('/api/game', gameRoutes);

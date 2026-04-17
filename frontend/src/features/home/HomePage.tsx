@@ -3,19 +3,19 @@ import Container from '../../components/common/Container';
 import TutorialSlideshow from '../auth/components/TutorialSlideshow';
 import { PiNumberCircleOne, PiNumberCircleTwo } from "react-icons/pi";
 import Button from '../../components/common/Button';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import Alert from '@mui/material/Alert';
 import { createLobby, joinLobby } from '../../services/api/lobbyApi';
 import { useAuth } from '../../contexts/AuthContext';
+import InitialAvatar from '../../components/common/Avatar';
 
 const HomePage: React.FC = () => {
     const navigate = useNavigate();
-    const { user, isAuthenticated, logout } = useAuth();
+    const { user, isAuthenticated } = useAuth();
     const [roomCodeInput, setRoomCodeInput] = useState<string>('');
     const [error, setError] = useState<string | null>(null);
     const [isCreating, setIsCreating] = useState(false);
     const [isJoining, setIsJoining] = useState(false);
-    const [isLoggingOut, setIsLoggingOut] = useState(false);
 
     const handleCreateLobby = async () => {
         let userId: string;
@@ -82,36 +82,31 @@ const HomePage: React.FC = () => {
         }
     };
 
-    const handleLogout = async () => {
-        try {
-            setIsLoggingOut(true);
-            await logout();
-        } catch (err: any) {
-            console.error("Logout error:", err);
-            setError('Failed to logout');
-        } finally {
-            setIsLoggingOut(false);
-        }
-    };
-
     return (
         <div className="flex flex-col justify-center items-center h-screen">
             {/* Home content container */}
             <Container width='900px' height='500px' padding='4em' className='flex items-center justify-center gap-8 flex-col border-2 border-dark-grey rounded-lg'>
                 {/* Heading */}
-                <div className="w-full flex align-left items-center justify-between">
+                <div className="relative z-20 flex w-full shrink-0 items-center justify-between gap-4">
                     <h1 className="text-heading-1 text-left">New Game</h1>
                     <div className='flex flex-row items-center gap-4'>
-                        {isAuthenticated ? (
-                            <>
-                                <div className='text-body-base'>Welcome, {user?.username}!</div>
-                                <Button
-                                    className='h-fit flex'
-                                    label={isLoggingOut ? "Logging out..." : "Logout"}
-                                    onClick={handleLogout}
-                                    disabled={isLoggingOut}
+                        {isAuthenticated && user ? (
+                            <Link
+                                to="/account"
+                                className="flex flex-row items-center gap-3 rounded-lg border border-dark-grey bg-white px-4 py-2 shadow-sm hover:bg-slate-50 transition-colors cursor-pointer text-left no-underline text-inherit"
+                            >
+                                <InitialAvatar
+                                    name={user.username}
+                                    src={user.profilePicture ?? undefined}
+                                    size="44"
                                 />
-                            </>
+                                <div className="flex flex-col min-w-0">
+                                    <span className="text-xs uppercase text-gray-500 tracking-wide">Account</span>
+                                    <span className="text-body-base font-semibold text-brand-charcoal truncate max-w-[200px]">
+                                        {user.username}
+                                    </span>
+                                </div>
+                            </Link>
                         ) : (
                             <>
                                 <div className='text-heading-3'>or</div>
@@ -125,9 +120,9 @@ const HomePage: React.FC = () => {
                     </div>
                 </div>
                 {/* Main content */}
-                <div className="flex flex-row items-center justify-center w-full h-full gap-8">
+                <div className="flex min-h-0 w-full flex-1 flex-row items-center justify-center gap-8">
                     {/* Join a room option */}
-                    <div className='flex flex-col justify-between items-center h-full text-center'>
+                    <div className='flex min-h-0 flex-col items-center justify-between text-center'>
                         <PiNumberCircleOne size={33}/>
                         <div className="flex flex-col gap-2">
                             <input
@@ -152,9 +147,9 @@ const HomePage: React.FC = () => {
                         <div>Join a room using the code provided by whoever is hosting!</div>
                     </div>
                     {/* How to Play slideshow */}
-                    <TutorialSlideshow className='w-hug'/>
+                    <TutorialSlideshow className='w-hug min-h-0 max-h-full'/>
                     {/* Start a new room option */}
-                    <div className='flex flex-col justify-between items-center w-hug h-full text-center gap-auto'>
+                    <div className='flex min-h-0 w-hug flex-col items-center justify-between text-center gap-auto'>
                         <PiNumberCircleTwo size={33} />
                         <Button 
                             label={isCreating ? "Creating..." : "Start a new room"}

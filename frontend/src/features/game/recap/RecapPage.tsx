@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import Container from '../../../components/common/Container';
 import Button from '../../../components/common/Button';
 import { useAuth } from '../../../contexts/AuthContext';
-import { endLobby, getGameState } from '../../../services/api/lobbyApi';
+import { getGameState } from '../../../services/api/lobbyApi';
 import {
   getFlipbookPresentation,
   listSavedFlipbooks,
@@ -13,7 +13,7 @@ import {
 } from '../../../services/api/gameApi';
 import { HttpError } from '../../../services/api/httpClient';
 import { AnimatedSketchDisplay } from '../../../components/game/AnimatedSketchDisplay';
-import { useLobby, useWebSocket } from '../../../hooks/useGameState';
+import { useGameState, useLobby, useWebSocket } from '../../../hooks/useGameState';
 import { getWSClient } from '../../../services/ws/wsClient';
 
 const RecapPage: React.FC = () => {
@@ -23,6 +23,8 @@ const RecapPage: React.FC = () => {
     const userId = user?.id || localStorage.getItem('userId') || '';
 
     const { lobby } = useLobby(roomCode || '', userId);
+    const sync = roomCode && userId ? { roomCode, userId } : undefined;
+    const gameState = useGameState(lobby?.id, sync);
     const ws = useWebSocket();
 
     const isHost = Boolean(userId && lobby?.host?.id && userId === lobby.host.id);
@@ -83,12 +85,16 @@ const RecapPage: React.FC = () => {
             try {
                 const s = await getGameState(roomCode, userId);
                 if (cancelled) return;
-                if (s.phase !== 'VOTING' && s.state === 'IN_PROGRESS') {
-                    navigate(`/game/${roomCode}/waiting`, { replace: true });
+                if (s.state === 'FINISHED') {
+                    navigate(`/game/${roomCode}/results`, { replace: true });
                     return;
                 }
-                if (s.state === 'FINISHED') {
-                    navigate(`/lobby/${roomCode}`, { replace: true });
+                if (s.state === 'IN_PROGRESS' && s.phase === 'VOTING') {
+                    navigate(`/game/${roomCode}/vote`, { replace: true });
+                    return;
+                }
+                if (s.state === 'IN_PROGRESS' && s.phase !== 'RECAP') {
+                    navigate(`/game/${roomCode}/waiting`, { replace: true });
                     return;
                 }
                 const players = s.players || [];
@@ -110,7 +116,18 @@ const RecapPage: React.FC = () => {
         return () => {
             cancelled = true;
         };
-    }, [roomCode, userId, navigate]);
+    }, [roomCode, userId, navigate, gameState.phase, ws.isConnected]);
+
+    useEffect(() => {
+        if (gameState.phase === 'VOTING' && roomCode) {
+            navigate(`/game/${roomCode}/vote`, { replace: true });
+        }
+    }, [gameState.phase, roomCode, navigate]);
+
+    useEffect(() => {
+        if (!ws.isConnected || !roomCode) return;
+        getWSClient().send('recap:request_sync');
+    }, [ws.isConnected, roomCode]);
 
     useEffect(() => {
         if (!ws.isConnected) return;
@@ -123,7 +140,9 @@ const RecapPage: React.FC = () => {
             entryCount: number;
             isComplete: boolean;
         }>('recap:sync', (msg) => {
-            setFlipbookIds(msg.flipbookIds);
+            setFlipbookIds((prev) =>
+                msg.flipbookIds.length > 0 ? msg.flipbookIds : prev
+            );
             setFlipbookIndex(msg.flipbookIndex);
             setEntryCount(msg.entryCount);
             setIsComplete(msg.isComplete);
@@ -196,16 +215,6 @@ const RecapPage: React.FC = () => {
         if (flipbookIndex < flipbookIds.length - 1) return 'Next flipbook';
         return 'Finish recap';
     }, [isComplete, presentation, timelineLen, entryCount, flipbookIndex, flipbookIds.length]);
-
-    const goLobby = useCallback(async () => {
-        if (!roomCode) return;
-        try {
-            await endLobby(roomCode);
-        } catch {
-            /* still navigate */
-        }
-        navigate(`/lobby/${roomCode}`, { replace: true });
-    }, [navigate, roomCode]);
 
     const onRevealNext = useCallback(() => {
         getWSClient().send('recap:reveal_next');
@@ -293,7 +302,7 @@ const RecapPage: React.FC = () => {
 
                 {isComplete && (
                     <p className="text-heading-3 text-center text-emerald-700">
-                        Recap complete — you&apos;ve seen every flipbook.
+                        Recap complete — heading to voting…
                     </p>
                 )}
 
@@ -350,7 +359,6 @@ const RecapPage: React.FC = () => {
                     ) : (
                         <span className="text-body text-gray-500" />
                     )}
-                    <Button label="Finish & return to lobby" onClick={() => void goLobby()} />
                 </div>
             </Container>
         </div>
