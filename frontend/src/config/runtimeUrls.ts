@@ -38,8 +38,12 @@ export function buildApiUrl(path: string): string {
 }
 
 /**
- * Same-origin WS in production (CloudFront → ALB). Ignore accidental `VITE_WS_URL=ws://localhost...`
- * baked into a prod build — same failure mode as empty API base incorrectly forcing localhost.
+ * WebSocket URL for the Node `ws` server (path `/ws`).
+ *
+ * - Optional `VITE_WS_URL` wins (except prod builds still pointing at localhost — same guard as API URL).
+ * - If `resolveApiBaseUrl()` is set (dev default `http://localhost:8000`, or Docker `VITE_API_BASE_URL`), WS uses
+ *   that host so the client does not connect to the Vite port by mistake.
+ * - Production with empty API base: same-origin `wss://` / `ws://` (CloudFront → ALB).
  */
 export function resolveWebSocketUrl(): string {
   const v = import.meta.env.VITE_WS_URL;
@@ -49,9 +53,22 @@ export function resolveWebSocketUrl(): string {
   if (hasExplicit && !(import.meta.env.PROD && isLocalhostWs)) {
     return v;
   }
-  if (typeof window === 'undefined') {
-    return 'ws://localhost:8000/ws';
+
+  const api = resolveApiBaseUrl();
+  if (api) {
+    try {
+      const u = new URL(api);
+      const wsProto = u.protocol === 'https:' ? 'wss:' : 'ws:';
+      return `${wsProto}//${u.host}/ws`;
+    } catch {
+      /* ignore invalid VITE_API_BASE_URL */
+    }
   }
-  const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  return `${proto}//${window.location.host}/ws`;
+
+  if (typeof window !== 'undefined') {
+    const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    return `${proto}//${window.location.host}/ws`;
+  }
+
+  return 'ws://localhost:8000/ws';
 }

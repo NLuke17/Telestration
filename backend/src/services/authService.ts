@@ -124,8 +124,48 @@ export async function loginUser(username: string, password: string) {
       id: user.id,
       username: user.username,
       profilePicture: user.profilePicture,
+      totalVotesReceived: user.totalVotesReceived,
+      wins: user.wins,
+      gamesPlayed: user.gamesPlayed,
     },
   };
+}
+
+export async function getUserProfile(userId: string) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      id: true,
+      username: true,
+      profilePicture: true,
+      createdAt: true,
+      totalVotesReceived: true,
+      wins: true,
+      gamesPlayed: true,
+    },
+  });
+
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  return user;
+}
+
+export async function updateUserProfilePictureUrl(userId: string, profilePicture: string | null) {
+  return prisma.user.update({
+    where: { id: userId },
+    data: { profilePicture },
+    select: {
+      id: true,
+      username: true,
+      profilePicture: true,
+      createdAt: true,
+      totalVotesReceived: true,
+      wins: true,
+      gamesPlayed: true,
+    },
+  });
 }
 
 export async function refreshUserToken(token: string) {

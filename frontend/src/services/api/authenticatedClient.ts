@@ -5,8 +5,26 @@
 
 import { resolveApiBaseUrl, withApiPrefix } from '../../config/runtimeUrls';
 import { HttpError } from './httpClient';
+import { rotateSessionTokensFromRefresh } from './tokenRefresh';
+import { AUTH_LOGOUT_REQUIRED_EVENT } from './authEvents';
 
 const API_BASE_URL = resolveApiBaseUrl();
+
+function isJwtAuthFailure(status: number, data: unknown): boolean {
+  // Backend uses 403 + this message for expired/invalid JWT (see authMiddleware).
+  // Do not treat generic 401 as JWT failure — e.g. delete-account returns 401 for wrong password.
+  if (status !== 403) {
+    return false;
+  }
+  const msg =
+    typeof data === 'object' &&
+    data !== null &&
+    'message' in data &&
+    typeof (data as { message: unknown }).message === 'string'
+      ? (data as { message: string }).message
+      : '';
+  return msg.includes('Invalid or expired token');
+}
 
 /**
  * Get access token from localStorage
@@ -21,7 +39,8 @@ function getAccessToken(): string | null {
  */
 async function authenticatedRequest<T>(
   endpoint: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
+  isRetry = false
 ): Promise<T> {
   const url = `${API_BASE_URL}${withApiPrefix(endpoint)}`;
   const accessToken = getAccessToken();
@@ -52,10 +71,15 @@ async function authenticatedRequest<T>(
     }
 
     if (!response.ok) {
-      // If unauthorized, could trigger token refresh here
-      if (response.status === 401) {
-        // Token might be expired, should trigger refresh
-        console.warn('Access token expired or invalid');
+      if (
+        !isRetry &&
+        isJwtAuthFailure(response.status, data)
+      ) {
+        const rotated = await rotateSessionTokensFromRefresh();
+        if (rotated) {
+          return authenticatedRequest<T>(endpoint, options, true);
+        }
+        window.dispatchEvent(new Event(AUTH_LOGOUT_REQUIRED_EVENT));
       }
       throw new HttpError(response.status, response.statusText, data);
     }

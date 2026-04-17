@@ -3,16 +3,17 @@
  * Manages user authentication state and provides auth functions
  */
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import type { ReactNode } from 'react';
 import {
   login as apiLogin,
   createUser as apiCreateUser,
   logout as apiLogout,
   logoutAll as apiLogoutAll,
-  refreshToken as apiRefreshToken,
   deleteAccount as apiDeleteAccount,
 } from '../services/api/authApi';
+import { rotateSessionTokensFromRefresh } from '../services/api/tokenRefresh';
+import { AUTH_LOGOUT_REQUIRED_EVENT } from '../services/api/authEvents';
 import type {
   LoginRequest,
   CreateUserRequest,
@@ -23,6 +24,9 @@ interface User {
   id: string;
   username: string;
   profilePicture?: string | null;
+  totalVotesReceived?: number;
+  wins?: number;
+  gamesPlayed?: number;
 }
 
 interface AuthContextType {
@@ -37,6 +41,8 @@ interface AuthContextType {
   logoutAllDevices: () => Promise<void>;
   deleteAccount: (password: string) => Promise<void>;
   refreshAccessToken: () => Promise<void>;
+  /** Merge fields into the signed-in user and persist to `localStorage` (e.g. after avatar upload). */
+  mergeUserToSession: (patch: Partial<User>) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -57,6 +63,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [refreshToken, setRefreshToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  const clearAuthState = useCallback(() => {
+    localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
+    localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
+    localStorage.removeItem(STORAGE_KEYS.USER);
+    setAccessToken(null);
+    setRefreshToken(null);
+    setUser(null);
+  }, []);
 
   // Load auth state from localStorage on mount
   useEffect(() => {
@@ -80,7 +95,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
 
     loadAuthState();
-  }, []);
+  }, [clearAuthState]);
 
   // Save auth state to localStorage
   const saveAuthState = (data: LoginResponse) => {
@@ -92,15 +107,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setUser(data.user);
   };
 
-  // Clear auth state
-  const clearAuthState = () => {
-    localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
-    localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
-    localStorage.removeItem(STORAGE_KEYS.USER);
-    setAccessToken(null);
-    setRefreshToken(null);
-    setUser(null);
-  };
+  useEffect(() => {
+    const onLogoutRequired = () => {
+      clearAuthState();
+    };
+    window.addEventListener(AUTH_LOGOUT_REQUIRED_EVENT, onLogoutRequired);
+    return () => window.removeEventListener(AUTH_LOGOUT_REQUIRED_EVENT, onLogoutRequired);
+  }, [clearAuthState]);
 
   // Login function
   const login = async (data: LoginRequest) => {
@@ -158,25 +171,35 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  // Refresh access token function
-  const refreshAccessToken = async () => {
+  // Stable reference required: useTokenRefresh depends on this — a new function each render
+  // would re-run the effect, call refresh on every paint, and can clear the session.
+  const refreshAccessToken = useCallback(async () => {
     try {
-      if (!refreshToken) {
-        throw new Error('No refresh token available');
+      const ok = await rotateSessionTokensFromRefresh();
+      if (!ok) {
+        throw new Error('Token refresh failed');
       }
-      const response = await apiRefreshToken({ token: refreshToken });
-      
-      // Update tokens
-      localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, response.accessToken);
-      localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, response.refreshToken);
-      setAccessToken(response.accessToken);
-      setRefreshToken(response.refreshToken);
+      const nextAccess = localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
+      const nextRefresh = localStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
+      setAccessToken(nextAccess);
+      setRefreshToken(nextRefresh);
     } catch (error) {
       console.error('Token refresh error:', error);
       clearAuthState();
       throw error;
     }
-  };
+  }, [clearAuthState]);
+
+  const mergeUserToSession = useCallback((patch: Partial<User>) => {
+    setUser((prev) => {
+      if (!prev) {
+        return prev;
+      }
+      const next = { ...prev, ...patch };
+      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(next));
+      return next;
+    });
+  }, []);
 
   const value: AuthContextType = {
     user,
@@ -190,6 +213,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     logoutAllDevices,
     deleteAccount,
     refreshAccessToken,
+    mergeUserToSession,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

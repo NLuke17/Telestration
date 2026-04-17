@@ -15,6 +15,8 @@ import GameCountdownPage from './features/game/countdown/GameCountdownPage';
 import RecapPage from './features/game/recap/RecapPage';
 import VotingPage from './features/game/voting/VotingPage';
 import ResultsPage from './features/game/results/ResultsPage';
+import AccountPage from './features/account/AccountPage';
+import { ProtectedRoute } from './components/ProtectedRoute';
 
 // Debug page (development only)
 import Home from './pages/home';
@@ -28,6 +30,14 @@ function AppContent() {
       <Routes>
         {/* Main Flow */}
         <Route path="/" element={<HomePage />} />
+        <Route
+          path="/account"
+          element={
+            <ProtectedRoute>
+              <AccountPage />
+            </ProtectedRoute>
+          }
+        />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
         

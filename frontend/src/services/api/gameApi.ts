@@ -88,6 +88,28 @@ export async function getFlipbookPresentation(
   );
 }
 
+export type SavedFlipbookPresentationResponse = {
+  savedFlipbook: {
+    id: string;
+    title: string | null;
+    prompt: string;
+    sourceFlipbookId: string | null;
+    createdAt: string;
+  };
+  timeline: FlipbookPresentationResponse['timeline'];
+};
+
+/**
+ * Full timeline for a library flipbook (JWT — owner only).
+ */
+export async function getSavedFlipbookPresentation(
+  savedId: string
+): Promise<SavedFlipbookPresentationResponse> {
+  return authenticatedClient.get<SavedFlipbookPresentationResponse>(
+    `/game/saved-flipbooks/${savedId}/presentation`
+  );
+}
+
 /**
  * Submit a drawing (deprecated - prefer WebSocket)
  * Kept for backward compatibility

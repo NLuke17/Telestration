@@ -3,6 +3,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { HttpError } from '../services/api/httpClient';
 import { getWSClient, type ConnectionStatus } from '../services/ws/wsClient';
 import type { LobbySnapshot } from '../types/dto';
 import type { WSServerMessage } from '../types/ws';
@@ -180,12 +181,30 @@ export function useGameState(lobbyId?: string, sync?: GameStateSync) {
     }
 
     let cancelled = false;
+    let pollId: ReturnType<typeof setInterval> | null = null;
+
+    const stopPolling = () => {
+      cancelled = true;
+      if (pollId != null) {
+        clearInterval(pollId);
+        pollId = null;
+      }
+    };
 
     const tick = async () => {
+      if (cancelled) {
+        return;
+      }
       try {
         const { getGameState } = await import('../services/api/lobbyApi');
         const s = await getGameState(sync.roomCode, sync.userId);
-        if (cancelled) return;
+        if (cancelled) {
+          return;
+        }
+        if (s.state === 'FINISHED') {
+          stopPolling();
+          return;
+        }
         if (s.state !== 'IN_PROGRESS' || !s.roundId) {
           return;
         }
@@ -207,16 +226,17 @@ export function useGameState(lobbyId?: string, sync?: GameStateSync) {
         if (typeof s.maxChainWave === 'number') {
           setMaxChainWave(s.maxChainWave);
         }
-      } catch {
-        /* ignore */
+      } catch (e) {
+        if (e instanceof HttpError && e.status === 404) {
+          stopPolling();
+        }
       }
     };
 
     void tick();
-    const id = setInterval(tick, 1500);
+    pollId = setInterval(tick, 1500);
     return () => {
-      cancelled = true;
-      clearInterval(id);
+      stopPolling();
     };
   }, [ws.isConnected, sync?.roomCode, sync?.userId]);
 
