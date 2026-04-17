@@ -2,7 +2,10 @@
 /**
  * Rollup, lightningcss (Tailwind), and similar packages ship platform-specific optional dependencies.
  * When package-lock.json was generated on macOS, `npm ci` on Linux can omit the Linux binding
- * (https://github.com/npm/cli/issues/4828). Install the correct optional package for this OS after npm ci.
+ * (https://github.com/npm/cli/issues/4828). Install the correct optional packages after npm ci.
+ *
+ * IMPORTANT: Install all missing natives in ONE `npm install` invocation. Separate installs can
+ * prune optional deps from each other ("removed 1 package"), breaking Rollup after LightningCSS.
  */
 const { execSync } = require('child_process');
 const fs = require('fs');
@@ -46,11 +49,11 @@ function optionalPackageJsonPath(optionalKey) {
   return path.join(frontendRoot, 'node_modules', optionalKey, 'package.json');
 }
 
-function ensureBinding(parentPkgFolderName, resolveOptionalKey, label) {
+function collectMissing(parentPkgFolderName, resolveOptionalKey, label) {
   const pkgJsonPath = path.join(frontendRoot, 'node_modules', parentPkgFolderName, 'package.json');
   if (!fs.existsSync(pkgJsonPath)) {
     console.warn(`[ci-install-native-bindings] skip ${label}: ${parentPkgFolderName} not installed`);
-    return;
+    return [];
   }
 
   const pkgJson = JSON.parse(fs.readFileSync(pkgJsonPath, 'utf8'));
@@ -59,7 +62,7 @@ function ensureBinding(parentPkgFolderName, resolveOptionalKey, label) {
 
   if (!optionalKey) {
     console.log(`[ci-install-native-bindings] skip ${label} (not linux x64/arm64 CI runner)`);
-    return;
+    return [];
   }
 
   const ver = optionalDeps[optionalKey];
@@ -69,15 +72,24 @@ function ensureBinding(parentPkgFolderName, resolveOptionalKey, label) {
   }
 
   const installedMarker = optionalPackageJsonPath(optionalKey);
-
   if (fs.existsSync(installedMarker)) {
-    console.log(`[ci-install-native-bindings] ${optionalKey} already installed (${label})`);
-    return;
+    console.log(`[ci-install-native-bindings] ${optionalKey} already present (${label})`);
+    return [];
   }
 
-  console.log(`[ci-install-native-bindings] installing ${optionalKey}@${ver} (${label}, npm optional-deps workaround)`);
-  execSync(`npm install "${optionalKey}@${ver}" --no-save`, { stdio: 'inherit', cwd: frontendRoot });
+  console.log(`[ci-install-native-bindings] will add ${optionalKey}@${ver} (${label})`);
+  return [`${optionalKey}@${ver}`];
 }
 
-ensureBinding('rollup', rollupLinuxOptionalKey, 'rollup');
-ensureBinding('lightningcss', lightningcssLinuxOptionalKey, 'lightningcss');
+const specs = [
+  ...collectMissing('rollup', rollupLinuxOptionalKey, 'rollup'),
+  ...collectMissing('lightningcss', lightningcssLinuxOptionalKey, 'lightningcss'),
+];
+
+if (specs.length === 0) {
+  process.exit(0);
+}
+
+console.log('[ci-install-native-bindings] single npm install (keeps all optional natives)', specs.join(' '));
+const quoted = specs.map((s) => `"${s}"`).join(' ');
+execSync(`npm install ${quoted} --no-save`, { stdio: 'inherit', cwd: frontendRoot });
