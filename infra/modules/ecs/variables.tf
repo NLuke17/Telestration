@@ -61,6 +61,12 @@ variable "github_actions_branch_ref" {
   default     = "refs/heads/main"
 }
 
+variable "github_actions_github_environment" {
+  type        = string
+  description = "GitHub Environment slug for OIDC sub repo:...:environment:NAME; empty to trust only branch ref."
+  default     = ""
+}
+
 variable "github_org" {
   type    = string
   default = ""
