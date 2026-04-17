@@ -6,7 +6,13 @@ import { parseEnvelope, routeMessage, MessageHandler } from '../core/wsRouter';
 import { WSClientMessage } from '../../types/ws';
 import { logInfo, logError, logWarn } from '../../utils/logger';
 import { normalizeRoomCode } from '../../utils/roomCode';
-import { handleDrawingSubmission, handleGuessSubmission, handleRevokeSubmission } from './gameWs';
+import {
+  handleDrawingSubmission,
+  handleGuessSubmission,
+  handleRevokeSubmission,
+  handleSubmitFavoriteVote,
+  handleRevokeFavoriteVote,
+} from './gameWs';
 import { deriveExpectedPhaseFromChainWave } from '../../services/gameService';
 import {
   buildRecapSyncMessage,
@@ -15,6 +21,7 @@ import {
   initRecapStateFromLobby,
   recapRevealNext,
 } from '../state/recapTracker';
+import { advanceFromRecapToFavoriteVoting } from '../../services/favoriteVotingService';
 
 export function registerLobbyHandlers(ctx: WSContext) {
   ctx.wss.on('connection', (ws: WebSocket & { isAlive?: boolean }) => {
@@ -65,7 +72,10 @@ function createHandlerMap(ctx: WSContext, conn: ClientConn): Map<string, Message
   handlers.set('game:submit_drawing', (msg) => handleDrawingSubmission(ctx, conn, msg as any));
   handlers.set('game:submit_guess', (msg) => handleGuessSubmission(ctx, conn, msg as any));
   handlers.set('game:revoke_submission', (msg) => handleRevokeSubmission(ctx, conn, msg as any));
+  handlers.set('game:submit_vote', (msg) => handleSubmitFavoriteVote(ctx, conn, msg as any));
+  handlers.set('game:revoke_vote', () => handleRevokeFavoriteVote(ctx, conn));
   handlers.set('recap:reveal_next', () => handleRecapRevealNext(ctx, conn));
+  handlers.set('recap:request_sync', () => handleRecapRequestSync(ctx, conn));
 
   return handlers;
 }
@@ -140,9 +150,12 @@ async function handleLobbyConnect(
         if (currentPhase === 'DRAWING') duration = DRAWING_PHASE_DURATION_MS;
         if (currentPhase === 'VOTING') duration = VOTING_PHASE_DURATION_MS;
 
-        const endsAt = round.phaseDeadline
+        let endsAt: number | null = round.phaseDeadline
           ? new Date(round.phaseDeadline).getTime()
-          : Date.now() + duration;
+          : null;
+        if (endsAt == null && currentPhase !== 'RECAP') {
+          endsAt = Date.now() + duration;
+        }
 
         send(conn, {
           type: 'game:phase_changed',
@@ -150,7 +163,7 @@ async function handleLobbyConnect(
           endsAt,
         });
 
-        if (currentPhase === 'VOTING') {
+        if (currentPhase === 'RECAP') {
           if (!getRecapState(snapshot.id)) {
             await initRecapStateFromLobby(snapshot.id);
           }
@@ -277,6 +290,46 @@ async function handlePromptSubmission(
   }
 }
 
+async function handleRecapRequestSync(ctx: WSContext, conn: ClientConn): Promise<void> {
+  if (!conn.lobbyId || !conn.userId) {
+    return;
+  }
+
+  const lobbyId = conn.lobbyId;
+
+  try {
+    const lobby = await ctx.prisma.lobby.findUnique({
+      where: { id: lobbyId },
+      select: {
+        state: true,
+        players: { select: { id: true }, orderBy: { createdAt: 'asc' } },
+        rounds: { orderBy: { number: 'desc' }, take: 1, select: { chainWave: true } },
+      },
+    });
+
+    if (!lobby || lobby.state !== 'IN_PROGRESS' || !lobby.rounds[0]) {
+      return;
+    }
+
+    const playerCount = lobby.players.length;
+    const phase = deriveExpectedPhaseFromChainWave(lobby.rounds[0].chainWave ?? 0, playerCount);
+    if (phase !== 'RECAP') {
+      return;
+    }
+
+    if (!getRecapState(lobbyId)) {
+      await initRecapStateFromLobby(lobbyId);
+    }
+
+    const recapMsg = buildRecapSyncMessage(lobbyId);
+    if (recapMsg) {
+      send(conn, recapMsg as any);
+    }
+  } catch (error: any) {
+    logError('recap:request_sync failed', { lobbyId, error: error.message });
+  }
+}
+
 async function handleRecapRevealNext(ctx: WSContext, conn: ClientConn): Promise<void> {
   if (!conn.lobbyId || !conn.userId) {
     send(conn, { type: 'error', error: 'NOT_AUTHENTICATED', message: 'Not authenticated' });
@@ -299,8 +352,37 @@ async function handleRecapRevealNext(ctx: WSContext, conn: ClientConn): Promise<
       return;
     }
 
-    await recapRevealNext(lobbyId);
+    if (!getRecapState(lobbyId)) {
+      const full = await ctx.prisma.lobby.findUnique({
+        where: { id: lobbyId },
+        include: {
+          players: { select: { id: true }, orderBy: { createdAt: 'asc' } },
+          rounds: { orderBy: { number: 'desc' }, take: 1, select: { chainWave: true } },
+        },
+      });
+      if (full?.rounds[0]) {
+        const N = full.players.length;
+        const ph = deriveExpectedPhaseFromChainWave(full.rounds[0].chainWave ?? 0, N);
+        if (ph === 'RECAP') {
+          await initRecapStateFromLobby(lobbyId);
+        }
+      }
+    }
+
+    const st = await recapRevealNext(lobbyId);
     broadcastRecapSync(lobbyId);
+
+    if (st?.isComplete) {
+      const adv = await advanceFromRecapToFavoriteVoting(lobbyId);
+      if (adv.advanced && adv.endsAt != null) {
+        const connections = ctx.registry.getLobbyConnections(lobbyId);
+        broadcast(connections, {
+          type: 'game:phase_changed',
+          phase: 'VOTING',
+          endsAt: adv.endsAt,
+        });
+      }
+    }
   } catch (error: any) {
     logError('recap:reveal_next failed', { lobbyId, error: error.message });
     send(conn, {

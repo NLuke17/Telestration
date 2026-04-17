@@ -26,7 +26,7 @@ const DrawingPage: React.FC = () => {
     const { roomCode } = useParams<{ roomCode: string}>();
     const navigate = useNavigate();
     const canvasRef = useRef<ReactSketchCanvasRef>(null);
-    const prevPhaseRef = useRef<'DRAWING' | 'GUESSING' | 'VOTING' | null>(null);
+    const prevPhaseRef = useRef<'DRAWING' | 'GUESSING' | 'RECAP' | 'VOTING' | null>(null);
     const { user } = useAuth();
 
     useEffect(() => {
@@ -56,7 +56,9 @@ const DrawingPage: React.FC = () => {
             prev === 'DRAWING' &&
             gameState.phase &&
             gameState.phase !== 'DRAWING' &&
-            (gameState.phase === 'GUESSING' || gameState.phase === 'VOTING') &&
+            (gameState.phase === 'GUESSING' ||
+                gameState.phase === 'RECAP' ||
+                gameState.phase === 'VOTING') &&
             roomCode
         ) {
             navigate(`/game/${roomCode}/countdown?phase=${gameState.phase}`, { replace: true });
@@ -174,6 +176,17 @@ const DrawingPage: React.FC = () => {
                 } else {
                     const state = await getGameState(roomCode, userId);
                     if (state.phase !== 'DRAWING') {
+                        if (
+                            roomCode &&
+                            (state.phase === 'GUESSING' ||
+                                state.phase === 'RECAP' ||
+                                state.phase === 'VOTING')
+                        ) {
+                            navigate(`/game/${roomCode}/countdown?phase=${state.phase}`, {
+                                replace: true,
+                            });
+                            return;
+                        }
                         setError(result.message || 'No assignment available');
                         return;
                     }

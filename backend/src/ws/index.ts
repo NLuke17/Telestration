@@ -18,8 +18,8 @@ export interface WSGatewayHandle {
   notifyGameStarted(lobbyId: string, roundId: string, roundNumber: number): Promise<void>;
   notifyPhaseChange(
     lobbyId: string,
-    phase: 'DRAWING' | 'GUESSING' | 'VOTING',
-    opts?: { endsAt?: number }
+    phase: 'DRAWING' | 'GUESSING' | 'RECAP' | 'VOTING',
+    opts?: { endsAt?: number | null }
   ): Promise<void>;
   getPromptsForLobby(lobbyId: string, playerIds: string[]): string[];
   clearPromptsForLobby(lobbyId: string): void;

@@ -9,9 +9,9 @@ import { useLobby, useGameState } from '../../../hooks/useGameState';
 
 const PROMPT_WAIT_FLAG = 'telestration.expectDrawAfterPromptWait';
 
-function readPhaseFromLocation(): 'DRAWING' | 'GUESSING' | 'VOTING' | null {
+function readPhaseFromLocation(): 'DRAWING' | 'GUESSING' | 'RECAP' | 'VOTING' | null {
     const p = new URLSearchParams(window.location.search).get('phase');
-    if (p === 'DRAWING' || p === 'GUESSING' || p === 'VOTING') return p;
+    if (p === 'DRAWING' || p === 'GUESSING' || p === 'RECAP' || p === 'VOTING') return p;
     return null;
 }
 
@@ -38,21 +38,32 @@ const GameCountdownPage: React.FC = () => {
     const [showMessage, setShowMessage] = useState(false);
 
     const phaseParam = searchParams.get('phase');
-    const urlPhase: 'DRAWING' | 'GUESSING' | 'VOTING' =
-        phaseParam === 'DRAWING' || phaseParam === 'GUESSING' || phaseParam === 'VOTING'
+    const urlPhase: 'DRAWING' | 'GUESSING' | 'RECAP' | 'VOTING' =
+        phaseParam === 'DRAWING' ||
+        phaseParam === 'GUESSING' ||
+        phaseParam === 'RECAP' ||
+        phaseParam === 'VOTING'
             ? phaseParam
             : 'GUESSING';
 
     /** Prefer live WS / server phase over ?phase= (URL can stay GUESSING after everyone submitted prompts). */
-    const displayPhase: 'DRAWING' | 'GUESSING' | 'VOTING' =
-        gameState.phase === 'DRAWING' || gameState.phase === 'GUESSING' || gameState.phase === 'VOTING'
+    const displayPhase: 'DRAWING' | 'GUESSING' | 'RECAP' | 'VOTING' =
+        gameState.phase === 'DRAWING' ||
+        gameState.phase === 'GUESSING' ||
+        gameState.phase === 'RECAP' ||
+        gameState.phase === 'VOTING'
             ? gameState.phase
             : urlPhase;
 
     // Align ?phase= with WebSocket when server advances (e.g. GUESSING → DRAWING after initial prompts).
     useEffect(() => {
         if (!roomCode || !gameState.phase) return;
-        if (gameState.phase !== 'DRAWING' && gameState.phase !== 'GUESSING' && gameState.phase !== 'VOTING')
+        if (
+            gameState.phase !== 'DRAWING' &&
+            gameState.phase !== 'GUESSING' &&
+            gameState.phase !== 'RECAP' &&
+            gameState.phase !== 'VOTING'
+        )
             return;
         const curr = searchParams.get('phase');
         if (curr !== gameState.phase) {
@@ -69,7 +80,13 @@ const GameCountdownPage: React.FC = () => {
             try {
                 const s = await getGameState(roomCode, userId);
                 if (cancelled) return;
-                if (s.phase !== 'DRAWING' && s.phase !== 'GUESSING' && s.phase !== 'VOTING') return;
+                if (
+                    s.phase !== 'DRAWING' &&
+                    s.phase !== 'GUESSING' &&
+                    s.phase !== 'RECAP' &&
+                    s.phase !== 'VOTING'
+                )
+                    return;
                 const curr = new URLSearchParams(window.location.search).get('phase');
                 if (curr !== s.phase) {
                     navigate(`/game/${roomCode}/countdown?phase=${s.phase}`, { replace: true });
@@ -89,7 +106,13 @@ const GameCountdownPage: React.FC = () => {
 
     // If ?phase= is missing entirely, fix once from server.
     useEffect(() => {
-        if (phaseParam === 'DRAWING' || phaseParam === 'GUESSING' || phaseParam === 'VOTING') return;
+        if (
+            phaseParam === 'DRAWING' ||
+            phaseParam === 'GUESSING' ||
+            phaseParam === 'RECAP' ||
+            phaseParam === 'VOTING'
+        )
+            return;
         if (!roomCode || !userId) return;
 
         let cancelled = false;
@@ -97,7 +120,12 @@ const GameCountdownPage: React.FC = () => {
             try {
                 const s = await getGameState(roomCode, userId);
                 if (cancelled) return;
-                if (s.phase === 'DRAWING' || s.phase === 'GUESSING' || s.phase === 'VOTING') {
+                if (
+                    s.phase === 'DRAWING' ||
+                    s.phase === 'GUESSING' ||
+                    s.phase === 'RECAP' ||
+                    s.phase === 'VOTING'
+                ) {
                     navigate(`/game/${roomCode}/countdown?phase=${s.phase}`, { replace: true });
                 }
             } catch {
@@ -136,7 +164,7 @@ const GameCountdownPage: React.FC = () => {
             // URL stayed ?phase=GUESSING while the server was already DRAWING, so "GUESSING" was treated
             // as valid and we never consulted wsPhaseRef — users were sent back to the writing page.
             let p = wsPhaseRef.current;
-            if (p !== 'DRAWING' && p !== 'GUESSING' && p !== 'VOTING') {
+            if (p !== 'DRAWING' && p !== 'GUESSING' && p !== 'RECAP' && p !== 'VOTING') {
                 p = readPhaseFromLocation();
             }
             if (
@@ -147,11 +175,13 @@ const GameCountdownPage: React.FC = () => {
                 p = 'DRAWING';
                 sessionStorage.removeItem(PROMPT_WAIT_FLAG);
             }
-            if (p !== 'DRAWING' && p !== 'GUESSING' && p !== 'VOTING') {
+            if (p !== 'DRAWING' && p !== 'GUESSING' && p !== 'RECAP' && p !== 'VOTING') {
                 p = 'GUESSING';
             }
-            if (p === 'VOTING') {
+            if (p === 'RECAP') {
                 navigate(`/game/${roomCode}/recap`, { replace: true });
+            } else if (p === 'VOTING') {
+                navigate(`/game/${roomCode}/vote`, { replace: true });
             } else if (p === 'DRAWING') {
                 navigate(`/game/${roomCode}/draw`, { replace: true });
             } else {
@@ -172,8 +202,11 @@ const GameCountdownPage: React.FC = () => {
         if (displayPhase === 'GUESSING') {
             return 'Time to write!';
         }
-        if (displayPhase === 'VOTING') {
+        if (displayPhase === 'RECAP') {
             return 'Time to see every flipbook!';
+        }
+        if (displayPhase === 'VOTING') {
+            return 'Vote for your favorite!';
         }
         return 'Get ready!';
     };

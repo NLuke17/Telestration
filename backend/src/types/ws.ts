@@ -21,7 +21,10 @@ export type WSClientMessage =
   | { type: 'game:submit_drawing'; flipbookId: string; drawingData: string }
   | { type: 'game:submit_guess'; flipbookId: string; text: string }
   | { type: 'game:revoke_submission'; flipbookId: string }
-  | { type: 'recap:reveal_next' };
+  | { type: 'game:submit_vote'; flipbookId: string }
+  | { type: 'game:revoke_vote' }
+  | { type: 'recap:reveal_next' }
+  | { type: 'recap:request_sync' };
 
 /**
  * Server-to-Client Messages
@@ -40,7 +43,10 @@ export type WSServerMessage =
   | { type: 'lobby:prompt_submitted'; userId: string; username: string }
   | { type: 'lobby:all_prompts_ready'; promptCount: number }
   | { type: 'game:started'; roundId: string; roundNumber: number }
-  | { type: 'game:phase_changed'; phase: 'DRAWING' | 'GUESSING' | 'VOTING'; endsAt: number }
+  | { type: 'game:phase_changed'; phase: 'DRAWING' | 'GUESSING' | 'RECAP' | 'VOTING'; endsAt: number | null }
+  | { type: 'game:vote_submitted'; flipbookId: string; userId: string }
+  | { type: 'game:vote_revoked'; userId: string }
+  | { type: 'game:voting_finished'; results: unknown }
   | { type: 'game:phase_complete'; phase: 'DRAWING' | 'GUESSING' }
   | { type: 'game:drawing_submitted'; flipbookId: string; userId: string }
   | { type: 'game:guess_submitted'; flipbookId: string; userId: string }

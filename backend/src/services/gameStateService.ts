@@ -1,6 +1,7 @@
 import prisma from '../prisma/client';
 import { getAssignedFlipbook, deriveExpectedPhaseFromChainWave } from './gameService';
 import { logDebug, logError } from '../utils/logger';
+import { resolveGameDrawingPayload } from './drawingStorageService';
 
 function lastGuessLine(
   guesses: { order: number; text: string }[]
@@ -86,7 +87,11 @@ export async function getGameState(roomCode: string, userId: string) {
                     id: true, 
                     authorId: true,
                     order: true,
-                    createdAt: true 
+                    createdAt: true,
+                    drawingData: true,
+                    storageKind: true,
+                    storageKey: true,
+                    byteLength: true,
                   },
                 },
                 guesses: {
@@ -153,6 +158,7 @@ export async function getGameState(roomCode: string, userId: string) {
         endsAt: null,
         assignedFlipbookId: null,
         assignedPrompt: null,
+        votingResults: currentRound?.votingResults ?? null,
         counts: {
           submittedDrawings: 0,
           submittedGuesses: 0,
@@ -232,9 +238,16 @@ export async function getGameState(roomCode: string, userId: string) {
         myRole = currentPhase.toLowerCase();
         hasSubmitted = fallbackHasSubmitted();
       }
-    } else if (currentPhase === 'VOTING') {
+    } else if (currentPhase === 'RECAP') {
       myRole = 'recap';
       hasSubmitted = true;
+    } else if (currentPhase === 'VOTING') {
+      myRole = 'vote';
+      const rv = await prisma.roundVote.findUnique({
+        where: { roundId_voterId: { roundId: currentRound.id, voterId: userId } },
+        select: { id: true },
+      });
+      hasSubmitted = Boolean(rv);
     }
 
     // Calculate submission counts
@@ -272,6 +285,47 @@ export async function getGameState(roomCode: string, userId: string) {
       ? currentRound.flipbooks.find((fb) => fb.id === workFlipbookId)
       : null;
 
+    let voteFlipbooks:
+      | Array<{
+          id: string;
+          authorId: string;
+          authorUsername: string;
+          prompt: string;
+          finalDrawingData: string | null;
+          votes: number;
+        }>
+      | undefined;
+
+    if (currentPhase === 'VOTING') {
+      const order = lobby.players.map((p) => p.id);
+      const sorted = [...currentRound.flipbooks].sort((a, b) => {
+        const ai = order.indexOf(a.authorId);
+        const bi = order.indexOf(b.authorId);
+        return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
+      });
+      voteFlipbooks = [];
+      for (const fb of sorted) {
+        const drawingsSorted = [...fb.drawings].sort((d1, d2) => d2.order - d1.order);
+        const lastDrawing = drawingsSorted[0];
+        let finalDrawingData: string | null = null;
+        if (lastDrawing) {
+          try {
+            finalDrawingData = await resolveGameDrawingPayload(lastDrawing);
+          } catch {
+            finalDrawingData = null;
+          }
+        }
+        voteFlipbooks.push({
+          id: fb.id,
+          authorId: fb.author.id,
+          authorUsername: fb.author.username,
+          prompt: fb.prompt,
+          finalDrawingData,
+          votes: fb.votes,
+        });
+      }
+    }
+
     return {
       ...baseState,
       roundId: currentRound.id,
@@ -287,6 +341,7 @@ export async function getGameState(roomCode: string, userId: string) {
       assignedPrompt: assignedFlipbook?.prompt || workFb?.prompt || null,
       workFlipbookId,
       workFlipbookDrawFromText,
+      voteFlipbooks,
       counts: {
         submittedDrawings: totalDrawings,
         expectedDrawings,

@@ -13,6 +13,8 @@ import WritingPage from './features/game/writing/WritingPage';
 import WaitingPage from './features/game/waiting/WaitingPage';
 import GameCountdownPage from './features/game/countdown/GameCountdownPage';
 import RecapPage from './features/game/recap/RecapPage';
+import VotingPage from './features/game/voting/VotingPage';
+import ResultsPage from './features/game/results/ResultsPage';
 
 // Debug page (development only)
 import Home from './pages/home';
@@ -38,6 +40,8 @@ function AppContent() {
         <Route path="/game/:roomCode/guess" element={<WritingPage />} />
         <Route path="/game/:roomCode/waiting" element={<WaitingPage />} />
         <Route path="/game/:roomCode/recap" element={<RecapPage />} />
+        <Route path="/game/:roomCode/vote" element={<VotingPage />} />
+        <Route path="/game/:roomCode/results" element={<ResultsPage />} />
         
         {/* Legacy/Debug Routes */}
         <Route path="/home" element={<Navigate to="/" replace />} />
