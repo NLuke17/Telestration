@@ -13,15 +13,15 @@ const LobbyPage: React.FC = () => {
     const { roomCode } = useParams<{ roomCode: string }>();
     const navigate = useNavigate();
     const { user } = useAuth();
-    
+
     // Get userId from auth context
     const userId = user?.id || localStorage.getItem('userId') || '';
     const sync = roomCode && userId ? { roomCode, userId } : undefined;
-    
+
     // Use custom hooks for lobby state
     const { lobby, isConnected, error, wsStatus } = useLobby(roomCode || '', userId);
     const gameState = useGameState(lobby?.id, sync);
-    
+
     const [isStarting, setIsStarting] = useState(false);
     const [startError, setStartError] = useState<string | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
@@ -29,12 +29,12 @@ const LobbyPage: React.FC = () => {
 
     // Handle game started event - redirect to countdown
     React.useEffect(() => {
-        console.log('[LobbyPage] Game state updated:', { 
-            roundId: gameState.roundId, 
+        console.log('[LobbyPage] Game state updated:', {
+            roundId: gameState.roundId,
             phase: gameState.phase,
-            roundNumber: gameState.roundNumber 
+            roundNumber: gameState.roundNumber
         });
-        
+
         if (gameState.roundId && gameState.phase) {
             console.log('[LobbyPage] Game started, navigating to countdown page with phase:', gameState.phase);
             navigate(`/game/${roomCode}/countdown?phase=${gameState.phase}`, { replace: true });
@@ -80,9 +80,9 @@ const LobbyPage: React.FC = () => {
 
     const handleShare = async () => {
         if (!roomCode) return;
-        
+
         const shareUrl = `${window.location.origin}/lobby/${roomCode}`;
-        
+
         try {
             if (navigator.share) {
                 await navigator.share({
@@ -102,12 +102,12 @@ const LobbyPage: React.FC = () => {
 
     const handleStart = async () => {
         if (!roomCode || !lobby) return;
-        
+
         console.log('[LobbyPage] handleStart called', { roomCode, lobbyId: lobby.id, playerCount: lobby.players.length });
-        
+
         setIsStarting(true);
         setStartError(null);
-        
+
         try {
             // Start the lobby via REST API
             console.log('[LobbyPage] Calling startLobby API...');
@@ -122,7 +122,7 @@ const LobbyPage: React.FC = () => {
                 console.log('[LobbyPage] Host navigating to countdown, phase:', startPhase);
                 navigate(`/game/${roomCode}/countdown?phase=${startPhase}`);
             }, 400);
-            
+
             // The game:started event will be received via WebSocket for other players
             // and handled by the useEffect above
         } catch (err: any) {
@@ -168,127 +168,120 @@ const LobbyPage: React.FC = () => {
 
     return (
         <div className="flex flex-col justify-center items-center h-screen bg-gray-50">
-            <Container 
-                width='900px' 
-                height='500px' 
-                padding='5em' 
-                className='flex flex-col justify-center gap-2 flex-col border-2 border-dark-grey rounded-lg bg-white shadow-xl p-12'
+            <Container
+                width='900px'
+                height='550px' // Slightly increased height to fit status messages inside
+                padding='2em'
+                className='flex flex-col justify-between border-2 border-dark-grey rounded-lg bg-white shadow-xl p-12'
             >
-                {/* Header */}
-                <h1 className="text-heading-1 w-full text-left mb-0">Join Room</h1>
-                <div className='flex flex-row gap-12'>
-                
-                {/* Left: players */}
-                    <div className="flex flex-col gap-6 w-auto">
+                {/* Header - Now stays at the top */}
+                <h1 className="text-heading-1 w-full text-left mb-4">Join Room</h1>
+
+                <div className='flex flex-row justify-between items-start gap-6 w-full'>
+
+                    {/* Left: players */}
+                    <div className="flex flex-col gap-4 w-64">
+                        <h2 className="text-lg font-bold text-left w-full">
+                            Players ({playerCount}/{MIN_PLAYERS} min)
+                        </h2>
                         <Container
-                            width='200px'
+                            width='100%'
                             height='auto'
                             padding='1em'
-                            className='flex flex-col items-start border-2 border-light-grey rounded-lg bg-white shadow-xl gap-4'>                          
-                            <h2 className="text-lg font-bold text-left w-full">
-                                Players ({playerCount}/{MIN_PLAYERS} min)
-                            </h2>
+                            className='flex flex-col items-start border-2 border-light-grey rounded-lg bg-white shadow-xl gap-4'>
+
                             <div className="flex flex-col gap-2">
                                 {lobby?.players.map((player) => {
                                     const isPlayerHost = player.id === lobby.host.id;
                                     return (
-                                    <div
-                                        key={player.id}
-                                        className="flex items-center gap-2"
-                                    >
-                                        {/* Profile Picture */}
-                                        <InitialAvatar
-                                            name={player.username}
-                                            src={player.profilePicture}
-                                            size="40"
-                                        />
-                                        {/* Username */ }
-                                        <span className="text-dark-grey">
-                                            {player.username}
-                                            {isPlayerHost && (
-                                                <span className="text-xs text-gray-500 ml-1">(Host)</span>
-                                            )}
-                                        </span>
-                                    </div>
+                                        <div key={player.id} className="flex items-center gap-2">
+                                            <InitialAvatar
+                                                name={player.username}
+                                                src={player.profilePicture}
+                                                size="40"
+                                            />
+                                            <span className="text-dark-grey">
+                                                {player.username}
+                                                {isPlayerHost && (
+                                                    <span className="text-xs text-gray-500 ml-1">(Host)</span>
+                                                )}
+                                            </span>
+                                        </div>
                                     )
                                 })}
                             </div>
                         </Container>
                     </div>
 
-                {/* Middle: invite and start */}
-                    <div className="flex flex-col gap-6 w-full">
-                        <h2 className="text-lg font-bold pb-2 text-center">Room code:</h2>
-                        {/* Displaying the Room Code numbers */}
-                        <p className="text-heading-1 font-bold text-center">
+                    {/* Middle: invite and start */}
+                    <div className="flex flex-col flex-1 gap-2 items-center">
+                        <h2 className="text-lg font-bold text-center">Room code:</h2>
+                        <p className="text-heading-1 font-bold text-center leading-none mb-4">
                             {roomCode}
                         </p>
-                        <Button 
-                            label="Share" 
-                            className="w-fit py-3 mt-2 self-center" 
-                            onClick={handleShare}
-                        />
-                        {isHost && (
-                            <>
-                                <Button
-                                    label={isDeleting ? 'Deleting…' : 'Delete room'}
-                                    className="w-fit py-3 mt-2 self-center border border-red-300 text-red-700"
-                                    onClick={() => void handleDeleteLobby()}
-                                    disabled={isDeleting}
-                                />
-                                {deleteError && (
-                                    <p className="text-red-600 text-sm text-center max-w-xs">{deleteError}</p>
-                                )}
-                            </>
-                        )}
-                        {isGameInProgress && (
-                            <p className="text-blue-600 text-sm text-center mt-4">
-                                Game in progress... Loading game page...
-                            </p>
-                        )}
-                        {isHost && !isGameInProgress && (
-                            <>
-                                <Button 
-                                    label={isStarting ? "Starting..." : "Start Game"} 
-                                    className="w-fit py-3 mt-2 self-center" 
-                                    onClick={handleStart}
-                                    disabled={!canStart || isStarting}
-                                />
-                                {startError && (
-                                    <p className="text-red-600 text-sm text-center">{startError}</p>
-                                )}
-                                {!hasMinimumPlayers && (
-                                    <p className="text-amber-600 text-sm text-center">
-                                        Need at least {MIN_PLAYERS} players to start ({playerCount}/{MIN_PLAYERS})
-                                    </p>
-                                )}
-                                {hasMinimumPlayers && !isStarting && (
-                                    <p className="text-green-600 text-sm text-center">
-                                        Ready to start! ✓
-                                    </p>
-                                )}
-                            </>
-                        )}
-                        {!isHost && !isGameInProgress && (
-                            <p className="text-gray-600 text-sm text-center mt-4">
-                                Waiting for host to start the game...
-                            </p>
-                        )}
+
+                        <div className="flex flex-col gap-3 items-center w-full">
+                            <Button
+                                label="Share"
+                                className="w-40 py-3"
+                                onClick={handleShare}
+                            />
+
+                            {isHost && (
+                                <>
+                                    <Button
+                                        label={isDeleting ? 'Deleting…' : 'Delete room'}
+                                        className="w-40 py-3 border border-red-300 text-red-700"
+                                        onClick={() => void handleDeleteLobby()}
+                                        disabled={isDeleting}
+                                    />
+                                    {isHost && !isGameInProgress && (
+                                        <Button
+                                            label={isStarting ? "Starting..." : "Start Game"}
+                                            className="w-40 py-3"
+                                            onClick={handleStart}
+                                            disabled={!canStart || isStarting}
+                                        />
+                                    )}
+                                </>
+                            )}
+                        </div>
+
+                        {/* Feedback Messages - Moved inside the card */}
+                        <div className="mt-4 min-h-[40px]">
+                            {deleteError && (
+                                <p className="text-red-600 text-sm text-center">{deleteError}</p>
+                            )}
+                            {isGameInProgress && (
+                                <p className="text-blue-600 text-sm text-center">
+                                    Game in progress...
+                                </p>
+                            )}
+                            {isHost && !isGameInProgress && !hasMinimumPlayers && (
+                                <p className="text-amber-600 text-sm text-center">
+                                    Need at least {MIN_PLAYERS} players ({playerCount}/{MIN_PLAYERS})
+                                </p>
+                            )}
+                            {!isHost && !isGameInProgress && (
+                                <p className="text-gray-600 text-sm text-center">
+                                    Waiting for host...
+                                </p>
+                            )}
+                        </div>
                     </div>
 
-                {/* Right: how to play */}
-                    <div className="flex flex-col justify-center items-center gap-6 w-auto">
-                        <h2 className="text-lg font-bold pb-2 text-center">How to play</h2>
+                    {/* Right: how to play */}
+                    <div className="flex flex-col gap-4 w-64 items-center">
+                        <h2 className="text-lg font-bold text-center">How to play</h2>
                         <Container
-                            width='200px'
+                            width='100%'
                             height='250px'
                             padding='0'
-                            className='gap-2 flex-col border-2 border-light-grey rounded-lg bg-white shadow-xl p-12'>
-                              <p className="text-center">Slideshow here</p>
+                            className='flex items-center justify-center border-2 border-light-grey rounded-lg bg-white shadow-xl'>
+                            <p className="text-center text-gray-400">Slideshow here</p>
                         </Container>
                     </div>
                 </div>
-
             </Container>
         </div>
     );
