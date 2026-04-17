@@ -85,7 +85,7 @@ const HomePage: React.FC = () => {
     return (
         <div className="flex flex-col justify-center items-center h-screen">
             {/* Home content container */}
-            <Container width='900px' height='500px' padding='4em' className='flex items-center justify-center gap-8 flex-col border-2 border-dark-grey rounded-lg'>
+            <Container width='900px' height='500px' padding='3em' className='flex items-center justify-center gap-8 flex-col border-2 border-dark-grey rounded-lg'>
                 {/* Heading */}
                 <div className="relative z-20 flex w-full shrink-0 items-center justify-between gap-4">
                     <h1 className="text-heading-1 text-left">New Game</h1>
@@ -120,11 +120,11 @@ const HomePage: React.FC = () => {
                     </div>
                 </div>
                 {/* Main content */}
-                <div className="flex min-h-0 w-full flex-1 flex-row items-center justify-center gap-8">
+                <div className="flex min-h-0 w-full flex-1 flex-row justify-center gap-8">
                     {/* Join a room option */}
                     <div className='flex min-h-0 flex-col items-center justify-between text-center'>
                         <PiNumberCircleOne size={33}/>
-                        <div className="flex flex-col gap-2">
+                        <div className="flex flex-col items-center gap-2">
                             <input
                                 type="text"
                                 placeholder="Enter room code"
