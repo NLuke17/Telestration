@@ -391,9 +391,9 @@ const WritingPage: React.FC = () => {
         <div className="flex justify-center items-center min-h-screen p-4">
             <Container
                 width="920px"
-                height="auto"
+                height="500px"
                 padding="3em"
-                className="flex flex-col gap-6 border-2 border-dark-grey rounded-lg"
+                className="flex flex-col gap-6 justify-between border-2 border-dark-grey rounded-lg"
             >
                 <div className="flex w-full justify-between">
                     <PageCounter
