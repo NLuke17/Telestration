@@ -22,12 +22,12 @@ const LoginPage: React.FC = () => {
             <Container width='900px' height='500px' padding='5em' className='flex items-center justify-center gap-8 flex-col border-2 border-light-mode-border dark:border-dark-mode-border rounded-lg'>
                 <h1 className="text-heading-1 text-light-mode-text-1 dark:text-dark-mode-text-1 w-full text-left ">Login</h1>
                 <div className="flex flex-row items-center justify-center w-full gap-8">
-                    <InitialAvatar size='100' name='Firestone'/>
+                    <InitialAvatar size='100' name='Person' iconType='astronaut'/>
                     <AuthForm mode="login" />
                     <TutorialSlideshow />
                 </div>
-                <div className="text-sm text-center">
-                    Don't have an account? <Link to="/signup" className="text-brand-charcoal font-semibold hover:underline">Sign up here</Link>
+                <div className="dark:text-dark-mode-text-1 text-sm text-center">
+                    Don't have an account? <Link to="/signup" className="text-brand-charcoal dark:text-dark-mode-text-2 font-semibold hover:underline">Sign up here</Link>
                 </div>
             </Container>
         </div>
