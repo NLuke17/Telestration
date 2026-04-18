@@ -407,16 +407,17 @@ const WritingPage: React.FC = () => {
                         className="text-heading-3"
                     />
                 </div>
+                <div className="flex flex-col items-center">
+                    <div className="text-heading-1 text-center">
+                        {isInitialPrompt ? 'Write your prompt!' : 'What did you see?'}
+                    </div>
 
-                <div className="text-heading-1 text-center">
-                    {isInitialPrompt ? 'Write your prompt!' : 'What did you see?'}
+                    {isInputLocked && (
+                        <p className="text-body text-center text-gray-600">
+                            Waiting for other players. You&apos;ll continue automatically when everyone is done.
+                        </p>
+                    )}
                 </div>
-
-                {isInputLocked && (
-                    <p className="text-body text-center text-gray-600">
-                        Waiting for other players. You&apos;ll continue automatically when everyone is done.
-                    </p>
-                )}
 
                 {!isInitialPrompt && latestDrawing && (
                     <div className="flex flex-col gap-2 w-full">
@@ -454,7 +455,7 @@ const WritingPage: React.FC = () => {
                         )}
                         {(!hasFinishedSubmit || allowLocalEdit) && (
                             <Button
-                                label={isSubmitting ? 'Submitting...' : 'Done'}
+                                label={'Done'}
                                 disabled={!(sentence.length > 0) || isSubmitting}
                                 onClick={handleSubmit}
                             />
