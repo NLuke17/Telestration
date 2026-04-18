@@ -346,9 +346,9 @@ const DrawingPage: React.FC = () => {
         <div className="flex flex-col justify-center items-center gap-8 h-screen">
             <Container width='900px' height='auto' padding='2em' className='flex items-center justify-center border-2 border-dark-grey rounded-lg flex-col'>
                 <div className='flex w-full justify-between'>
-                    <PageCounter pageNum={currentPage.toString()} totalPages={totalPages.toString()} className='text-heading-3'/>
+                    <PageCounter pageNum={currentPage.toString()} totalPages={totalPages.toString()} className='whitespace-nowrap text-heading-3'/>
                     {/* Heading */}
-                    <div className='flex flex-col text-center'>
+                    <div className='flex flex-col flex-1 items-center text-center'>
                         <div className='text-heading-3'>Hey, it's time to draw!</div>
                         <div className='text-display-prompt'>{promptToDisplay}</div>
                         {isCanvasLocked && (
@@ -360,7 +360,7 @@ const DrawingPage: React.FC = () => {
                     <TimerDisplay 
                         minutesLeft={timer.minutes.toString().padStart(2, '0')} 
                         secondsLeft={timer.seconds.toString().padStart(2, '0')} 
-                        className='text-heading-3'
+                        className='whitespace-nowrap text-heading-3'
                     />
                 </div>
                 {/* Color buttons */}
