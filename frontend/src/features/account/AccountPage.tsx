@@ -14,12 +14,18 @@ import {
 } from '../../services/api/gameApi';
 import { encodeDrawingsAsAnimatedGif } from '../../utils/savedFlipbookGif';
 import SavedFlipbookPreview from './SavedFlipbookPreview';
+import { useTheme } from '../../contexts/ThemeContext';
+
+import lightBg from '../../assets/lightmode.jpg';
+import darkBg from '../../assets/darkmode.jpg';
+import ColorModeButton from '../../components/common/ColorModeButton';
 
 function sanitizeFilenameBase(name: string): string {
   return name.replace(/[^\w\s-]/g, '').replace(/\s+/g, '-').slice(0, 80) || 'flipbook';
 }
 
 const AccountPage: React.FC = () => {
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const { user, logout, mergeUserToSession } = useAuth();
   const [profile, setProfile] = useState<CurrentUserResponse | null>(null);
@@ -173,7 +179,11 @@ const AccountPage: React.FC = () => {
   );
 
   return (
-    <div className="flex flex-col items-center min-h-screen py-10 px-4">
+    <div className="flex flex-col items-center min-h-screen py-10 px-4"
+      style={{ backgroundImage: `url(${theme === 'dark' ? darkBg : lightBg})` }}
+    >
+      {/* Toggle Button */}
+      <ColorModeButton className="absolute top-8 right-8" />
       <canvas ref={gifScratchRef} className="hidden" aria-hidden />
       <Container
         width="900px"
@@ -197,7 +207,7 @@ const AccountPage: React.FC = () => {
           </Alert>
         )}
 
-        <div className="flex w-full flex-col items-center gap-4 rounded-lg border border-dark-grey bg-slate-50 px-8 py-10 text-center">
+        <div className="flex w-full flex-col items-center gap-4 rounded-lg border border-dark-grey bg-sky-50 dark:bg-indigo-50 px-8 py-10 text-center">
           <div className="relative inline-block rounded-full">
             <button
               type="button"
@@ -247,7 +257,7 @@ const AccountPage: React.FC = () => {
         </div>
 
         <div className="w-full">
-          <h2 className="text-heading-2 mb-4 text-left">Saved flipbooks</h2>
+          <h2 className="text-heading-2 text-light-mode-text-1 dark:text-dark-mode-text-1 mb-4 text-left">Saved flipbooks</h2>
           {listError && (
             <Alert severity="error" className="mb-4 w-full">
               {listError}
@@ -259,7 +269,7 @@ const AccountPage: React.FC = () => {
             </Alert>
           )}
           {savedList.length === 0 && !listError ? (
-            <p className="text-body-base text-gray-600">
+            <p className="text-body-base text-gray-600 dark:text-dark-mode-text-2">
               You have not saved any flipbooks yet. Finish a game and save one from the recap screen.
             </p>
           ) : (
