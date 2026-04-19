@@ -190,7 +190,7 @@ const LobbyPage: React.FC = () => {
 
                     {/* Left: players */}
                     <div className="flex flex-col gap-4 w-64">
-                        <h2 className="dark:text-dark-mode-text-2 text-lg font-bold text-left w-full">
+                        <h2 className="dark:text-dark-mode-text-2 text-lg font-bold text-center w-full">
                             Players ({playerCount}/{MIN_PLAYERS} min)
                         </h2>
                         <Container

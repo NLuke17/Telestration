@@ -11,7 +11,7 @@ export default function Container({width, height, padding='5em', children, fille
     return (
         <div style={{ width: `${width}`, height: `${height}`, padding: `${padding}` }}
         className={`${className}
-        ${filled ? 'bg-sky-100 dark:bg-gray-950' : ''}
+        ${filled ? 'bg-white dark:bg-gray-950' : ''}
         `}>
             {children}
         </div>
