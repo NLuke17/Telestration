@@ -16,14 +16,20 @@ import { getAssignedFlipbook } from '../../../services/api/gameApi';
 import { getGameState } from '../../../services/api/lobbyApi';
 import { getWSClient } from '../../../services/ws/wsClient';
 import { useAuth } from '../../../contexts/AuthContext';
+import { useTheme } from '../../../contexts/ThemeContext';
+
+import lightBg from '../../../assets/lightmode.jpg';
+import darkBg from '../../../assets/darkmode.jpg';
+import ColorModeButton from '../../../components/common/ColorModeButton';
 
 const styles = {
-  border: '0.0625rem solid #9c9c9c',
-  borderRadius: '0.25rem',
+    border: '0.0625rem solid #9c9c9c',
+    borderRadius: '0.25rem',
 };
 
 const DrawingPage: React.FC = () => {
-    const { roomCode } = useParams<{ roomCode: string}>();
+    const { theme, toggleTheme } = useTheme();
+    const { roomCode } = useParams<{ roomCode: string }>();
     const navigate = useNavigate();
     const canvasRef = useRef<ReactSketchCanvasRef>(null);
     const prevPhaseRef = useRef<'DRAWING' | 'GUESSING' | 'RECAP' | 'VOTING' | null>(null);
@@ -32,20 +38,20 @@ const DrawingPage: React.FC = () => {
     useEffect(() => {
         sessionStorage.removeItem('telestration.expectDrawAfterPromptWait');
     }, []);
-    
+
     // Get userId from auth context or localStorage for guest users
     const userId = user?.id || localStorage.getItem('userId') || '';
 
     // First, get lobby to get lobbyId
     const { lobby, error: lobbyError, isConnected } = useLobby(roomCode || '', userId);
     const sync = roomCode && userId ? { roomCode, userId } : undefined;
-    
+
     // Canvas state
     const [penColor, setPenColor] = useState("#000000");
     const [selectedSize, setSelectedSize] = useState(5);
     const [selectedTool, setSelectedTool] = useState('pen');
     const sizes = [5, 10, 15, 20, 25, 30];
-    
+
     // Game state - pass lobbyId to useGameState
     const gameState = useGameState(lobby?.id, sync);
     const timer = usePhaseTimer(gameState.phaseEndsAt);
@@ -71,7 +77,7 @@ const DrawingPage: React.FC = () => {
             navigate('/', { replace: true });
         }
     }, [lobbyError, navigate]);
-    
+
     // Assignment state
     const [assignment, setAssignment] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -84,7 +90,7 @@ const DrawingPage: React.FC = () => {
     const pendingFlipbookIdRef = useRef<string | null>(null);
     const submitTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const optimisticRevokeRef = useRef(false);
-    const handleSubmitRef = useRef<(opts?: { fromTimer?: boolean }) => Promise<void>>(async () => {});
+    const handleSubmitRef = useRef<(opts?: { fromTimer?: boolean }) => Promise<void>>(async () => { });
     const timeUpAutoSubmitRef = useRef(false);
 
     useEffect(() => {
@@ -319,8 +325,8 @@ const DrawingPage: React.FC = () => {
         return (
             <div className="flex flex-col justify-center items-center h-screen">
                 <p className="text-heading-3 text-red-600">Error: {error || 'No assignment'}</p>
-                <Button 
-                    label="Back to Lobby" 
+                <Button
+                    label="Back to Lobby"
                     onClick={() => navigate(`/lobby/${roomCode}`)}
                     className="mt-4"
                 />
@@ -343,58 +349,59 @@ const DrawingPage: React.FC = () => {
     const isCanvasLocked = hasFinishedSubmit && !allowLocalEdit;
 
     return (
-        <div className="flex flex-col justify-center items-center gap-8 h-screen">
+        <div className="flex flex-col justify-center items-center gap-8 h-screen"
+            style={{ backgroundImage: `url(${theme === 'dark' ? darkBg : lightBg})` }}
+        >
             <Container width='900px' height='auto' padding='2em' className='flex items-center justify-center border-2 border-dark-grey rounded-lg flex-col'>
                 <div className='flex w-full justify-between'>
-                    <PageCounter pageNum={currentPage.toString()} totalPages={totalPages.toString()} className='whitespace-nowrap text-heading-3'/>
+                    <PageCounter pageNum={currentPage.toString()} totalPages={totalPages.toString()} className='dark:text-dark-mode-text-1 whitespace-nowrap text-heading-3' />
                     {/* Heading */}
                     <div className='flex flex-col flex-1 items-center text-center'>
-                        <div className='text-heading-3'>Hey, it's time to draw!</div>
-                        <div className='text-display-prompt'>{promptToDisplay}</div>
+                        <div className='dark:text-dark-mode-text-1 text-heading-3'>Hey, it's time to draw!</div>
+                        <div className='dark:text-dark-mode-text-1 text-display-prompt'>{promptToDisplay}</div>
                         {isCanvasLocked && (
-                            <p className="text-body text-gray-600 mt-2 max-w-md">
+                            <p className="text-body dark:text-dark-mode-text-2 text-gray-600 mt-2 max-w-md">
                                 Waiting for other players. You&apos;ll continue automatically when everyone is done.
                             </p>
                         )}
-                    </div> 
-                    <TimerDisplay 
-                        minutesLeft={timer.minutes.toString().padStart(2, '0')} 
-                        secondsLeft={timer.seconds.toString().padStart(2, '0')} 
-                        className='whitespace-nowrap text-heading-3'
+                    </div>
+                    <TimerDisplay
+                        minutesLeft={timer.minutes.toString().padStart(2, '0')}
+                        secondsLeft={timer.seconds.toString().padStart(2, '0')}
+                        className='whitespace-nowrap dark:text-dark-mode-text-1 text-heading-3'
                     />
                 </div>
                 {/* Color buttons */}
                 <div
-                    className={`flex flex-row gap-6 justify-center items-center relative ${
-                        isCanvasLocked ? 'pointer-events-none opacity-70' : ''
-                    }`}
+                    className={`flex flex-row gap-6 justify-center items-center relative ${isCanvasLocked ? 'pointer-events-none opacity-70' : ''
+                        }`}
                 >
                     <div className="flex flex-col gap-4">
                         <ColorButton color='black' size='30' aria-label="select black color" onClick={() => {
                             setPenColor('#000000')
                             canvasRef.current?.eraseMode(false)
                             setSelectedTool('pen')
-                        }}/>
+                        }} />
                         <ColorButton color='#0088FF' size='30' aria-label="select blue color" onClick={() => {
                             setPenColor('#0088FF')
                             canvasRef.current?.eraseMode(false)
                             setSelectedTool('pen')
-                        }}/>
+                        }} />
                         <ColorButton color='#FF383C' size='30' aria-label="select red color" onClick={() => {
                             setPenColor('#FF383C')
                             canvasRef.current?.eraseMode(false)
                             setSelectedTool('pen')
-                        }}/>
+                        }} />
                         <ColorButton color='#FFCC00' size='30' aria-label="select yellow color" onClick={() => {
                             setPenColor('#FFCC00')
                             canvasRef.current?.eraseMode(false)
                             setSelectedTool('pen')
-                        }}/>
+                        }} />
                         <ColorButton color='#ffffff' size='30' aria-label="select white color" onClick={() => {
                             setPenColor('#ffffff')
                             canvasRef.current?.eraseMode(false)
                             setSelectedTool('pen')
-                        }}/>
+                        }} />
                     </div>
                     {/* Canvas */}
                     <ReactSketchCanvas
@@ -410,23 +417,23 @@ const DrawingPage: React.FC = () => {
                     <div className="flex flex-col">
                         <ToolButton key='undo' icon={<SlActionUndo size={30} />} aria-label="Undo" onClick={() => {
                             canvasRef.current?.undo()
-                            }}/>
+                        }} />
                         <ToolButton key='redo' icon={<SlActionRedo size={30} />} aria-label="Redo" onClick={() => {
                             canvasRef.current?.redo()
-                            }}/>
+                        }} />
                         <ToolButton key='pen' icon={<SlPencil size={30} />} isActive={selectedTool === 'pen'} aria-label="Pen tool" onClick={() => {
                             canvasRef.current?.eraseMode(false)
                             setSelectedTool('pen')
-                            }}/>
+                        }} />
                         <ToolButton key='eraser' icon={<BsEraser size={30} />} isActive={selectedTool === 'eraser'} aria-label="Eraser tool" onClick={() => {
                             canvasRef.current?.eraseMode(true)
                             setSelectedTool('eraser')
-                            }} />
+                        }} />
                     </div>
                 </div>
             </Container>
             {/* Tool size indicators */}
-            <div 
+            <div
                 style={{
                     width: "100%",
                     maxWidth: "900px",
@@ -435,9 +442,9 @@ const DrawingPage: React.FC = () => {
             >
                 <div className="flex flex-row gap-2 bg-mid-grey rounded-lg px-[20px] py-[15px] border border-dark-grey">
                     {sizes.map((size) => (
-                        <ToolSizeIndicator 
+                        <ToolSizeIndicator
                             key={size}
-                            toolSize={size} 
+                            toolSize={size}
                             variant={selectedSize === size ? 'active' : 'default'}
                             onClick={() => {
                                 setSelectedSize(size);

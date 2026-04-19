@@ -5,6 +5,11 @@ import Button from '../../../components/common/Button';
 import { AnimatedSketchDisplay } from '../../../components/game/AnimatedSketchDisplay';
 import { useAuth } from '../../../contexts/AuthContext';
 import { getGameState, endLobby } from '../../../services/api/lobbyApi';
+import { useTheme } from '../../../contexts/ThemeContext';
+
+import lightBg from '../../../assets/lightmode.jpg';
+import darkBg from '../../../assets/darkmode.jpg';
+import ColorModeButton from '../../../components/common/ColorModeButton';
 
 type RankingRow = {
     rank: number;
@@ -23,6 +28,7 @@ function parseResults(raw: unknown): RankingRow[] {
 }
 
 const ResultsPage: React.FC = () => {
+    const { theme, toggleTheme } = useTheme();
     const { roomCode } = useParams<{ roomCode: string }>();
     const navigate = useNavigate();
     const { user } = useAuth();
@@ -93,7 +99,11 @@ const ResultsPage: React.FC = () => {
     };
 
     return (
-        <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-gray-50 p-4">
+        <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-gray-50 p-4"
+        style={{ backgroundImage: `url(${theme === 'dark' ? darkBg : lightBg})` }}
+        >
+            {/* Toggle Button */}
+            <ColorModeButton className="absolute top-8 right-8" />
             <Container
                 width="960px"
                 height="auto"
