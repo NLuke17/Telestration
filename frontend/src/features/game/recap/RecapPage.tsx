@@ -320,7 +320,7 @@ const RecapPage: React.FC = () => {
                         {visibleTimeline.map((entry, i) => {
                             if (entry.kind === 'prompt') {
                                 return (
-                                    <div key={`p-${i}`} className="rounded-lg border border-dark-grey p-4 bg-indigo-50">
+                                    <div key={`p-${i}`} className="rounded-lg border border-dark-grey p-4 bg-sky-50 dark:bg-indigo-50">
                                         <div className="text-xs uppercase text-gray-500">Prompt</div>
                                         <div className="text-heading-3">{entry.text}</div>
                                     </div>
