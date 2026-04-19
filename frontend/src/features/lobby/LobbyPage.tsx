@@ -6,10 +6,16 @@ import InitialAvatar from '../../components/common/Avatar';
 import { useLobby, useGameState } from '../../hooks/useGameState';
 import { startLobby, deleteLobby } from '../../services/api/lobbyApi';
 import { useAuth } from '../../contexts/AuthContext';
+import { useTheme } from '../../contexts/ThemeContext';
+
+import lightBg from '../../assets/lightmode.jpg';
+import darkBg from '../../assets/darkmode.jpg';
+import ColorModeButton from '../../components/common/ColorModeButton';
 
 const MIN_PLAYERS = 2;
 
 const LobbyPage: React.FC = () => {
+    const { theme, toggleTheme } = useTheme();
     const { roomCode } = useParams<{ roomCode: string }>();
     const navigate = useNavigate();
     const { user } = useAuth();
@@ -167,21 +173,24 @@ const LobbyPage: React.FC = () => {
     const isGameInProgress = lobby?.state === 'IN_PROGRESS';
 
     return (
-        <div className="flex flex-col justify-center items-center h-screen bg-gray-50">
+        <div
+            className="flex flex-col justify-center items-center h-screen bg-gray-50"
+            style={{ backgroundImage: `url(${theme === 'dark' ? darkBg : lightBg})` }}
+        >
+            {/* Toggle Button */}
+            <ColorModeButton className="absolute top-8 right-8" />
             <Container
                 width='900px'
-                height='550px' // Slightly increased height to fit status messages inside
+                height='550px'
                 padding='2em'
                 className='flex flex-col justify-between border-2 border-dark-grey rounded-lg bg-white shadow-xl p-12'
             >
-                {/* Header - Now stays at the top */}
-                <h1 className="text-heading-1 w-full text-left mb-4">Join Room</h1>
-
+                <h1 className="text-heading-1 text-light-mode-text-1 dark:text-dark-mode-text-1 w-full text-left mb-4">Join Room</h1>
                 <div className='flex flex-row justify-between items-start gap-6 w-full'>
 
                     {/* Left: players */}
                     <div className="flex flex-col gap-4 w-64">
-                        <h2 className="text-lg font-bold text-left w-full">
+                        <h2 className="dark:text-dark-mode-text-2 text-lg font-bold text-left w-full">
                             Players ({playerCount}/{MIN_PLAYERS} min)
                         </h2>
                         <Container
@@ -215,8 +224,8 @@ const LobbyPage: React.FC = () => {
 
                     {/* Middle: invite and start */}
                     <div className="flex flex-col flex-1 gap-2 items-center">
-                        <h2 className="text-lg font-bold text-center">Room code:</h2>
-                        <p className="text-heading-1 font-bold text-center leading-none mb-4">
+                        <h2 className="dark:text-dark-mode-text-2 text-lg font-bold text-center">Room code:</h2>
+                        <p className="text-heading-1 dark:text-dark-mode-text-1 font-bold text-center leading-none mb-4">
                             {roomCode}
                         </p>
 
@@ -253,17 +262,17 @@ const LobbyPage: React.FC = () => {
                                 <p className="text-red-600 text-sm text-center">{deleteError}</p>
                             )}
                             {isGameInProgress && (
-                                <p className="text-blue-600 text-sm text-center">
+                                <p className="dark:text-dark-mode-text-2 text-blue-600 text-sm text-center">
                                     Game in progress...
                                 </p>
                             )}
                             {isHost && !isGameInProgress && !hasMinimumPlayers && (
-                                <p className="text-amber-600 text-sm text-center">
+                                <p className="dark:text-dark-mode-text-2 text-amber-600 text-sm text-center">
                                     Need at least {MIN_PLAYERS} players ({playerCount}/{MIN_PLAYERS})
                                 </p>
                             )}
                             {!isHost && !isGameInProgress && (
-                                <p className="text-gray-600 text-sm text-center">
+                                <p className="dark:text-dark-mode-text-2 text-gray-600 text-sm text-center">
                                     Waiting for host...
                                 </p>
                             )}
@@ -272,7 +281,7 @@ const LobbyPage: React.FC = () => {
 
                     {/* Right: how to play */}
                     <div className="flex flex-col gap-4 w-64 items-center">
-                        <h2 className="text-lg font-bold text-center">How to play</h2>
+                        <h2 className="dark:text-dark-mode-text-2 text-lg font-bold text-center">How to play</h2>
                         <Container
                             width='100%'
                             height='250px'

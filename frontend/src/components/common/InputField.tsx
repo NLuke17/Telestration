@@ -7,7 +7,6 @@ interface InputFieldProps {
     className?: string;
     disabled?: boolean;
     required?: boolean;
-    /** Tighter label + input for toolbars and footers */
     compact?: boolean;
     onChange: (val: string) => void;
 }
