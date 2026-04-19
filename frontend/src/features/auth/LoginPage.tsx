@@ -15,14 +15,14 @@ const LoginPage: React.FC = () => {
 
     return (
         <div className="flex flex-col justify-center items-center h-screen"
-        style={{ backgroundImage: `url(${theme === 'dark' ? darkBg : lightBg})`}}
+            style={{ backgroundImage: `url(${theme === 'dark' ? darkBg : lightBg})` }}
         >
             {/* Toggle Button */}
             <ColorModeButton className="absolute top-8 right-8" />
             <Container width='900px' height='500px' padding='5em' className='flex items-center justify-center gap-8 flex-col border-2 border-light-mode-border dark:border-dark-mode-border rounded-lg'>
                 <h1 className="text-heading-1 text-light-mode-text-1 dark:text-dark-mode-text-1 w-full text-left ">Login</h1>
                 <div className="flex flex-row items-center justify-center w-full gap-8">
-                    <InitialAvatar size='100' name='Person' iconType='astronaut'/>
+                    <InitialAvatar size='100' name='Person' iconType='astronaut' />
                     <AuthForm mode="login" />
                     <TutorialSlideshow />
                 </div>
