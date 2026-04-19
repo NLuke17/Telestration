@@ -110,9 +110,9 @@ const ResultsPage: React.FC = () => {
                 padding="2em"
                 className="flex flex-col gap-6 border-2 border-dark-grey bg-white shadow-xl"
             >
-                <h1 className="text-heading-1">Results</h1>
-                <p className="text-body text-gray-600">
-                    Top placements (ties share the same spot). Votes are saved to each author&apos;s account
+                <h1 className="text-heading-1 text-light-mode-text-1 dark:text-dark-mode-text-1">Results</h1>
+                <p className="text-body text-gray-600 dark:text-dark-mode-text-2">
+                    Here are the winning flipbooks! Votes are saved to each author&apos;s account
                     stats.
                 </p>
                 {loadError && <p className="text-body text-red-600">{loadError}</p>}
@@ -125,19 +125,19 @@ const ResultsPage: React.FC = () => {
                             key={`${r.flipbookId}-${r.rank}`}
                             className="flex flex-col gap-3 rounded-lg border-2 border-dark-grey p-4 md:flex-row md:items-start"
                         >
-                            <div className="shrink-0 text-heading-2 text-brand-charcoal md:w-28">
+                            <div className="shrink-0 text-heading-1 text-brand-charcoal dark:text-dark-mode-text-1 md:w-28">
                                 {ordinal(r.rank)}
                             </div>
                             <div className="flex min-w-0 flex-1 flex-col gap-3">
                                 <div className="flex flex-wrap items-baseline justify-between gap-2">
-                                    <span className="text-heading-3">{r.authorUsername}</span>
-                                    <span className="text-body text-gray-600">{r.voteCount} votes</span>
+                                    <span className="text-heading-3 dark:text-dark-mode-text-1">{r.authorUsername}</span>
+                                    <span className="text-body text-gray-600 dark:text-dark-mode-text-1">{r.voteCount} votes</span>
                                 </div>
-                                <div className="rounded-md border border-dark-grey bg-blue-50 p-3">
+                                <div className="rounded-md border border-dark-grey bg-sky-50 dark:bg-indigo-50 p-3">
                                     <div className="text-xs uppercase text-gray-500">Prompt</div>
                                     <div className="text-body font-medium">{r.prompt}</div>
                                 </div>
-                                <div className="rounded-md border border-dark-grey bg-green-50 p-2">
+                                <div className="rounded-md border border-dark-grey bg-sky-50 dark:bg-indigo-50 p-2">
                                     <div className="text-xs uppercase text-gray-500">Final drawing</div>
                                     <div className="mt-2 flex justify-center">
                                         {r.finalDrawingData ? (

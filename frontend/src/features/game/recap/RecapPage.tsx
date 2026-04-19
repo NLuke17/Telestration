@@ -15,8 +15,14 @@ import { HttpError } from '../../../services/api/httpClient';
 import { AnimatedSketchDisplay } from '../../../components/game/AnimatedSketchDisplay';
 import { useGameState, useLobby, useWebSocket } from '../../../hooks/useGameState';
 import { getWSClient } from '../../../services/ws/wsClient';
+import { useTheme } from '../../../contexts/ThemeContext';
+
+import lightBg from '../../../assets/lightmode.jpg';
+import darkBg from '../../../assets/darkmode.jpg';
+import ColorModeButton from '../../../components/common/ColorModeButton';
 
 const RecapPage: React.FC = () => {
+    const { theme, toggleTheme } = useTheme();
     const { roomCode } = useParams<{ roomCode: string }>();
     const navigate = useNavigate();
     const { user, isAuthenticated } = useAuth();
@@ -270,6 +276,7 @@ const RecapPage: React.FC = () => {
                 className={`flex flex-col justify-center items-center min-h-screen bg-gray-50 gap-6 p-4 ${
                     currentFlipbookFullyRevealed ? saveBarBottomClass : ''
                 }`}
+                style={{ backgroundImage: `url(${theme === 'dark' ? darkBg : lightBg})` }}
             >
                 <Container
                     width="900px"
