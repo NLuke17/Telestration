@@ -13,6 +13,7 @@ const ColorModeButton: React.FC<ColorModeButtonProps> = ({ className }) => {
         <button
             onClick={toggleTheme}
             className={`
+                absolute right-4 top-4 z-30 sm:right-8 sm:top-8
                 flex items-center justify-center p-2 rounded-lg
                 border-1 border-light-mode-border dark:border-dark-mode-border
                 bg-light-mode-text-2 dark:bg-dark-mode-button-background

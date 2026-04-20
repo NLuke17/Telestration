@@ -19,6 +19,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import lightBg from '../../assets/lightmode.jpg';
 import darkBg from '../../assets/darkmode.jpg';
 import ColorModeButton from '../../components/common/ColorModeButton';
+import { PiMoonStars } from 'react-icons/pi';
 
 function sanitizeFilenameBase(name: string): string {
   return name.replace(/[^\w\s-]/g, '').replace(/\s+/g, '-').slice(0, 80) || 'flipbook';
@@ -179,11 +180,12 @@ const AccountPage: React.FC = () => {
   );
 
   return (
-    <div className="flex flex-col items-center min-h-screen py-10 px-4"
+    <div
+      className="box-border flex min-h-screen w-full flex-col items-center px-3 py-20 sm:px-6 sm:py-16"
       style={{ backgroundImage: `url(${theme === 'dark' ? darkBg : lightBg})` }}
     >
       {/* Toggle Button */}
-      <ColorModeButton className="absolute top-8 right-8" />
+      <ColorModeButton />
       <canvas ref={gifScratchRef} className="hidden" aria-hidden />
       <Container
         width="900px"
@@ -207,7 +209,7 @@ const AccountPage: React.FC = () => {
           </Alert>
         )}
 
-        <div className="flex w-full flex-col items-center gap-4 rounded-lg border border-dark-grey bg-sky-50 dark:bg-indigo-50 px-8 py-10 text-center">
+        <div className="flex w-full flex-col items-center gap-4 rounded-lg border border-dark-grey bg-sky-50 px-4 py-8 text-center dark:bg-indigo-50 sm:px-8 sm:py-10">
           <div className="relative inline-block rounded-full">
             <button
               type="button"
@@ -257,7 +259,10 @@ const AccountPage: React.FC = () => {
         </div>
 
         <div className="w-full">
-          <h2 className="text-heading-2 text-light-mode-text-1 dark:text-dark-mode-text-1 mb-4 text-left">Saved flipbooks</h2>
+          <h2 className="text-heading-2 text-light-mode-text-1 dark:text-dark-mode-text-1 mb-4 flex items-center gap-2 text-left">
+            <PiMoonStars className="shrink-0 text-indigo-500 dark:text-indigo-400" size={24} aria-hidden />
+            Saved flipbooks
+          </h2>
           {listError && (
             <Alert severity="error" className="mb-4 w-full">
               {listError}

@@ -11,6 +11,8 @@ import { useTheme } from '../../contexts/ThemeContext';
 import lightBg from '../../assets/lightmode.jpg';
 import darkBg from '../../assets/darkmode.jpg';
 import ColorModeButton from '../../components/common/ColorModeButton';
+import { PiPlanet } from 'react-icons/pi';
+import { GAME_NAME } from '../../constants/branding';
 
 const MIN_PLAYERS = 2;
 
@@ -92,7 +94,7 @@ const LobbyPage: React.FC = () => {
         try {
             if (navigator.share) {
                 await navigator.share({
-                    title: 'Join my Telestration game!',
+                    title: `Join my ${GAME_NAME} game!`,
                     text: `Join my game with room code: ${roomCode}`,
                     url: shareUrl,
                 });
@@ -141,8 +143,14 @@ const LobbyPage: React.FC = () => {
     // Loading state
     if (wsStatus === 'connecting' || !isConnected) {
         return (
-            <div className="flex flex-col justify-center items-center h-screen bg-gray-50">
-                <Container width='900px' height='500px' padding='5em' className='flex flex-col justify-center items-center border-2 border-dark-grey rounded-lg bg-white shadow-xl'>
+            <div className="box-border flex min-h-screen w-full flex-col items-center justify-center bg-gray-50 px-3 py-20 sm:px-5 sm:py-16">
+                <ColorModeButton />
+                <Container
+                    width="900px"
+                    height="500px"
+                    padding="5em"
+                    className="flex flex-col items-center justify-center border-2 border-dark-grey bg-white shadow-xl"
+                >
                     <p className="text-heading-3">Connecting to lobby...</p>
                 </Container>
             </div>
@@ -152,8 +160,14 @@ const LobbyPage: React.FC = () => {
     // Error state
     if (error) {
         return (
-            <div className="flex flex-col justify-center items-center h-screen bg-gray-50">
-                <Container width='900px' height='500px' padding='5em' className='flex flex-col justify-center items-center border-2 border-dark-grey rounded-lg bg-white shadow-xl'>
+            <div className="box-border flex min-h-screen w-full flex-col items-center justify-center bg-gray-50 px-3 py-20 sm:px-5 sm:py-16">
+                <ColorModeButton />
+                <Container
+                    width="900px"
+                    height="500px"
+                    padding="5em"
+                    className="flex flex-col items-center justify-center border-2 border-dark-grey bg-white shadow-xl"
+                >
                     <p className="text-heading-3 text-red-600">Error: {error}</p>
                     {error.includes('deleted') && (
                         <p className="text-body mt-4">Redirecting to home...</p>
@@ -174,22 +188,23 @@ const LobbyPage: React.FC = () => {
 
     return (
         <div
-            className="flex flex-col justify-center items-center h-screen bg-gray-50"
+            className="box-border flex min-h-screen w-full flex-col items-center justify-center bg-gray-50 px-3 py-20 sm:px-5 sm:py-16"
             style={{ backgroundImage: `url(${theme === 'dark' ? darkBg : lightBg})` }}
         >
-            {/* Toggle Button */}
-            <ColorModeButton className="absolute top-8 right-8" />
+            <ColorModeButton />
             <Container
-                width='900px'
-                height='550px'
-                padding='2em'
-                className='flex flex-col justify-between border-2 border-dark-grey rounded-lg bg-white shadow-xl p-12'
+                width="900px"
+                height="550px"
+                padding="2em"
+                className="flex min-h-0 flex-col justify-between gap-6 rounded-lg border-2 border-dark-grey bg-white p-4 shadow-xl sm:p-8 xl:p-10"
             >
-                <h1 className="text-heading-1 text-light-mode-text-1 dark:text-dark-mode-text-1 w-full text-left mb-4">Join Room</h1>
-                <div className='flex flex-row justify-between items-start gap-6 w-full'>
-
+                <h1 className="mb-2 flex w-full items-center gap-2 text-left text-heading-1 text-light-mode-text-1 dark:text-dark-mode-text-1 sm:mb-4">
+                    <PiPlanet className="shrink-0 text-indigo-500 dark:text-indigo-400" size={28} aria-hidden />
+                    Join room
+                </h1>
+                <div className="flex w-full flex-1 flex-col items-stretch gap-8 xl:flex-row xl:justify-between xl:gap-6">
                     {/* Left: players */}
-                    <div className="flex flex-col gap-4 w-64">
+                    <div className="flex w-full shrink-0 flex-col gap-4 xl:w-64">
                         <h2 className="dark:text-dark-mode-text-2 text-lg font-bold text-center w-full">
                             Players ({playerCount}/{MIN_PLAYERS} min)
                         </h2>
@@ -223,7 +238,7 @@ const LobbyPage: React.FC = () => {
                     </div>
 
                     {/* Middle: invite and start */}
-                    <div className="flex flex-col flex-1 gap-2 items-center">
+                    <div className="flex w-full min-w-0 flex-1 flex-col items-center gap-2">
                         <h2 className="dark:text-dark-mode-text-2 text-lg font-bold text-center">Room code:</h2>
                         <p className="text-heading-1 dark:text-dark-mode-text-1 font-bold text-center leading-none mb-4">
                             {roomCode}
@@ -280,7 +295,7 @@ const LobbyPage: React.FC = () => {
                     </div>
 
                     {/* Right: how to play */}
-                    <div className="flex flex-col gap-4 w-64 items-center">
+                    <div className="flex w-full shrink-0 flex-col items-center gap-4 xl:w-64">
                         <h2 className="dark:text-dark-mode-text-2 text-lg font-bold text-center">How to play</h2>
                         <Container
                             width='100%'

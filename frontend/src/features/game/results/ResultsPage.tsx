@@ -99,11 +99,12 @@ const ResultsPage: React.FC = () => {
     };
 
     return (
-        <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-gray-50 p-4"
-        style={{ backgroundImage: `url(${theme === 'dark' ? darkBg : lightBg})` }}
+        <div
+            className="box-border flex min-h-screen w-full flex-col items-center justify-center gap-6 bg-gray-50 px-3 py-20 sm:px-5 sm:py-16"
+            style={{ backgroundImage: `url(${theme === 'dark' ? darkBg : lightBg})` }}
         >
             {/* Toggle Button */}
-            <ColorModeButton className="absolute top-8 right-8" />
+            <ColorModeButton />
             <Container
                 width="960px"
                 height="auto"
@@ -143,10 +144,9 @@ const ResultsPage: React.FC = () => {
                                         {r.finalDrawingData ? (
                                             <AnimatedSketchDisplay
                                                 drawingData={r.finalDrawingData}
-                                                width="440px"
-                                                height="260px"
+                                                width="100%"
                                                 strokeDelayMs={40}
-                                                className="max-w-full"
+                                                className="max-w-full sm:max-w-[440px]"
                                                 replayNonce={r.flipbookId.length + r.rank}
                                             />
                                         ) : (

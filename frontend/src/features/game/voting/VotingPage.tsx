@@ -198,11 +198,12 @@ const VotingPage: React.FC = () => {
     const isLocked = hasFinishedSubmit && !allowLocalEdit;
 
     return (
-        <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-gray-50 p-4"
+        <div
+            className="box-border flex min-h-screen w-full flex-col items-center justify-center gap-6 bg-gray-50 px-3 py-20 sm:px-5 sm:py-16"
             style={{ backgroundImage: `url(${theme === 'dark' ? darkBg : lightBg})` }}
         >
             {/* Toggle Button */}
-            <ColorModeButton className="absolute top-8 right-8" />
+            <ColorModeButton />
             <Container
                 width="900px"
                 height="auto"
@@ -266,10 +267,9 @@ const VotingPage: React.FC = () => {
                                         {c.finalDrawingData ? (
                                             <AnimatedSketchDisplay
                                                 drawingData={c.finalDrawingData}
-                                                width="260px"
-                                                height="156px"
+                                                width="100%"
                                                 strokeDelayMs={40}
-                                                className="max-w-full"
+                                                className="max-w-full sm:max-w-[260px]"
                                                 replayNonce={c.id.length}
                                             />
                                         ) : (

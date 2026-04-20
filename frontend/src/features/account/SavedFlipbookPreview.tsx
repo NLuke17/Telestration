@@ -2,14 +2,15 @@ import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 're
 import { ReactSketchCanvas } from 'react-sketch-canvas';
 import type { ReactSketchCanvasRef } from 'react-sketch-canvas';
 import { parseCanvasPathsJson } from '../../components/game/AnimatedSketchDisplay';
+import { DRAWING_CANVAS_HEIGHT, DRAWING_CANVAS_WIDTH } from '../../constants/drawingCanvas';
 import {
   getSavedFlipbookPresentation,
   type SavedFlipbookPresentationResponse,
 } from '../../services/api/gameApi';
 
-/** Matches drawing export coordinates; scaled down to fit `VIEW` below. */
-const LOGICAL_W = 600;
-const LOGICAL_H = 360;
+/** Logical canvas size; scaled down to fit `VIEW` below. */
+const LOGICAL_W = DRAWING_CANVAS_WIDTH;
+const LOGICAL_H = DRAWING_CANVAS_HEIGHT;
 const VIEW_W = 200;
 const VIEW_H = 120;
 const VIEW_SCALE = Math.min(VIEW_W / LOGICAL_W, VIEW_H / LOGICAL_H);

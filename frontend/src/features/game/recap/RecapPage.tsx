@@ -272,12 +272,12 @@ const RecapPage: React.FC = () => {
     return (
         <>
             <div
-                className={`flex flex-col justify-center items-center min-h-screen bg-gray-50 gap-6 p-4 ${currentFlipbookFullyRevealed ? saveBarBottomClass : ''
+                className={`box-border flex min-h-screen w-full flex-col items-center justify-center gap-6 bg-gray-50 px-3 py-20 sm:px-5 sm:py-16 ${currentFlipbookFullyRevealed ? saveBarBottomClass : ''
                     }`}
                 style={{ backgroundImage: `url(${theme === 'dark' ? darkBg : lightBg})` }}
             >
                 {/* Toggle Button */}
-                <ColorModeButton className="absolute top-8 right-8" />
+                <ColorModeButton />
                 <Container
                     width="900px"
                     height="auto"
@@ -344,10 +344,9 @@ const RecapPage: React.FC = () => {
                                     <div className="mt-3 flex justify-center">
                                         <AnimatedSketchDisplay
                                             drawingData={entry.drawingData}
-                                            width="560px"
-                                            height="320px"
+                                            width="100%"
                                             strokeDelayMs={75}
-                                            className="max-w-full"
+                                            className="max-w-full sm:max-w-[560px]"
                                             replayNonce={entryCount + flipbookIndex + i}
                                         />
                                     </div>

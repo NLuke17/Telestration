@@ -1,7 +1,8 @@
-import React, { useLayoutEffect, useRef, useMemo, useCallback } from 'react';
+import React, { useLayoutEffect, useRef, useMemo, useCallback, useState } from 'react';
 import { ReactSketchCanvas } from 'react-sketch-canvas';
 import type { ReactSketchCanvasRef } from 'react-sketch-canvas';
 import type { CanvasPath } from 'react-sketch-canvas';
+import { DRAWING_CANVAS_HEIGHT, DRAWING_CANVAS_WIDTH } from '../../constants/drawingCanvas';
 
 /**
  * Parse JSON produced by `ReactSketchCanvas.exportPaths()` (stored in `Drawing.drawingData` or blobs).
@@ -58,7 +59,9 @@ export function parseCanvasPathsJson(drawingData: string | null | undefined): Ca
 
 export type AnimatedSketchDisplayProps = {
     drawingData: string | null | undefined;
+    /** CSS width of the on-screen frame (e.g. `100%`, `260px`). Height follows the drawing canvas ratio. */
     width?: string;
+    /** @deprecated Ignored; frame height follows the drawing canvas aspect ratio (600×360). */
     height?: string;
     /** Delay between each stroke (first stroke appears immediately). */
     strokeDelayMs?: number;
@@ -69,22 +72,41 @@ export type AnimatedSketchDisplayProps = {
 
 /**
  * Read-only sketch replay: progressively calls `loadPaths` so strokes appear in order.
+ * Always renders at the same logical resolution as the drawing page, then scales to fit `width`.
  */
 export const AnimatedSketchDisplay: React.FC<AnimatedSketchDisplayProps> = ({
     drawingData,
     width = '100%',
-    height = '280px',
     strokeDelayMs = 90,
     className = '',
     replayNonce = 0,
 }) => {
     const ref = useRef<ReactSketchCanvasRef>(null);
+    const wrapperRef = useRef<HTMLDivElement>(null);
+    const [scale, setScale] = useState(1);
     const paths = useMemo(() => parseCanvasPathsJson(drawingData ?? null), [drawingData]);
     const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
     const clearTimers = useCallback(() => {
         timersRef.current.forEach((t) => clearTimeout(t));
         timersRef.current = [];
+    }, []);
+
+    useLayoutEffect(() => {
+        const el = wrapperRef.current;
+        if (!el) {
+            return;
+        }
+        const update = () => {
+            const w = el.getBoundingClientRect().width;
+            if (w > 0) {
+                setScale(w / DRAWING_CANVAS_WIDTH);
+            }
+        };
+        update();
+        const ro = new ResizeObserver(update);
+        ro.observe(el);
+        return () => ro.disconnect();
     }, []);
 
     useLayoutEffect(() => {
@@ -121,17 +143,36 @@ export const AnimatedSketchDisplay: React.FC<AnimatedSketchDisplayProps> = ({
 
     return (
         <div
+            ref={wrapperRef}
             className={`rounded border border-dark-grey overflow-hidden bg-white ${className}`}
-            style={{ width, maxWidth: '100%' }}
+            style={{
+                width,
+                maxWidth: '100%',
+                marginInline: 'auto',
+                aspectRatio: `${DRAWING_CANVAS_WIDTH} / ${DRAWING_CANVAS_HEIGHT}`,
+                position: 'relative',
+            }}
         >
-            <ReactSketchCanvas
-                ref={ref}
-                width={width}
-                height={height}
-                strokeColor="#000000"
-                canvasColor="#ffffff"
-                style={{ pointerEvents: 'none', touchAction: 'none' }}
-            />
+            <div
+                style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: DRAWING_CANVAS_WIDTH,
+                    height: DRAWING_CANVAS_HEIGHT,
+                    transform: `scale(${scale})`,
+                    transformOrigin: 'top left',
+                }}
+            >
+                <ReactSketchCanvas
+                    ref={ref}
+                    width={`${DRAWING_CANVAS_WIDTH}px`}
+                    height={`${DRAWING_CANVAS_HEIGHT}px`}
+                    strokeColor="#000000"
+                    canvasColor="#ffffff"
+                    style={{ pointerEvents: 'none', touchAction: 'none', display: 'block' }}
+                />
+            </div>
         </div>
     );
 };

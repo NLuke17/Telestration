@@ -394,18 +394,18 @@ const WritingPage: React.FC = () => {
     const isInputLocked = hasFinishedSubmit && !allowLocalEdit;
 
     return (
-        <div className="flex justify-center items-center min-h-screen p-4"
+        <div
+            className="box-border flex min-h-screen w-full items-center justify-center px-3 py-20 sm:px-5 sm:py-16"
             style={{ backgroundImage: `url(${theme === 'dark' ? darkBg : lightBg})` }}
         >
-            {/* Toggle Button */}
-            <ColorModeButton className="absolute top-8 right-8" />
+            <ColorModeButton />
             <Container
                 width="920px"
-                height="500px"
+                height="auto"
                 padding="3em"
-                className="flex flex-col gap-6 justify-between border-2 border-dark-grey rounded-lg"
+                className="flex min-h-0 flex-col justify-between gap-6 rounded-lg border-2 border-dark-grey sm:min-h-[420px] lg:min-h-[500px]"
             >
-                <div className="flex w-full justify-between">
+                <div className="flex w-full flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                     <PageCounter
                         pageNum={currentPage.toString()}
                         totalPages={totalPages.toString()}
@@ -435,7 +435,6 @@ const WritingPage: React.FC = () => {
                         <AnimatedSketchDisplay
                             drawingData={latestDrawing}
                             width="100%"
-                            height="300px"
                             strokeDelayMs={85}
                         />
                     </div>
