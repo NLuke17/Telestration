@@ -8,6 +8,7 @@ import InitialAvatar from '../../components/common/Avatar';
 import { useAuth } from '../../contexts/AuthContext';
 import { getCurrentUser, uploadProfileAvatar, type CurrentUserResponse } from '../../services/api/authApi';
 import {
+  deleteSavedFlipbook,
   getSavedFlipbookPresentation,
   listSavedFlipbooks,
   type SavedFlipbookSummary,
@@ -36,6 +37,8 @@ const AccountPage: React.FC = () => {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [downloadMessage, setDownloadMessage] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteMessage, setDeleteMessage] = useState<string | null>(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [avatarError, setAvatarError] = useState<string | null>(null);
   const gifScratchRef = useRef<HTMLCanvasElement | null>(null);
@@ -179,6 +182,25 @@ const AccountPage: React.FC = () => {
     []
   );
 
+  const handleDeleteSaved = useCallback(async (item: SavedFlipbookSummary) => {
+    const confirmed = window.confirm(
+      'Delete this saved flipbook from your account? This cannot be undone.'
+    );
+    if (!confirmed) {
+      return;
+    }
+    setDeleteMessage(null);
+    setDeletingId(item.id);
+    try {
+      await deleteSavedFlipbook(item.id);
+      setSavedList((prev) => prev.filter((s) => s.id !== item.id));
+    } catch {
+      setDeleteMessage('Could not delete that flipbook. Try again in a moment.');
+    } finally {
+      setDeletingId(null);
+    }
+  }, []);
+
   return (
     <div
       className="box-border flex min-h-screen w-full flex-col items-center px-3 py-20 sm:px-6 sm:py-16"
@@ -273,6 +295,11 @@ const AccountPage: React.FC = () => {
               {downloadMessage}
             </Alert>
           )}
+          {deleteMessage && (
+            <Alert severity="error" className="mb-4 w-full" onClose={() => setDeleteMessage(null)}>
+              {deleteMessage}
+            </Alert>
+          )}
           {savedList.length === 0 && !listError ? (
             <p className="text-body-base text-gray-600 dark:text-dark-mode-text-2">
               You have not saved any flipbooks yet. Finish a game and save one from the recap screen.
@@ -297,12 +324,22 @@ const AccountPage: React.FC = () => {
                         Saved {new Date(item.createdAt).toLocaleString()}
                       </div>
                     </div>
-                    <Button
-                      type="button"
-                      label={downloadingId === item.id ? 'Building GIF…' : 'Download as GIF'}
-                      disabled={downloadingId !== null}
-                      onClick={() => void handleDownloadGif(item)}
-                    />
+                    <div className="flex w-full flex-col items-stretch gap-2 sm:flex-row sm:justify-center">
+                      <Button
+                        type="button"
+                        label={downloadingId === item.id ? 'Building GIF…' : 'Download as GIF'}
+                        disabled={downloadingId !== null || deletingId !== null}
+                        onClick={() => void handleDownloadGif(item)}
+                      />
+                      <Button
+                        type="button"
+                        variant="image"
+                        label={deletingId === item.id ? 'Deleting…' : 'Delete from library'}
+                        className="border border-red-600 bg-white px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-50 disabled:border-gray-400 disabled:bg-gray-400 disabled:text-white dark:border-red-400 dark:bg-transparent dark:text-red-300 dark:hover:bg-red-950/40 dark:disabled:border-gray-500 dark:disabled:bg-gray-500"
+                        disabled={downloadingId !== null || deletingId !== null}
+                        onClick={() => void handleDeleteSaved(item)}
+                      />
+                    </div>
                   </div>
                 </li>
               ))}

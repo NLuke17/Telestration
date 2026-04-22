@@ -77,6 +77,13 @@ export const getSavedFlipbookPresentationSchema = z.object({
   }),
 });
 
+// DELETE /game/saved-flipbooks/:savedId
+export const deleteSavedFlipbookSchema = z.object({
+  params: z.object({
+    savedId: uuidSchema,
+  }),
+});
+
 export type GetCurrentRoundInput = z.infer<typeof getCurrentRoundSchema>;
 export type SubmitDrawingInput = z.infer<typeof submitDrawingSchema>;
 export type SubmitGuessInput = z.infer<typeof submitGuessSchema>;

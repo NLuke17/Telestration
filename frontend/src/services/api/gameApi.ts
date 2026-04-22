@@ -173,3 +173,10 @@ export async function saveFlipbookToLibrary(
     body ?? {}
   );
 }
+
+/**
+ * Remove a flipbook from the signed-in user's library (requires JWT).
+ */
+export async function deleteSavedFlipbook(savedId: string): Promise<void> {
+  await authenticatedClient.delete<{ ok: boolean }>(`/game/saved-flipbooks/${savedId}`);
+}

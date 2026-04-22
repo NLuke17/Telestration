@@ -37,6 +37,20 @@ export async function readDrawingBlob(relativeKey: string): Promise<string> {
   return fs.readFile(abs, 'utf8');
 }
 
+/** Best-effort removal of a file-backed drawing payload (ignores missing files). */
+export async function deleteDrawingBlob(relativeKey: string): Promise<void> {
+  try {
+    const abs = toAbsoluteKey(relativeKey);
+    await fs.unlink(abs);
+  } catch (e: unknown) {
+    const code = e && typeof e === 'object' && 'code' in e ? (e as { code?: string }).code : undefined;
+    if (code === 'ENOENT') {
+      return;
+    }
+    logError('Failed to delete drawing blob', { relativeKey, error: e instanceof Error ? e.message : String(e) });
+  }
+}
+
 export function getInlineMaxBytes(): number {
   return getNumberEnv('DRAWING_INLINE_MAX_BYTES', DEFAULT_INLINE_MAX_BYTES);
 }

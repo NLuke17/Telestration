@@ -1,7 +1,11 @@
 import { randomUUID } from 'crypto';
 import prisma from '../prisma/client';
 import { logInfo, logError } from '../utils/logger';
-import { persistLibraryDrawingPayload, resolveGameDrawingPayload } from './drawingStorageService';
+import {
+  deleteDrawingBlob,
+  persistLibraryDrawingPayload,
+  resolveGameDrawingPayload,
+} from './drawingStorageService';
 import { deriveExpectedPhaseFromChainWave } from './gameService';
 import { MAX_SAVED_FLIPBOOKS_PER_USER } from '../config/constants';
 import { Prisma } from '../generated/prisma';
@@ -144,4 +148,28 @@ export async function listSavedFlipbooksForUser(ownerId: string) {
       createdAt: true,
     },
   });
+}
+
+/**
+ * Remove a library flipbook owned by the user. Deletes file-backed drawing blobs first, then DB row (cascade).
+ */
+export async function deleteSavedFlipbookForOwner(ownerId: string, savedId: string) {
+  const saved = await prisma.savedFlipbook.findFirst({
+    where: { id: savedId, ownerId },
+    include: {
+      drawings: { select: { storageKind: true, storageKey: true } },
+    },
+  });
+
+  if (!saved) {
+    throw new Error('SAVED_FLIPBOOK_NOT_FOUND');
+  }
+
+  for (const d of saved.drawings) {
+    if (d.storageKind === 'LOCAL_FILE' && d.storageKey) {
+      await deleteDrawingBlob(d.storageKey);
+    }
+  }
+
+  await prisma.savedFlipbook.delete({ where: { id: savedId } });
 }
