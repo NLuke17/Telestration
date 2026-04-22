@@ -53,7 +53,7 @@ function toPickerHex(c: string): string {
 }
 
 const DrawingPage: React.FC = () => {
-    const { theme, toggleTheme } = useTheme();
+    const { theme } = useTheme();
     const { roomCode } = useParams<{ roomCode: string }>();
     const navigate = useNavigate();
     const canvasRef = useRef<ReactSketchCanvasRef>(null);

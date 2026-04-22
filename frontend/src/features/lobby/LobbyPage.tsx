@@ -17,7 +17,7 @@ import { GAME_NAME } from '../../constants/branding';
 const MIN_PLAYERS = 2;
 
 const LobbyPage: React.FC = () => {
-    const { theme, toggleTheme } = useTheme();
+    const { theme } = useTheme();
     const { roomCode } = useParams<{ roomCode: string }>();
     const navigate = useNavigate();
     const { user } = useAuth();
@@ -273,6 +273,9 @@ const LobbyPage: React.FC = () => {
 
                         {/* Feedback Messages - Moved inside the card */}
                         <div className="mt-4 min-h-[40px]">
+                            {startError && (
+                                <p className="text-red-600 text-sm text-center">{startError}</p>
+                            )}
                             {deleteError && (
                                 <p className="text-red-600 text-sm text-center">{deleteError}</p>
                             )}

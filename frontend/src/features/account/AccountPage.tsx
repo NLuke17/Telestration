@@ -26,7 +26,7 @@ function sanitizeFilenameBase(name: string): string {
 }
 
 const AccountPage: React.FC = () => {
-  const { theme, toggleTheme } = useTheme();
+  const { theme } = useTheme();
   const navigate = useNavigate();
   const { user, logout, mergeUserToSession } = useAuth();
   const [profile, setProfile] = useState<CurrentUserResponse | null>(null);

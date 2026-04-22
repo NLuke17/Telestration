@@ -21,7 +21,7 @@ function readPhaseFromLocation(): 'DRAWING' | 'GUESSING' | 'RECAP' | 'VOTING' | 
 }
 
 const GameCountdownPage: React.FC = () => {
-    const { theme, toggleTheme } = useTheme();
+    const { theme } = useTheme();
     const { roomCode } = useParams<{ roomCode: string }>();
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();

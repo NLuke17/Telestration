@@ -28,7 +28,7 @@ function parseResults(raw: unknown): RankingRow[] {
 }
 
 const ResultsPage: React.FC = () => {
-    const { theme, toggleTheme } = useTheme();
+    const { theme } = useTheme();
     const { roomCode } = useParams<{ roomCode: string }>();
     const navigate = useNavigate();
     const { user } = useAuth();

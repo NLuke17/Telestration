@@ -13,7 +13,7 @@ import SiteLogo from '../../components/common/SiteLogo';
 import { GAME_NAME } from '../../constants/branding';
 
 const SignupPage: React.FC = () => {
-    const { theme, toggleTheme } = useTheme();
+    const { theme } = useTheme();
     return (
         <div
             className="box-border flex min-h-screen w-full flex-col items-center justify-center px-3 py-20 sm:px-5 sm:py-16"

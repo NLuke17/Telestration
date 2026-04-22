@@ -13,7 +13,7 @@ import SiteLogo from '../../components/common/SiteLogo';
 import { GAME_NAME } from '../../constants/branding';
 
 const LoginPage: React.FC = () => {
-    const { theme, toggleTheme } = useTheme();
+    const { theme } = useTheme();
 
     return (
         <div

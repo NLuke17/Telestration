@@ -16,7 +16,7 @@ import darkBg from '../../../assets/darkmode.jpg';
 import ColorModeButton from '../../../components/common/ColorModeButton';
 
 const VotingPage: React.FC = () => {
-    const { theme, toggleTheme } = useTheme();
+    const { theme } = useTheme();
     const { roomCode } = useParams<{ roomCode: string }>();
     const navigate = useNavigate();
     const { user } = useAuth();

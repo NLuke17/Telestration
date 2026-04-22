@@ -90,7 +90,7 @@ const HomePage: React.FC = () => {
         }
     };
 
-    const { theme, toggleTheme } = useTheme();
+    const { theme } = useTheme();
 
 
     return (
