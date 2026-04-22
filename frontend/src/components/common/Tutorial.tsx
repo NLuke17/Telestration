@@ -2,6 +2,14 @@ import TutorialSlideshow from './TutorialSlideshow';
 import TutorialSlide from './TutorialSlide';
 import { TutorialEmbeddedContext } from './tutorialLayoutContext';
 
+import slide1 from '../../assets/slide1.jpg';
+import slide2 from '../../assets/slide2.jpg';
+import slide3 from '../../assets/slide3.jpg';
+import slide4 from '../../assets/slide4.jpg';
+import slide5 from '../../assets/slide5.jpg';
+import slide6 from '../../assets/slide6.jpg';
+import slide7 from '../../assets/slide7.jpg';
+
 interface TutorialProps {
     width?: string;
     /** Fill parent height; tighter dots/chrome for lobby-style panels. */
@@ -20,7 +28,7 @@ export default function Tutorial({ width = 'w-full', embedded = false }: Tutoria
                     heading="how to play"
                     title="GET YOUR FRIENDS TOGETHER!"
                     subtitle=""
-                    imageSrc="../../src/assets/slide1.jpg"
+                    imageSrc={slide1}
                     imageAlt="Drawn image of Sputnik."
                 />
 
@@ -28,7 +36,7 @@ export default function Tutorial({ width = 'w-full', embedded = false }: Tutoria
                     heading="how to play"
                     title="TIME TO PROMPT!"
                     subtitle="each person must write a STELLAR sentence"
-                    imageSrc="../../src/assets/slide2.jpg"
+                    imageSrc={slide2}
                     imageAlt="Drawn image of a rocket blasting off."
                 />
 
@@ -36,7 +44,7 @@ export default function Tutorial({ width = 'w-full', embedded = false }: Tutoria
                     heading="how to play"
                     title="TIME TO DRAW!"
                     subtitle="you're going to to get an OTHERWORLDLY sentence"
-                    imageSrc="../../src/assets/slide3.jpg"
+                    imageSrc={slide3}
                     imageAlt="Drawn image of Saturn."
                 />
 
@@ -44,7 +52,7 @@ export default function Tutorial({ width = 'w-full', embedded = false }: Tutoria
                     heading="how to play"
                     title="WHAT IS IT?"
                     subtitle="try to describe one of the LUNATIC drawings"
-                    imageSrc="../../src/assets/slide4.jpg"
+                    imageSrc={slide4}
                     imageAlt="Drawn image of the moon."
                 />
 
@@ -52,7 +60,7 @@ export default function Tutorial({ width = 'w-full', embedded = false }: Tutoria
                     heading="how to play"
                     title="WATCH WHAT HAPPENED!"
                     subtitle="see the ASTRONOMICAL results"
-                    imageSrc="../../src/assets/slide5.jpg"
+                    imageSrc={slide5}
                     imageAlt="Drawn image of a TV with a rocketship blasting off."
                 />
 
@@ -60,7 +68,7 @@ export default function Tutorial({ width = 'w-full', embedded = false }: Tutoria
                     heading="how to play"
                     title="VOTE!"
                     subtitle="like your favorite INTERGALACTIC masterpiece"
-                    imageSrc="../../src/assets/slide6.jpg"
+                    imageSrc={slide6}
                     imageAlt="Drawn image of stars."
                 />
 
@@ -68,7 +76,7 @@ export default function Tutorial({ width = 'w-full', embedded = false }: Tutoria
                     heading="how to play"
                     title="SHARE WHAT HAPPENED!"
                     subtitle=""
-                    imageSrc="../../src/assets/slide7.jpg"
+                    imageSrc={slide7}
                     imageAlt="Drawn image of Sputnik with satellite waves."
                 />
             </TutorialSlideshow>
