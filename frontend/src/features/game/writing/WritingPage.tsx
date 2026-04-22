@@ -7,32 +7,38 @@ import TimerDisplay from '../../../components/game/TimerDisplay';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useGameState, usePhaseTimer, useLobby } from '../../../hooks/useGameState';
 import {
-  getAssignedFlipbook,
-  getFlipbookPresentation,
-  submitGuess as submitGuessViaHttp,
+    getAssignedFlipbook,
+    getFlipbookPresentation,
+    submitGuess as submitGuessViaHttp,
 } from '../../../services/api/gameApi';
 import { getGameState } from '../../../services/api/lobbyApi';
 import { getWSClient } from '../../../services/ws/wsClient';
 import { useAuth } from '../../../contexts/AuthContext';
 import { AnimatedSketchDisplay } from '../../../components/game/AnimatedSketchDisplay';
+import { useTheme } from '../../../contexts/ThemeContext';
+
+import lightBg from '../../../assets/lightmode.jpg';
+import darkBg from '../../../assets/darkmode.jpg';
+import ColorModeButton from '../../../components/common/ColorModeButton';
 
 const WritingPage: React.FC = () => {
+    const { theme, toggleTheme } = useTheme();
     const { roomCode } = useParams<{ roomCode: string }>();
     const navigate = useNavigate();
     const [sentence, setSentence] = useState('');
     const { user } = useAuth();
-    
+
     // Get userId from auth context or localStorage for guest users
     const userId = user?.id || localStorage.getItem('userId') || '';
-    
+
     // First, get lobby to get lobbyId
     const { lobby, error: lobbyError, isConnected } = useLobby(roomCode || '', userId);
     const sync = roomCode && userId ? { roomCode, userId } : undefined;
-    
+
     // Game state - pass lobbyId to useGameState
     const gameState = useGameState(lobby?.id, sync);
     const timer = usePhaseTimer(gameState.phaseEndsAt);
-    
+
     // Assignment state
     const [assignment, setAssignment] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -44,7 +50,7 @@ const WritingPage: React.FC = () => {
     const pendingFlipbookIdRef = useRef<string | null>(null);
     const submitTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const optimisticRevokeRef = useRef(false);
-    const handleSubmitRef = useRef<(opts?: { fromTimer?: boolean }) => Promise<void>>(async () => {});
+    const handleSubmitRef = useRef<(opts?: { fromTimer?: boolean }) => Promise<void>>(async () => { });
     const timeUpAutoSubmitRef = useRef(false);
 
     useEffect(() => {
@@ -142,12 +148,12 @@ const WritingPage: React.FC = () => {
     useEffect(() => {
         const fetchAssignment = async () => {
             if (!gameState.roundId || !userId || !roomCode) return;
-            
+
             try {
                 setIsLoading(true);
                 setError(null);
                 const result = await getAssignedFlipbook(gameState.roundId, userId, 'GUESSING');
-                
+
                 if (result.assigned && result.flipbook) {
                     setAssignment(result.flipbook);
                     const hasEmptyPrompt = !result.flipbook.prompt || result.flipbook.prompt.trim().length === 0;
@@ -368,8 +374,8 @@ const WritingPage: React.FC = () => {
         return (
             <div className="flex flex-col justify-center items-center h-screen">
                 <p className="text-heading-3 text-red-600">Error: {error || 'No assignment'}</p>
-                <Button 
-                    label="Back to Lobby" 
+                <Button
+                    label="Back to Lobby"
                     onClick={() => navigate(`/lobby/${roomCode}`)}
                     className="mt-4"
                 />
@@ -388,35 +394,40 @@ const WritingPage: React.FC = () => {
     const isInputLocked = hasFinishedSubmit && !allowLocalEdit;
 
     return (
-        <div className="flex justify-center items-center min-h-screen p-4">
+        <div
+            className="box-border flex min-h-screen w-full items-center justify-center px-3 py-20 sm:px-5 sm:py-16"
+            style={{ backgroundImage: `url(${theme === 'dark' ? darkBg : lightBg})` }}
+        >
+            <ColorModeButton />
             <Container
                 width="920px"
                 height="auto"
                 padding="3em"
-                className="flex flex-col gap-6 border-2 border-dark-grey rounded-lg"
+                className="flex min-h-0 flex-col justify-between gap-6 rounded-lg border-2 border-dark-grey sm:min-h-[420px] lg:min-h-[500px]"
             >
-                <div className="flex w-full justify-between">
+                <div className="flex w-full flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                     <PageCounter
                         pageNum={currentPage.toString()}
                         totalPages={totalPages.toString()}
-                        className="text-heading-3"
+                        className="text-heading-3 dark:text-dark-mode-text-1"
                     />
                     <TimerDisplay
                         minutesLeft={timer.minutes.toString().padStart(2, '0')}
                         secondsLeft={timer.seconds.toString().padStart(2, '0')}
-                        className="text-heading-3"
+                        className="text-heading-3 dark:text-dark-mode-text-1"
                     />
                 </div>
+                <div className="flex flex-col items-center">
+                    <div className="text-heading-1 text-light-mode-text-1 dark:text-dark-mode-text-1 text-center">
+                        {isInitialPrompt ? 'Write your prompt!' : 'What did you see?'}
+                    </div>
 
-                <div className="text-heading-1 text-center">
-                    {isInitialPrompt ? 'Write your prompt!' : 'What did you see?'}
+                    {isInputLocked && (
+                        <p className="text-body text-center text-gray-600">
+                            Waiting for other players. You&apos;ll continue automatically when everyone is done.
+                        </p>
+                    )}
                 </div>
-
-                {isInputLocked && (
-                    <p className="text-body text-center text-gray-600">
-                        Waiting for other players. You&apos;ll continue automatically when everyone is done.
-                    </p>
-                )}
 
                 {!isInitialPrompt && latestDrawing && (
                     <div className="flex flex-col gap-2 w-full">
@@ -424,7 +435,6 @@ const WritingPage: React.FC = () => {
                         <AnimatedSketchDisplay
                             drawingData={latestDrawing}
                             width="100%"
-                            height="300px"
                             strokeDelayMs={85}
                         />
                     </div>
@@ -454,7 +464,7 @@ const WritingPage: React.FC = () => {
                         )}
                         {(!hasFinishedSubmit || allowLocalEdit) && (
                             <Button
-                                label={isSubmitting ? 'Submitting...' : 'Done'}
+                                label={'Done'}
                                 disabled={!(sentence.length > 0) || isSubmitting}
                                 onClick={handleSubmit}
                             />

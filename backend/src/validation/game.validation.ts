@@ -7,6 +7,9 @@ import { z } from 'zod';
 // UUID validation helper
 const uuidSchema = z.string().uuid({ message: 'Invalid UUID format' });
 
+/** Stored User.id (UUID or legacy client-generated ids); keep in sync with lobby.validation participantIdSchema */
+const participantIdSchema = z.string().min(1).max(128);
+
 // GET /game/lobbies/:lobbyId/current-round
 export const getCurrentRoundSchema = z.object({
   params: z.object({
@@ -42,7 +45,7 @@ export const getAssignedFlipbookSchema = z.object({
     roundId: uuidSchema,
   }),
   query: z.object({
-    userId: z.string().min(1).max(128),
+    userId: participantIdSchema,
     phase: z.enum(['DRAWING', 'GUESSING'], { message: 'Phase must be DRAWING or GUESSING' }),
   }),
 });
@@ -53,7 +56,7 @@ export const getFlipbookPresentationSchema = z.object({
     flipbookId: uuidSchema,
   }),
   query: z.object({
-    userId: uuidSchema,
+    userId: participantIdSchema,
   }),
 });
 

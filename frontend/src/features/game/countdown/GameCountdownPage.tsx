@@ -6,6 +6,11 @@ import Container from '../../../components/common/Container';
 import { getGameState } from '../../../services/api/lobbyApi';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useLobby, useGameState } from '../../../hooks/useGameState';
+import { useTheme } from '../../../contexts/ThemeContext';
+
+import lightBg from '../../../assets/lightmode.jpg';
+import darkBg from '../../../assets/darkmode.jpg';
+import ColorModeButton from '../../../components/common/ColorModeButton';
 
 const PROMPT_WAIT_FLAG = 'telestration.expectDrawAfterPromptWait';
 
@@ -16,6 +21,7 @@ function readPhaseFromLocation(): 'DRAWING' | 'GUESSING' | 'RECAP' | 'VOTING' | 
 }
 
 const GameCountdownPage: React.FC = () => {
+    const { theme, toggleTheme } = useTheme();
     const { roomCode } = useParams<{ roomCode: string }>();
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
@@ -212,12 +218,16 @@ const GameCountdownPage: React.FC = () => {
     };
 
     return (
-        <div className="flex flex-col justify-center items-center h-screen bg-gradient-to-br from-blue-50 to-purple-50">
+        <div
+            className="box-border flex min-h-screen w-full flex-col items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50 px-3 py-24 sm:px-5 sm:py-20"
+            style={{ backgroundImage: `url(${theme === 'dark' ? darkBg : lightBg})` }}
+        >
+            <ColorModeButton />
             <Container
                 width="600px"
                 height="400px"
                 padding="3em"
-                className="flex flex-col justify-center items-center gap-8 border-2 border-dark-grey rounded-lg bg-white shadow-2xl"
+                className="flex flex-col items-center justify-center gap-6 rounded-lg border-2 border-dark-grey bg-white shadow-2xl sm:gap-8"
             >
                 <AnimatePresence mode="wait">
                     {showMessage && (
@@ -226,7 +236,7 @@ const GameCountdownPage: React.FC = () => {
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: 20 }}
                             transition={{ duration: 0.5 }}
-                            className="text-heading-1 text-center"
+                            className="px-2 text-center text-heading-1 text-light-mode-text-1 dark:text-dark-mode-text-1 sm:px-4"
                         >
                             {getMessage()}
                         </motion.div>
@@ -250,7 +260,7 @@ const GameCountdownPage: React.FC = () => {
                                 duration: 0.8,
                                 ease: 'easeOut',
                             }}
-                            className="text-9xl font-bold text-brand-charcoal"
+                            className="text-7xl font-bold text-brand-charcoal dark:text-dark-mode-text-1 sm:text-9xl"
                         >
                             {countdown}
                         </motion.div>
@@ -259,7 +269,7 @@ const GameCountdownPage: React.FC = () => {
                             initial={{ scale: 0.8, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             transition={{ duration: 0.3 }}
-                            className="text-6xl font-bold text-green-600"
+                            className="text-5xl font-bold text-green-600 dark:text-dark-mode-text-1 sm:text-6xl"
                         >
                             GO!
                         </motion.div>

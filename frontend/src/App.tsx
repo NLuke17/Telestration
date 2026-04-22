@@ -20,49 +20,52 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 
 // Debug page (development only)
 import Home from './pages/home';
+import { ThemeProvider } from './contexts/ThemeContext';
 
 function AppContent() {
   // Auto refresh tokens
   useTokenRefresh();
 
   return (
-    <div>
-      <Routes>
-        {/* Main Flow */}
-        <Route path="/" element={<HomePage />} />
-        <Route
-          path="/account"
-          element={
-            <ProtectedRoute>
-              <AccountPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/signup" element={<SignupPage />} />
-        
-        {/* Lobby */}
-        <Route path="/lobby/:roomCode" element={<LobbyPage />} />
-        
-        {/* Game Routes */}
-        <Route path="/game/:roomCode/countdown" element={<GameCountdownPage />} />
-        <Route path="/game/:roomCode/draw" element={<DrawingPage />} />
-        <Route path="/game/:roomCode/guess" element={<WritingPage />} />
-        <Route path="/game/:roomCode/waiting" element={<WaitingPage />} />
-        <Route path="/game/:roomCode/recap" element={<RecapPage />} />
-        <Route path="/game/:roomCode/vote" element={<VotingPage />} />
-        <Route path="/game/:roomCode/results" element={<ResultsPage />} />
-        
-        {/* Legacy/Debug Routes */}
-        <Route path="/home" element={<Navigate to="/" replace />} />
-        <Route path="/drawing" element={<Navigate to="/" replace />} />
-        <Route path="/writing" element={<Navigate to="/" replace />} />
-        <Route path="/debug" element={<Home />} />
-        
-        {/* 404 Catch-all */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </div>
+    <ThemeProvider>
+      <div>
+        <Routes>
+          {/* Main Flow */}
+          <Route path="/" element={<HomePage />} />
+          <Route
+            path="/account"
+            element={
+              <ProtectedRoute>
+                <AccountPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/signup" element={<SignupPage />} />
+
+          {/* Lobby */}
+          <Route path="/lobby/:roomCode" element={<LobbyPage />} />
+
+          {/* Game Routes */}
+          <Route path="/game/:roomCode/countdown" element={<GameCountdownPage />} />
+          <Route path="/game/:roomCode/draw" element={<DrawingPage />} />
+          <Route path="/game/:roomCode/guess" element={<WritingPage />} />
+          <Route path="/game/:roomCode/waiting" element={<WaitingPage />} />
+          <Route path="/game/:roomCode/recap" element={<RecapPage />} />
+          <Route path="/game/:roomCode/vote" element={<VotingPage />} />
+          <Route path="/game/:roomCode/results" element={<ResultsPage />} />
+
+          {/* Legacy/Debug Routes */}
+          <Route path="/home" element={<Navigate to="/" replace />} />
+          <Route path="/drawing" element={<Navigate to="/" replace />} />
+          <Route path="/writing" element={<Navigate to="/" replace />} />
+          <Route path="/debug" element={<Home />} />
+
+          {/* 404 Catch-all */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </div>
+    </ThemeProvider>
   );
 }
 

@@ -1,10 +1,11 @@
 import { GIFEncoder, quantize, applyPalette } from 'gifenc';
 import type { CanvasPath } from 'react-sketch-canvas';
 import { parseCanvasPathsJson } from '../components/game/AnimatedSketchDisplay';
+import { DRAWING_CANVAS_HEIGHT, DRAWING_CANVAS_WIDTH } from '../constants/drawingCanvas';
 
-/** Match in-game drawing canvas so stored path coordinates line up. */
-export const FLIPBOOK_GIF_CANVAS_WIDTH = 600;
-export const FLIPBOOK_GIF_CANVAS_HEIGHT = 360;
+/** Re-export for callers that referenced the old GIF constant names. */
+export const FLIPBOOK_GIF_CANVAS_WIDTH = DRAWING_CANVAS_WIDTH;
+export const FLIPBOOK_GIF_CANVAS_HEIGHT = DRAWING_CANVAS_HEIGHT;
 
 function drawPaths(
   ctx: CanvasRenderingContext2D,
@@ -61,8 +62,8 @@ export function encodeDrawingsAsAnimatedGif(
   drawingDataStrings: string[],
   options?: { frameDelayMs?: number; scratchCanvas?: HTMLCanvasElement }
 ): Uint8Array {
-  const width = FLIPBOOK_GIF_CANVAS_WIDTH;
-  const height = FLIPBOOK_GIF_CANVAS_HEIGHT;
+  const width = DRAWING_CANVAS_WIDTH;
+  const height = DRAWING_CANVAS_HEIGHT;
   const delay = options?.frameDelayMs ?? 750;
   const scratch = options?.scratchCanvas ?? document.createElement('canvas');
 

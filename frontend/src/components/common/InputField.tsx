@@ -7,7 +7,6 @@ interface InputFieldProps {
     className?: string;
     disabled?: boolean;
     required?: boolean;
-    /** Tighter label + input for toolbars and footers */
     compact?: boolean;
     onChange: (val: string) => void;
 }
@@ -29,7 +28,9 @@ export default function InputField({
             {label ? (
                 <label
                     htmlFor={id}
-                    className={compact ? 'text-xs font-semibold text-gray-700' : 'text-sm font-semibold'}
+                    className={`text-light-mode-text-2 dark:text-dark-mode-text-2
+                        ${compact ? 'text-xs text-gray-700' : 'text-sm'}`
+                    }
                 >
                     {label}
                 </label>
@@ -44,7 +45,7 @@ export default function InputField({
                 disabled={disabled}
                 required={required}
                 onChange={(e) => onChange(e.target.value)}
-                className={`border-2 border-light-grey rounded-md outline-none focus:border-charcoal transition-colors ${
+                className={`text-light-mode-text-2 dark:text-slate-950 border-2 border-light-grey bg-transparent dark:bg-white rounded-md outline-none focus:border-charcoal transition-colors ${
                     compact ? 'px-2 py-1.5 text-sm' : 'px-3 py-2 text-body-base gap-2'
                 } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
             />

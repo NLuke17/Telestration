@@ -5,18 +5,24 @@ import Button from '../../../components/common/Button';
 import { useAuth } from '../../../contexts/AuthContext';
 import { getGameState } from '../../../services/api/lobbyApi';
 import {
-  getFlipbookPresentation,
-  listSavedFlipbooks,
-  saveFlipbookToLibrary,
-  type FlipbookPresentationResponse,
-  type SavedFlipbookSummary,
+    getFlipbookPresentation,
+    listSavedFlipbooks,
+    saveFlipbookToLibrary,
+    type FlipbookPresentationResponse,
+    type SavedFlipbookSummary,
 } from '../../../services/api/gameApi';
 import { HttpError } from '../../../services/api/httpClient';
 import { AnimatedSketchDisplay } from '../../../components/game/AnimatedSketchDisplay';
 import { useGameState, useLobby, useWebSocket } from '../../../hooks/useGameState';
 import { getWSClient } from '../../../services/ws/wsClient';
+import { useTheme } from '../../../contexts/ThemeContext';
+
+import lightBg from '../../../assets/lightmode.jpg';
+import darkBg from '../../../assets/darkmode.jpg';
+import ColorModeButton from '../../../components/common/ColorModeButton';
 
 const RecapPage: React.FC = () => {
+    const { theme, toggleTheme } = useTheme();
     const { roomCode } = useParams<{ roomCode: string }>();
     const navigate = useNavigate();
     const { user, isAuthenticated } = useAuth();
@@ -255,11 +261,10 @@ const RecapPage: React.FC = () => {
 
     const progressLabel =
         flipbookIds.length > 0
-            ? `Flipbook ${flipbookIndex + 1} / ${flipbookIds.length}${
-                  presentation && entryCount > 0
-                      ? ` · ${entryCount} / ${presentation.timeline.length} cards`
-                      : ''
-              }`
+            ? `Flipbook ${flipbookIndex + 1} / ${flipbookIds.length}${presentation && entryCount > 0
+                ? ` · ${entryCount} / ${presentation.timeline.length} cards`
+                : ''
+            }`
             : '—';
 
     const saveBarBottomClass = 'pb-[clamp(4.25rem,10vh,6rem)]';
@@ -267,10 +272,12 @@ const RecapPage: React.FC = () => {
     return (
         <>
             <div
-                className={`flex flex-col justify-center items-center min-h-screen bg-gray-50 gap-6 p-4 ${
-                    currentFlipbookFullyRevealed ? saveBarBottomClass : ''
-                }`}
+                className={`box-border flex min-h-screen w-full flex-col items-center justify-center gap-6 bg-gray-50 px-3 py-20 sm:px-5 sm:py-16 ${currentFlipbookFullyRevealed ? saveBarBottomClass : ''
+                    }`}
+                style={{ backgroundImage: `url(${theme === 'dark' ? darkBg : lightBg})` }}
             >
+                {/* Toggle Button */}
+                <ColorModeButton />
                 <Container
                     width="900px"
                     height="auto"
@@ -278,13 +285,13 @@ const RecapPage: React.FC = () => {
                     className="flex flex-col gap-6 border-2 border-dark-grey rounded-lg bg-white shadow-xl min-h-[480px]"
                 >
                     <div className="flex justify-between items-center gap-4 flex-wrap">
-                        <h1 className="text-heading-1">Flipbook recap</h1>
-                        <span className="text-body text-gray-600">{progressLabel}</span>
+                        <h1 className="text-heading-1 text-light-mode-text-1 dark:text-dark-mode-text-1">Flipbook recap</h1>
+                        <span className="text-body text-gray-600 dark:text-dark-mode-text-2">{progressLabel}</span>
                     </div>
 
                     {loadError && <p className="text-red-600 text-body">{loadError}</p>}
 
-                    <h2 className="text-heading-2">{title}</h2>
+                    <h2 className="text-heading-2 text-light-mode-text-1 dark:text-dark-mode-text-2">{title}</h2>
 
                     {!isHost && (
                         <p className="text-body text-gray-600 bg-gray-50 border border-dark-grey rounded-lg px-4 py-2">
@@ -292,76 +299,75 @@ const RecapPage: React.FC = () => {
                         </p>
                     )}
 
-                {entryCount === 0 && !isComplete && (
-                    <p className="text-heading-3 text-center text-gray-600">
-                        {isHost
-                            ? `Press “${revealButtonLabel}” to show the first card.`
-                            : 'Waiting for the host to reveal the first card…'}
-                    </p>
-                )}
-
-                {isComplete && (
-                    <p className="text-heading-3 text-center text-emerald-700">
-                        Recap complete — heading to voting…
-                    </p>
-                )}
-
-                <div
-                    ref={timelineScrollRef}
-                    className="flex flex-col gap-4 max-h-[60vh] overflow-y-auto pr-2 scroll-smooth"
-                >
-                    {visibleTimeline.map((entry, i) => {
-                        if (entry.kind === 'prompt') {
-                            return (
-                                <div key={`p-${i}`} className="rounded-lg border border-dark-grey p-4 bg-blue-50">
-                                    <div className="text-xs uppercase text-gray-500">Prompt</div>
-                                    <div className="text-heading-3">{entry.text}</div>
-                                </div>
-                            );
-                        }
-                        if (entry.kind === 'guess') {
-                            return (
-                                <div key={entry.id} className="rounded-lg border border-dark-grey p-4 bg-amber-50">
-                                    <div className="text-xs uppercase text-gray-500">
-                                        Guess — {entry.authorUsername}
-                                    </div>
-                                    <div className="text-body">{entry.text}</div>
-                                </div>
-                            );
-                        }
-                        return (
-                            <div key={`${entry.id}-${flipbookIndex}-${entryCount}`} className="rounded-lg border border-dark-grey p-4 bg-green-50">
-                                <div className="text-xs uppercase text-gray-500">
-                                    Drawing — {entry.authorUsername}
-                                </div>
-                                <div className="mt-3 flex justify-center">
-                                    <AnimatedSketchDisplay
-                                        drawingData={entry.drawingData}
-                                        width="560px"
-                                        height="320px"
-                                        strokeDelayMs={75}
-                                        className="max-w-full"
-                                        replayNonce={entryCount + flipbookIndex + i}
-                                    />
-                                </div>
-                            </div>
-                        );
-                    })}
-                </div>
-
-                <div className="flex gap-4 flex-wrap justify-between items-center">
-                    {isHost ? (
-                        <Button
-                            label={revealButtonLabel}
-                            onClick={onRevealNext}
-                            disabled={isComplete}
-                        />
-                    ) : (
-                        <span className="text-body text-gray-500" />
+                    {entryCount === 0 && !isComplete && (
+                        <p className="text-heading-3 text-center text-gray-600 dark:text-dark-mode-text-2">
+                            {isHost
+                                ? `Press “${revealButtonLabel}” to show the first card.`
+                                : 'Waiting for the host to reveal the first card…'}
+                        </p>
                     )}
-                </div>
-            </Container>
-        </div>
+
+                    {isComplete && (
+                        <p className="text-heading-3 text-center text-emerald-700 dark:text-dark-mode-text-2">
+                            Recap complete — heading to voting…
+                        </p>
+                    )}
+
+                    <div
+                        ref={timelineScrollRef}
+                        className="flex flex-col gap-4 max-h-[60vh] overflow-y-auto pr-2 scroll-smooth"
+                    >
+                        {visibleTimeline.map((entry, i) => {
+                            if (entry.kind === 'prompt') {
+                                return (
+                                    <div key={`p-${i}`} className="rounded-lg border border-dark-grey p-4 bg-sky-50 dark:bg-indigo-50">
+                                        <div className="text-xs uppercase text-gray-500">Prompt</div>
+                                        <div className="text-heading-3">{entry.text}</div>
+                                    </div>
+                                );
+                            }
+                            if (entry.kind === 'guess') {
+                                return (
+                                    <div key={entry.id} className="rounded-lg border border-dark-grey p-4 bg-sky-50 dark:bg-indigo-50">
+                                        <div className="text-xs uppercase text-gray-500">
+                                            Guess — {entry.authorUsername}
+                                        </div>
+                                        <div className="text-body">{entry.text}</div>
+                                    </div>
+                                );
+                            }
+                            return (
+                                <div key={`${entry.id}-${flipbookIndex}-${entryCount}`} className="rounded-lg border border-dark-grey p-4 bg-sky-50 dark:bg-indigo-50">
+                                    <div className="text-xs uppercase text-gray-500">
+                                        Drawing — {entry.authorUsername}
+                                    </div>
+                                    <div className="mt-3 flex justify-center">
+                                        <AnimatedSketchDisplay
+                                            drawingData={entry.drawingData}
+                                            width="100%"
+                                            strokeDelayMs={75}
+                                            className="max-w-full sm:max-w-[560px]"
+                                            replayNonce={entryCount + flipbookIndex + i}
+                                        />
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+
+                    <div className="flex gap-4 flex-wrap justify-between items-center">
+                        {isHost ? (
+                            <Button
+                                label={revealButtonLabel}
+                                onClick={onRevealNext}
+                                disabled={isComplete}
+                            />
+                        ) : (
+                            <span className="text-body text-gray-500" />
+                        )}
+                    </div>
+                </Container>
+            </div>
 
             {currentFlipbookFullyRevealed && (
                 <div
@@ -384,8 +390,8 @@ const RecapPage: React.FC = () => {
                                     {alreadySavedThis
                                         ? ' · Already saved'
                                         : atLibraryLimit
-                                          ? ' · Full'
-                                          : ''}
+                                            ? ' · Full'
+                                            : ''}
                                 </span>
                                 {!alreadySavedThis && !atLibraryLimit && (
                                     <>
@@ -417,9 +423,8 @@ const RecapPage: React.FC = () => {
                                 )}
                                 {saveMessage && (
                                     <span
-                                        className={`max-w-[min(14rem,38vw)] shrink-0 truncate text-xs ${
-                                            saveMessage.startsWith('Saved') ? 'text-emerald-700' : 'text-red-600'
-                                        }`}
+                                        className={`max-w-[min(14rem,38vw)] shrink-0 truncate text-xs ${saveMessage.startsWith('Saved') ? 'text-emerald-700' : 'text-red-600'
+                                            }`}
                                         title={saveMessage}
                                     >
                                         {saveMessage}

@@ -4,7 +4,9 @@ interface TutorialSlideshowProps {
 
 export default function TutorialSlideshow({className=''}: TutorialSlideshowProps) {
     return (
-        <div className={` ${className} h-full w-auto min-w-[200px] border-2 border-light-grey rounded-lg flex items-center text-center`}>
+        <div
+            className={`flex h-full min-h-[120px] w-full min-w-0 flex-col items-center justify-center border-2 border-light-grey text-center ${className}`.trim()}
+        >
             Placeholder for Tutorial Slideshow
         </div>
     );

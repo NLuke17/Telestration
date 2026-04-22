@@ -1,19 +1,27 @@
 import React, { useState } from 'react';
 import Container from '../../components/common/Container';
 import TutorialSlideshow from '../auth/components/TutorialSlideshow';
-import { PiNumberCircleOne, PiNumberCircleTwo } from "react-icons/pi";
+import { PiPlanet, PiRocketLaunch } from 'react-icons/pi';
+import { GAME_NAME } from '../../constants/branding';
 import Button from '../../components/common/Button';
 import { useNavigate, Link } from 'react-router-dom';
 import Alert from '@mui/material/Alert';
 import { createLobby, joinLobby } from '../../services/api/lobbyApi';
 import { useAuth } from '../../contexts/AuthContext';
 import InitialAvatar from '../../components/common/Avatar';
+import { useTheme } from '../../contexts/ThemeContext';
+
+import lightBg from '../../assets/lightmode.jpg';
+import darkBg from '../../assets/darkmode.jpg';
+import ColorModeButton from '../../components/common/ColorModeButton';
+import SiteLogo from '../../components/common/SiteLogo';
 
 const HomePage: React.FC = () => {
     const navigate = useNavigate();
     const { user, isAuthenticated } = useAuth();
     const [roomCodeInput, setRoomCodeInput] = useState<string>('');
-    const [error, setError] = useState<string | null>(null);
+    const [joinError, setJoinError] = useState<string | null>(null);
+    const [createError, setCreateError] = useState<string | null>(null);
     const [isCreating, setIsCreating] = useState(false);
     const [isJoining, setIsJoining] = useState(false);
 
@@ -35,13 +43,13 @@ const HomePage: React.FC = () => {
 
         try {
             setIsCreating(true);
-            setError(null);
-            
+            setCreateError(null);
+
             const lobby = await createLobby(userId);
             navigate(`/lobby/${lobby.roomCode}`);
         } catch (err: any) {
             console.error("Create Error:", err);
-            setError(err.message || 'Failed to create lobby');
+            setCreateError(err.message || 'Failed to create lobby');
         } finally {
             setIsCreating(false);
         }
@@ -49,7 +57,7 @@ const HomePage: React.FC = () => {
 
     const handleJoinLobby = async () => {
         if (!roomCodeInput.trim()) {
-            setError('Please enter a room code');
+            setJoinError('Please enter a room code');
             return;
         }
 
@@ -70,103 +78,149 @@ const HomePage: React.FC = () => {
 
         try {
             setIsJoining(true);
-            setError(null);
-            
+            setJoinError(null);
+
             await joinLobby(roomCodeInput.trim().toUpperCase(), userId);
             navigate(`/lobby/${roomCodeInput.trim().toUpperCase()}`);
         } catch (err: any) {
             console.error("Join Error:", err);
-            setError(err.message || 'Failed to join lobby');
+            setJoinError(err.message || 'Failed to join lobby');
         } finally {
             setIsJoining(false);
         }
     };
 
+    const { theme, toggleTheme } = useTheme();
+
+
     return (
-        <div className="flex flex-col justify-center items-center h-screen">
+        <div
+            className="box-border flex min-h-screen w-full flex-col items-center justify-center px-3 py-20 sm:px-5 sm:py-16"
+            style={{ backgroundImage: `url(${theme === 'dark' ? darkBg : lightBg})` }}
+        >
+            <ColorModeButton />
             {/* Home content container */}
-            <Container width='900px' height='500px' padding='4em' className='flex items-center justify-center gap-8 flex-col border-2 border-dark-grey rounded-lg'>
-                {/* Heading */}
-                <div className="relative z-20 flex w-full shrink-0 items-center justify-between gap-4">
-                    <h1 className="text-heading-1 text-left">New Game</h1>
-                    <div className='flex flex-row items-center gap-4'>
+            <Container
+                width="900px"
+                height="500px"
+                padding="3em"
+                className="flex flex-col items-center justify-center gap-6 border-2 border-dark-grey rounded-lg sm:gap-8"
+            >
+                {/* Heading — one row on all breakpoints; title can wrap within its flex space */}
+                <div className="relative z-20 flex w-full shrink-0 flex-row flex-wrap items-center justify-between gap-x-3 gap-y-2">
+                    <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
+                        <SiteLogo
+                            size={80}
+                            className="drop-shadow-sm h-10 w-10 shrink-0 sm:h-12 sm:w-12 md:h-16 md:w-16 lg:h-20 lg:w-20"
+                        />
+                        <h1 className="min-w-0 flex-1 break-words text-left text-[1.5rem] font-medium lowercase tracking-tight text-light-mode-text-1 dark:text-dark-mode-text-1 sm:text-3xl md:text-4xl lg:text-heading-1">
+                            {GAME_NAME}
+                        </h1>
+                    </div>
+                    <div className="flex shrink-0 flex-row items-center justify-end">
                         {isAuthenticated && user ? (
                             <Link
                                 to="/account"
-                                className="flex flex-row items-center gap-3 rounded-lg border border-dark-grey bg-white px-4 py-2 shadow-sm hover:bg-slate-50 transition-colors cursor-pointer text-left no-underline text-inherit"
+                                className="flex max-w-full flex-row items-center gap-2 rounded-lg border border-dark-grey bg-white px-2 py-1.5 shadow-sm hover:bg-slate-50 transition-colors sm:gap-3 sm:px-4 sm:py-2"
+                                title={user.username}
                             >
                                 <InitialAvatar
                                     name={user.username}
                                     src={user.profilePicture ?? undefined}
                                     size="44"
                                 />
-                                <div className="flex flex-col min-w-0">
+                                <div className="hidden min-w-0 flex-col sm:flex">
                                     <span className="text-xs uppercase text-gray-500 tracking-wide">Account</span>
-                                    <span className="text-body-base font-semibold text-brand-charcoal truncate max-w-[200px]">
+                                    <span className="text-body-base font-semibold text-brand-charcoal truncate sm:max-w-[200px]">
                                         {user.username}
                                     </span>
                                 </div>
                             </Link>
                         ) : (
-                            <>
-                                <div className='text-heading-3'>or</div>
-                                <Button
-                                    className='h-fit flex'
-                                    label="Sign in"
-                                    onClick={() => navigate('/login')}
-                                />
-                            </>
+                            <Button
+                                className="h-fit shrink-0"
+                                label="Sign in"
+                                onClick={() => navigate('/login')}
+                            />
                         )}
                     </div>
                 </div>
                 {/* Main content */}
-                <div className="flex min-h-0 w-full flex-1 flex-row items-center justify-center gap-8">
+                <div className="flex min-h-0 w-full flex-1 flex-col justify-center gap-8 lg:flex-row lg:items-stretch lg:gap-6">
                     {/* Join a room option */}
-                    <div className='flex min-h-0 flex-col items-center justify-between text-center'>
-                        <PiNumberCircleOne size={33}/>
-                        <div className="flex flex-col gap-2">
+                    <div className="flex w-full min-w-0 flex-col items-center gap-5 text-center lg:min-h-0 lg:flex-1 lg:basis-0">
+                        <div className="mb-8 flex items-start justify-center gap-2 text-center text-body dark:text-dark-mode-text-1">
+                            <PiPlanet
+                                className="mt-0.5 shrink-0 text-indigo-500/85 dark:text-indigo-400/90"
+                                size={16}
+                                aria-hidden
+                            />
+                            <span>Join a room using the code from whoever is hosting.</span>
+                        </div>
+                        <div className="flex w-full max-w-full flex-col items-center gap-3">
                             <input
                                 type="text"
                                 placeholder="Enter room code"
                                 value={roomCodeInput}
-                                onChange={(e) => setRoomCodeInput(e.target.value.toUpperCase())}
-                                className="border border-gray-300 rounded px-3 py-2 text-center"
+                                onChange={(e) => {
+                                    setRoomCodeInput(e.target.value.toUpperCase());
+                                    setJoinError(null);
+                                }}
+                                className="dark:bg-white w-full border border-gray-300 rounded px-3 py-2 text-center"
                                 maxLength={6}
                             />
-                            <Button 
+                            <Button
                                 label={isJoining ? "Joining..." : "Join a room"}
                                 disabled={!roomCodeInput.trim() || isJoining}
                                 onClick={handleJoinLobby}
                             />
+                            <div className="flex w-full flex-wrap items-start justify-center gap-3">
+                                {!isAuthenticated && (
+                                    <Alert severity="info" className="py-1 [&_.MuiAlert-message]:py-0">
+                                        Playing as guest
+                                    </Alert>
+                                )}
+                                {joinError && (
+                                    <Alert severity="error" className="max-w-full py-1 sm:max-w-[280px] [&_.MuiAlert-message]:py-0">
+                                        {joinError}
+                                    </Alert>
+                                )}
+                            </div>
                         </div>
-                        <div>{!isAuthenticated ? (
-                            <Alert severity='info'>Playing as guest</Alert>
-                        ): (
-                            <div></div>
-                        )}</div>
-                        <div>Join a room using the code provided by whoever is hosting!</div>
                     </div>
                     {/* How to Play slideshow */}
-                    <TutorialSlideshow className='w-hug min-h-0 max-h-full'/>
+                    <TutorialSlideshow className="min-h-0 w-full min-w-0 max-h-[40vh] lg:max-h-full lg:flex-1 lg:basis-0" />
                     {/* Start a new room option */}
-                    <div className='flex min-h-0 w-hug flex-col items-center justify-between text-center gap-auto'>
-                        <PiNumberCircleTwo size={33} />
-                        <Button 
-                            label={isCreating ? "Creating..." : "Start a new room"}
-                            disabled={isCreating}
-                            onClick={handleCreateLobby}
-                        />
-                        <div>{!isAuthenticated ? (
-                            <Alert severity='info'>Playing as guest</Alert>
-                        ): (
-                            <div></div>
-                        )}</div>
-                        <div>Start a room of your own and invite your friends to join!</div>
+                    <div className="flex w-full min-w-0 flex-col items-center gap-5 text-center lg:min-h-0 lg:flex-1 lg:basis-0">
+                        <div className="mb-8 flex items-start justify-center gap-2 text-center text-body dark:text-dark-mode-text-1">
+                            <PiRocketLaunch
+                                className="mt-0.5 shrink-0 text-indigo-500/85 dark:text-indigo-400/90"
+                                size={16}
+                                aria-hidden
+                            />
+                            <span>Start a room and invite your crew to jump in.</span>
+                        </div>
+                        <div className="flex w-full max-w-full flex-col items-center gap-3">
+                            <Button
+                                label={isCreating ? "Creating..." : "Start a new room"}
+                                disabled={isCreating}
+                                onClick={handleCreateLobby}
+                            />
+                            <div className="flex w-full flex-wrap items-start justify-center gap-3">
+                                {!isAuthenticated && (
+                                    <Alert severity="info" className="py-1 [&_.MuiAlert-message]:py-0">
+                                        Playing as guest
+                                    </Alert>
+                                )}
+                                {createError && (
+                                    <Alert severity="error" className="max-w-full py-1 sm:max-w-[280px] [&_.MuiAlert-message]:py-0">
+                                        {createError}
+                                    </Alert>
+                                )}
+                            </div>
+                        </div>
                     </div>
                 </div>
-                {error && (
-                    <Alert severity='error' className='w-full'>{error}</Alert>
-                )}
             </Container>
         </div>
     );

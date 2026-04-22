@@ -1,14 +1,28 @@
 @import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
 
 /* Project CSS variables (kept for reference) */
 @theme {
-    --color-light-grey: #D9D9D9;
-    --color-mid-grey: #B3B3B3;
-    --color-dark-grey: #757575;
-    --font-size-body-base: 1rem;
-    --font-weight-body-base: 400;
-    --color-body-base: #1E1E1E;
-    --color-brand-charcoal: #2C2C2C;
+  --color-light-grey: #D9D9D9;
+  --color-mid-grey: #B3B3B3;
+  --color-dark-grey: #757575;
+  --font-size-body-base: 1rem;
+  --font-weight-body-base: 400;
+  --color-body-base: #1E1E1E;
+  --color-brand-charcoal: #2C2C2C;
+
+  /* Fixed: Removed quotes and commas, added semicolons */
+  --color-dark-mode-border: #B8E1EC;
+  --color-dark-mode-border-2: #6EA5F0;
+  --color-dark-mode-text-1: #EAF5FF;
+  --color-dark-mode-button-background: #001A69;
+  --color-dark-mode-text-2: #9FC8FE;
+
+  --color-light-mode-border: #757575;
+  --color-light-mode-text-1: #2C2C2C;
+  --color-light-mode-text-2: #757575;
+  --color-light-mode-text-light: #f5f5f5;
+  --color-light-mode-button-background: #2C2C2C;
 }
 
 /* Small, safe global resets to avoid horizontal overflow issues:
@@ -17,21 +31,30 @@
      - prevent horizontal scrolling caused by 100vw-like elements
 */
 @layer base {
-    *, *::before, *::after {
-        box-sizing: border-box;
-    }
 
-    html, body, #root {
-        width: 100%;
-        height: 100%;
-        overflow-x: hidden; /* hide accidental horizontal overflow */
-    }
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
 
-    img, svg, video, canvas {
-        max-width: 100%;
-        height: auto;
-        display: block;
-    }
+  html,
+  body
+  #root {
+    width: 100%;
+    height: 100%;
+    overflow-x: hidden;
+    /* hide accidental horizontal overflow */
+  }
+
+  img,
+  svg,
+  video,
+  canvas {
+    max-width: 100%;
+    height: auto;
+    display: block;
+  }
 }
 
 @layer utilities {
@@ -41,8 +64,8 @@
   }
 
   .text-display-prompt {
-    font-size: 1.5rem;      
-    font-weight: 500;    
+    font-size: 1.5rem;
+    font-weight: 500;
   }
 
   .text-heading-3 {

@@ -9,8 +9,14 @@ import { useGameState, useLobby, usePhaseTimer, useWebSocket } from '../../../ho
 import { getGameState } from '../../../services/api/lobbyApi';
 import { getWSClient } from '../../../services/ws/wsClient';
 import type { VoteFlipbookCard } from '../../../types/dto';
+import { useTheme } from '../../../contexts/ThemeContext';
+
+import lightBg from '../../../assets/lightmode.jpg';
+import darkBg from '../../../assets/darkmode.jpg';
+import ColorModeButton from '../../../components/common/ColorModeButton';
 
 const VotingPage: React.FC = () => {
+    const { theme, toggleTheme } = useTheme();
     const { roomCode } = useParams<{ roomCode: string }>();
     const navigate = useNavigate();
     const { user } = useAuth();
@@ -192,7 +198,12 @@ const VotingPage: React.FC = () => {
     const isLocked = hasFinishedSubmit && !allowLocalEdit;
 
     return (
-        <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-gray-50 p-4">
+        <div
+            className="box-border flex min-h-screen w-full flex-col items-center justify-center gap-6 bg-gray-50 px-3 py-20 sm:px-5 sm:py-16"
+            style={{ backgroundImage: `url(${theme === 'dark' ? darkBg : lightBg})` }}
+        >
+            {/* Toggle Button */}
+            <ColorModeButton />
             <Container
                 width="900px"
                 height="auto"
@@ -200,14 +211,14 @@ const VotingPage: React.FC = () => {
                 className="flex max-h-[92vh] min-h-[380px] flex-col gap-5 overflow-y-auto border-2 border-dark-grey bg-white shadow-xl"
             >
                 <div className="flex flex-wrap items-center justify-between gap-4">
-                    <h1 className="text-heading-1">Favorite flipbook</h1>
+                    <h1 className="text-heading-1 text-light-mode-text-1 dark:text-dark-mode-text-1">Favorite flipbook</h1>
                     <TimerDisplay
                         minutesLeft={timer.minutes.toString().padStart(2, '0')}
                         secondsLeft={timer.seconds.toString().padStart(2, '0')}
-                        className="text-heading-3"
+                        className="text-heading-3 text-light-mode-text-1 dark:text-dark-mode-text-1"
                     />
                 </div>
-                <p className="text-sm leading-relaxed text-gray-600">
+                <p className="text-sm leading-relaxed text-light-mode-text-1 dark:text-dark-mode-text-1">
                     Pick someone else&apos;s flipbook — initial prompt and final drawing below. Tap{' '}
                     <span className="font-semibold">Done</span> when you&apos;re set. You can unlock and
                     change your vote until the timer ends.
@@ -230,8 +241,8 @@ const VotingPage: React.FC = () => {
                                     isMine
                                         ? 'cursor-not-allowed border-gray-200 bg-gray-100 opacity-70'
                                         : isSelected
-                                          ? 'border-charcoal bg-blue-50'
-                                          : 'border-dark-grey bg-white hover:border-charcoal'
+                                          ? 'border-charcoal bg-blue-50 dark:border-dark-mode-border dark:bg-indigo-50'
+                                          : 'border-dark-grey bg-white hover:border-charcoal dark:hover:border-dark-mode-border'
                                 }`}
                             >
                                 <div className="flex items-center justify-between gap-2">
@@ -240,7 +251,7 @@ const VotingPage: React.FC = () => {
                                     </span>
                                     <span className="shrink-0 text-xs text-gray-500">{c.votes} votes</span>
                                 </div>
-                                <div className="rounded-md border border-dark-grey/80 bg-blue-50/90 px-2.5 py-2">
+                                <div className="rounded-md border border-dark-grey/80 bg-sky-50/90 dark:bg-indigo-50/90 dark:border-dark-mode-border px-2.5 py-2">
                                     <div className="text-[10px] font-semibold uppercase tracking-wide text-gray-500">
                                         Prompt
                                     </div>
@@ -248,7 +259,7 @@ const VotingPage: React.FC = () => {
                                         {c.prompt}
                                     </div>
                                 </div>
-                                <div className="rounded-md border border-dark-grey/80 bg-emerald-50/60 px-2 py-1.5">
+                                <div className="rounded-md border border-dark-grey/80 bg-sky-50/60 dark:bg-indigo-50/60 px-2 py-1.5">
                                     <div className="text-[10px] font-semibold uppercase tracking-wide text-gray-500">
                                         Final drawing
                                     </div>
@@ -256,10 +267,9 @@ const VotingPage: React.FC = () => {
                                         {c.finalDrawingData ? (
                                             <AnimatedSketchDisplay
                                                 drawingData={c.finalDrawingData}
-                                                width="260px"
-                                                height="156px"
+                                                width="100%"
                                                 strokeDelayMs={40}
-                                                className="max-w-full"
+                                                className="max-w-full sm:max-w-[260px]"
                                                 replayNonce={c.id.length}
                                             />
                                         ) : (

@@ -100,12 +100,12 @@ const WaitingPage: React.FC = () => {
     const displayPhase = gameState.phase ?? phaseFromApi;
 
     return (
-        <div className="flex flex-col justify-center items-center h-screen bg-gray-50">
-            <Container 
-                width='900px' 
-                height='500px' 
-                padding='5em' 
-                className='flex flex-col justify-center items-center border-2 border-dark-grey rounded-lg bg-white shadow-xl gap-8'
+        <div className="box-border flex min-h-screen w-full flex-col items-center justify-center bg-gray-50 px-3 py-20 sm:px-5 sm:py-16">
+            <Container
+                width="900px"
+                height="500px"
+                padding="5em"
+                className="flex flex-col items-center justify-center gap-6 rounded-lg border-2 border-dark-grey bg-white text-center shadow-xl sm:gap-8"
             >
                 <h1 className="text-heading-1">Waiting for other players...</h1>
                 
