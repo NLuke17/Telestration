@@ -89,19 +89,21 @@ export class WSClient {
   /**
    * Send a message to the server
    */
-  send(type: string, payload?: Record<string, any>): void {
+  send(type: string, payload?: Record<string, any>): boolean {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
       console.error('[WSClient] Cannot send message - not connected');
-      return;
+      return false;
     }
 
     const message: WSClientMessage = { type, ...payload } as WSClientMessage;
-    
+
     try {
       this.ws.send(JSON.stringify(message));
       console.log('[WSClient] Sent:', type, payload);
+      return true;
     } catch (error) {
       console.error('[WSClient] Failed to send message:', error);
+      return false;
     }
   }
 

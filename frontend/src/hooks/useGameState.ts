@@ -33,7 +33,7 @@ export function useWebSocket() {
   }, []);
 
   const send = useCallback((type: string, payload?: Record<string, any>) => {
-    wsClient.current.send(type, payload);
+    return wsClient.current.send(type, payload);
   }, []);
 
   const subscribe = useCallback(<T extends WSServerMessage = WSServerMessage>(
@@ -71,10 +71,7 @@ export function useLobby(roomCode: string, userId?: string) {
 
     const client = getWSClient();
 
-    // Connect to lobby
-    client.send('lobby:connect', { roomCode, userId });
-
-    // Subscribe to lobby events
+    // Subscribe before connect so a fast server error is not dropped.
     const unsubscribers = [
       client.subscribe<{ type: 'lobby:connected'; roomCode: string; lobbyId: string }>(
         'lobby:connected',
@@ -117,6 +114,8 @@ export function useLobby(roomCode: string, userId?: string) {
         }
       ),
     ];
+
+    client.send('lobby:connect', { roomCode, userId });
 
     // Cleanup
     return () => {
@@ -333,7 +332,7 @@ export function useGameState(lobbyId?: string, sync?: GameStateSync) {
   }, [ws.isConnected, lobbyId, sync?.roomCode]);
 
   const submitDrawing = useCallback((flipbookId: string, drawingData: string) => {
-    ws.send('game:submit_drawing', { flipbookId, drawingData });
+    return ws.send('game:submit_drawing', { flipbookId, drawingData });
   }, [ws]);
 
   const submitGuess = useCallback((flipbookId: string, text: string) => {
@@ -388,8 +387,11 @@ export function usePhaseTimer(phaseEndsAt: number | null) {
     };
   }, [phaseEndsAt]);
 
-  const minutes = Math.floor(timeRemaining / 60000);
-  const seconds = Math.floor((timeRemaining % 60000) / 1000);
+  // Ceil so the UI does not show 0:00 while time is still left (floor made iOS/desktop feel "stuck"
+  // after zero for up to ~1s before auto-submit).
+  const totalSecondsCeil = Math.max(0, Math.ceil(timeRemaining / 1000));
+  const minutes = Math.floor(totalSecondsCeil / 60);
+  const seconds = totalSecondsCeil % 60;
 
   return {
     timeRemaining,

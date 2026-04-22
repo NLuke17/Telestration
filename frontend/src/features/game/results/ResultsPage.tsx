@@ -134,16 +134,14 @@ const ResultsPage: React.FC = () => {
                                     <span className="text-heading-3 dark:text-dark-mode-text-1">{r.authorUsername}</span>
                                     <span className="text-body text-gray-600 dark:text-dark-mode-text-1">{r.voteCount} votes</span>
                                 </div>
-                                <div className="rounded-md border border-dark-grey bg-sky-50 dark:bg-indigo-50 p-3">
-                                    <div className="text-xs uppercase text-gray-500 dark:text-dark-mode-text-2">Prompt</div>
-                                    <div className="text-body font-medium text-light-mode-text-1 dark:text-dark-mode-text-1">
+                                <div className="rounded-md border border-dark-grey bg-sky-50 p-3">
+                                    <div className="text-xs uppercase text-gray-500">Prompt</div>
+                                    <div className="text-body font-medium text-brand-charcoal">
                                         {r.prompt}
                                     </div>
                                 </div>
-                                <div className="rounded-md border border-dark-grey bg-sky-50 dark:bg-indigo-50 p-2">
-                                    <div className="text-xs uppercase text-gray-500 dark:text-dark-mode-text-2">
-                                        Final drawing
-                                    </div>
+                                <div className="rounded-md border border-dark-grey bg-sky-50 p-2">
+                                    <div className="text-xs uppercase text-gray-500">Final drawing</div>
                                     <div className="mt-2 flex justify-center">
                                         {r.finalDrawingData ? (
                                             <AnimatedSketchDisplay
@@ -154,9 +152,7 @@ const ResultsPage: React.FC = () => {
                                                 replayNonce={r.flipbookId.length + r.rank}
                                             />
                                         ) : (
-                                            <span className="text-sm text-gray-500 dark:text-dark-mode-text-2">
-                                                No drawing
-                                            </span>
+                                            <span className="text-sm text-gray-500">No drawing</span>
                                         )}
                                     </div>
                                 </div>

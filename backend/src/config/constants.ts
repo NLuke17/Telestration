@@ -15,8 +15,9 @@ export const RECAP_FLIPBOOK_DURATION_MS = 14000;
 /**
  * After `phaseDeadline`, wait this long before server-side auto-fill + phase advance.
  * Lets slow clients finish uploading large drawing payloads (WS) when the UI timer hits zero.
+ * Keep long enough for large paths + mobile WS; shorter values make the round feel more responsive.
  */
-export const PHASE_DEADLINE_SUBMISSION_GRACE_MS = 12000;
+export const PHASE_DEADLINE_SUBMISSION_GRACE_MS = 8000;
 
 // Game configuration
 export const MIN_PLAYERS_TO_START = 2;

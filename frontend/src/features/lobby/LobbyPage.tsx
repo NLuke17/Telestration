@@ -4,7 +4,8 @@ import Button from '../../components/common/Button';
 import { useParams, useNavigate } from 'react-router-dom';
 import InitialAvatar from '../../components/common/Avatar';
 import { useLobby, useGameState } from '../../hooks/useGameState';
-import { startLobby, deleteLobby, leaveLobby } from '../../services/api/lobbyApi';
+import { startLobby, deleteLobby, leaveLobby, getLobby } from '../../services/api/lobbyApi';
+import { HttpError } from '../../services/api/httpClient';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 
@@ -31,6 +32,29 @@ const LobbyPage: React.FC = () => {
     // Use custom hooks for lobby state
     const { lobby, isConnected, error, wsStatus } = useLobby(roomCode || '', userId);
     const gameState = useGameState(lobby?.id, sync);
+
+    /** Missing or deleted room: REST returns 404 before WS can hang on “Connecting…” */
+    React.useEffect(() => {
+        if (!roomCode) {
+            return;
+        }
+        let cancelled = false;
+        void (async () => {
+            try {
+                await getLobby(roomCode);
+            } catch (e) {
+                if (cancelled) {
+                    return;
+                }
+                if (e instanceof HttpError && e.status === 404) {
+                    navigate('/', { replace: true });
+                }
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, [roomCode, navigate]);
 
     const [isStarting, setIsStarting] = useState(false);
     const [startError, setStartError] = useState<string | null>(null);

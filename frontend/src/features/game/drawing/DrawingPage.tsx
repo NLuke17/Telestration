@@ -179,6 +179,7 @@ const DrawingPage: React.FC = () => {
                 }
                 pendingFlipbookIdRef.current = null;
                 setIsSubmitting(false);
+                setHasFinishedSubmit(false);
                 setError(msg.message || 'Drawing submission failed');
             }
         );
@@ -283,13 +284,24 @@ const DrawingPage: React.FC = () => {
             pendingFlipbookIdRef.current = assignment.id;
             setIsSubmitting(true);
 
-            gameState.submitDrawing(assignment.id, drawingData);
+            const sent = gameState.submitDrawing(assignment.id, drawingData);
+            if (!sent) {
+                pendingFlipbookIdRef.current = null;
+                setIsSubmitting(false);
+                setError('Not connected — could not send drawing.');
+                return;
+            }
+
+            // Treat send as success for UI; server ack/error still clears pending and rolls back on failure.
+            setHasFinishedSubmit(true);
+            setAllowLocalEdit(false);
+            setIsSubmitting(false);
 
             submitTimeoutRef.current = window.setTimeout(() => {
                 submitTimeoutRef.current = null;
                 if (pendingFlipbookIdRef.current === assignment.id) {
                     pendingFlipbookIdRef.current = null;
-                    setIsSubmitting(false);
+                    setHasFinishedSubmit(false);
                     setError('No confirmation from server. Check your connection and try again.');
                 }
             }, 20000);
