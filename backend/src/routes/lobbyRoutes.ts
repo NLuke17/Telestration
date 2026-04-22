@@ -173,18 +173,28 @@ router.post('/:roomCode/leave', validate(leaveLobbySchema), async (req, res) => 
   try {
     const roomCode = typeof req.params.roomCode === 'string' ? req.params.roomCode : req.params.roomCode[0];
     const { userId } = req.body;
-    const lobby = await leaveLobby(roomCode, userId);
-    
-    // Notify WebSocket clients
+    const result = await leaveLobby(roomCode, userId);
+
     const wsHandle = getWSHandle(req);
     if (wsHandle) {
-      await wsHandle.notifyPlayerLeft(lobby.id, userId);
+      if (result.kind === 'deleted') {
+        await wsHandle.notifyLobbyDeleted(result.lobbyId);
+      } else {
+        await wsHandle.notifyPlayerLeft(result.lobbyId, userId);
+      }
     }
-    
-    return res.json({ message: "Lobby left" });
+
+    return res.json({
+      message: 'Lobby left',
+      lobbyDeleted: result.kind === 'deleted',
+    });
   } catch (e: any) {
-    if (e.message === "LOBBY_NOT_FOUND") return res.status(404).json({ error: "Lobby not found" });
-    return res.status(500).json({ error: "Failed to leave lobby" });
+    if (e.message === 'LOBBY_NOT_FOUND') return res.status(404).json({ error: 'Lobby not found' });
+    if (e.message === 'NOT_IN_LOBBY') return res.status(400).json({ error: 'You are not in this lobby' });
+    if (e.message === 'LOBBY_GAME_IN_PROGRESS') {
+      return res.status(409).json({ error: 'Cannot leave while a game is in progress' });
+    }
+    return res.status(500).json({ error: 'Failed to leave lobby' });
   }
 });
 

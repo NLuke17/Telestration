@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import Container from '../../components/common/Container';
-import TutorialSlideshow from '../auth/components/TutorialSlideshow';
+import Tutorial from '../../components/common/Tutorial';
 import { PiPlanet, PiRocketLaunch } from 'react-icons/pi';
 import { GAME_NAME } from '../../constants/branding';
 import Button from '../../components/common/Button';
@@ -188,8 +188,8 @@ const HomePage: React.FC = () => {
                             </div>
                         </div>
                     </div>
-                    {/* How to Play slideshow */}
-                    <TutorialSlideshow className="min-h-0 w-full min-w-0 max-h-[40vh] lg:max-h-full lg:flex-1 lg:basis-0" />
+                    {/* How to Play (rulebook) */}
+                    <Tutorial width="min-h-0 w-full min-w-0 max-h-[40vh] lg:max-h-full lg:flex-1 lg:basis-0" />
                     {/* Start a new room option */}
                     <div className="flex w-full min-w-0 flex-col items-center gap-5 text-center lg:min-h-0 lg:flex-1 lg:basis-0">
                         <div className="mb-8 flex items-start justify-center gap-2 text-center text-body dark:text-dark-mode-text-1">

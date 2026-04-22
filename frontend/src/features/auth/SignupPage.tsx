@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import AuthForm from './components/AuthForm';
 import Container from '../../components/common/Container';
 import InitialAvatar from '../../components/common/Avatar';
-import TutorialSlideshow from './components/TutorialSlideshow';
+import Tutorial from '../../components/common/Tutorial';
 import { useTheme } from '../../contexts/ThemeContext';
 
 import lightBg from '../../assets/lightmode.jpg';
@@ -38,14 +38,17 @@ const SignupPage: React.FC = () => {
                 <div className="flex w-full max-w-full flex-col items-center justify-center gap-8 lg:flex-row lg:items-start lg:gap-10">
                     <InitialAvatar size="100" name="Person" iconType="astronaut" />
                     <AuthForm mode="signup" />
-                    <TutorialSlideshow className="max-w-md lg:max-w-none" />
+                    <Tutorial width="w-full max-w-md lg:max-w-none" />
                 </div>
                 <div className="dark:text-dark-mode-text-1 text-sm text-center">
-                    Already have an account? <Link to="/login" className="text-brand-charcoal dark:text-dark-mode-text-2 font-semibold hover:underline">Login here</Link>
+                    Already have an account?{' '}
+                    <Link to="/login" className="text-brand-charcoal dark:text-dark-mode-text-2 font-semibold hover:underline">
+                        Login here
+                    </Link>
                 </div>
             </Container>
         </div>
     );
-}
+};
 
 export default SignupPage;

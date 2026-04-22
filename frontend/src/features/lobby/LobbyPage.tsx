@@ -4,7 +4,7 @@ import Button from '../../components/common/Button';
 import { useParams, useNavigate } from 'react-router-dom';
 import InitialAvatar from '../../components/common/Avatar';
 import { useLobby, useGameState } from '../../hooks/useGameState';
-import { startLobby, deleteLobby } from '../../services/api/lobbyApi';
+import { startLobby, deleteLobby, leaveLobby } from '../../services/api/lobbyApi';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 
@@ -13,6 +13,7 @@ import darkBg from '../../assets/darkmode.jpg';
 import ColorModeButton from '../../components/common/ColorModeButton';
 import { PiPlanet } from 'react-icons/pi';
 import { GAME_NAME } from '../../constants/branding';
+import Tutorial from '../../components/common/Tutorial';
 
 const MIN_PLAYERS = 2;
 
@@ -34,6 +35,8 @@ const LobbyPage: React.FC = () => {
     const [startError, setStartError] = useState<string | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
     const [deleteError, setDeleteError] = useState<string | null>(null);
+    const [isLeaving, setIsLeaving] = useState(false);
+    const [leaveError, setLeaveError] = useState<string | null>(null);
 
     // Handle game started event - redirect to countdown
     React.useEffect(() => {
@@ -83,6 +86,26 @@ const LobbyPage: React.FC = () => {
             setDeleteError(msg);
         } finally {
             setIsDeleting(false);
+        }
+    };
+
+    const handleLeaveLobby = async () => {
+        if (!roomCode || !userId) return;
+        const hostNote =
+            lobby?.host.id === userId && (lobby.players?.length ?? 0) > 1
+                ? ' Another player will be picked at random as the new host.'
+                : '';
+        if (!window.confirm(`Leave this room and go back home?${hostNote}`)) return;
+        setIsLeaving(true);
+        setLeaveError(null);
+        try {
+            await leaveLobby(roomCode, userId);
+            navigate('/', { replace: true });
+        } catch (err: unknown) {
+            const msg = err instanceof Error ? err.message : 'Failed to leave lobby';
+            setLeaveError(msg);
+        } finally {
+            setIsLeaving(false);
         }
     };
 
@@ -198,10 +221,20 @@ const LobbyPage: React.FC = () => {
                 padding="2em"
                 className="flex min-h-0 flex-col justify-between gap-6 rounded-lg border-2 border-dark-grey bg-white p-4 shadow-xl sm:p-8 xl:p-10"
             >
-                <h1 className="mb-2 flex w-full items-center gap-2 text-left text-heading-1 text-light-mode-text-1 dark:text-dark-mode-text-1 sm:mb-4">
-                    <PiPlanet className="shrink-0 text-indigo-500 dark:text-indigo-400" size={28} aria-hidden />
-                    Join room
-                </h1>
+                <div className="mb-2 flex w-full min-w-0 flex-row flex-wrap items-center justify-between gap-3 sm:mb-4">
+                    <h1 className="flex min-w-0 flex-1 items-center gap-2 text-left text-heading-1 text-light-mode-text-1 dark:text-dark-mode-text-1">
+                        <PiPlanet className="shrink-0 text-indigo-500 dark:text-indigo-400" size={28} aria-hidden />
+                        Join room
+                    </h1>
+                    <button
+                        type="button"
+                        onClick={() => void handleLeaveLobby()}
+                        disabled={isLeaving || isGameInProgress}
+                        className="shrink-0 rounded-lg border border-light-mode-border bg-white px-3 py-2 text-sm font-semibold text-light-mode-text-1 shadow-sm transition-all duration-150 ease-out enabled:hover:-translate-y-px enabled:hover:border-indigo-300 enabled:hover:bg-indigo-50 enabled:hover:text-indigo-950 enabled:hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50 dark:border-dark-mode-border dark:bg-slate-950 dark:text-dark-mode-text-1 dark:shadow-none dark:enabled:hover:-translate-y-px dark:enabled:hover:border-indigo-400/50 dark:enabled:hover:bg-indigo-950/40 dark:enabled:hover:text-indigo-100 dark:enabled:hover:shadow-md dark:enabled:hover:shadow-indigo-950/50"
+                    >
+                        {isLeaving ? 'Leaving…' : 'Leave lobby'}
+                    </button>
+                </div>
                 <div className="flex w-full flex-1 flex-col items-stretch gap-8 xl:flex-row xl:justify-between xl:gap-6">
                     {/* Left: players */}
                     <div className="flex w-full shrink-0 flex-col gap-4 xl:w-64">
@@ -213,7 +246,6 @@ const LobbyPage: React.FC = () => {
                             height='auto'
                             padding='1em'
                             className='flex flex-col items-start border-2 border-light-grey rounded-lg bg-white shadow-xl gap-4'>
-
                             <div className="flex flex-col gap-2">
                                 {lobby?.players.map((player) => {
                                     const isPlayerHost = player.id === lobby.host.id;
@@ -279,6 +311,9 @@ const LobbyPage: React.FC = () => {
                             {deleteError && (
                                 <p className="text-red-600 text-sm text-center">{deleteError}</p>
                             )}
+                            {leaveError && (
+                                <p className="text-red-600 text-sm text-center">{leaveError}</p>
+                            )}
                             {isGameInProgress && (
                                 <p className="dark:text-dark-mode-text-2 text-blue-600 text-sm text-center">
                                     Game in progress...
@@ -297,16 +332,12 @@ const LobbyPage: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* Right: how to play */}
+                    {/* Right: how to play (rulebook) */}
                     <div className="flex w-full shrink-0 flex-col items-center gap-4 xl:w-64">
                         <h2 className="dark:text-dark-mode-text-2 text-lg font-bold text-center">How to play</h2>
-                        <Container
-                            width='100%'
-                            height='250px'
-                            padding='0'
-                            className='flex items-center justify-center border-2 border-light-grey rounded-lg bg-white shadow-xl'>
-                            <p className="text-center text-gray-400">Slideshow here</p>
-                        </Container>
+                        <div className="flex h-[250px] w-full min-h-0 flex-col overflow-hidden rounded-lg border-2 border-light-grey bg-white shadow-xl">
+                            <Tutorial embedded width="h-full min-h-0 w-full flex-1" />
+                        </div>
                     </div>
                 </div>
             </Container>

@@ -94,11 +94,13 @@ export async function endLobby(roomCode: string): Promise<{ message: string }> {
 /**
  * Leave a lobby
  */
-export async function leaveLobby(
-  roomCode: string,
-  userId: string
-): Promise<{ message: string }> {
-  return httpClient.post<{ message: string }>(`/lobby/${roomCode}/leave`, { userId });
+export interface LeaveLobbyResponse {
+  message: string;
+  lobbyDeleted?: boolean;
+}
+
+export async function leaveLobby(roomCode: string, userId: string): Promise<LeaveLobbyResponse> {
+  return httpClient.post<LeaveLobbyResponse>(`/lobby/${roomCode}/leave`, { userId });
 }
 
 /**

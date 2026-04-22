@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import AuthForm from './components/AuthForm';
 import Container from '../../components/common/Container';
 import InitialAvatar from '../../components/common/Avatar';
-import TutorialSlideshow from './components/TutorialSlideshow';
+import Tutorial from '../../components/common/Tutorial';
 import { useTheme } from '../../contexts/ThemeContext';
 
 import lightBg from '../../assets/lightmode.jpg';
@@ -11,6 +11,7 @@ import darkBg from '../../assets/darkmode.jpg';
 import ColorModeButton from '../../components/common/ColorModeButton';
 import SiteLogo from '../../components/common/SiteLogo';
 import { GAME_NAME } from '../../constants/branding';
+import { PiCaretLeft } from 'react-icons/pi';
 
 const LoginPage: React.FC = () => {
     const { theme } = useTheme();
@@ -27,6 +28,13 @@ const LoginPage: React.FC = () => {
                 padding="5em"
                 className="flex min-h-0 flex-col items-center justify-center gap-6 border-2 border-light-mode-border dark:border-dark-mode-border rounded-lg sm:gap-8"
             >
+                <Link
+                    to="/"
+                    className="flex w-full items-center gap-1 self-start text-sm font-semibold text-indigo-600/90 hover:underline dark:text-indigo-300/90"
+                >
+                    <PiCaretLeft className="h-4 w-4 shrink-0" aria-hidden />
+                    Back to home
+                </Link>
                 <div className="flex w-full flex-col gap-2">
                     <div className="flex w-full items-center gap-3">
                         <SiteLogo size={48} className="drop-shadow-sm" />
@@ -39,14 +47,17 @@ const LoginPage: React.FC = () => {
                 <div className="flex w-full max-w-full flex-col items-center justify-center gap-8 lg:flex-row lg:items-start lg:gap-10">
                     <InitialAvatar size="100" name="Person" iconType="astronaut" />
                     <AuthForm mode="login" />
-                    <TutorialSlideshow className="w-full max-w-md lg:max-w-none" />
+                    <Tutorial width="w-full max-w-md lg:max-w-none" />
                 </div>
                 <div className="dark:text-dark-mode-text-1 text-sm text-center">
-                    Don't have an account? <Link to="/signup" className="text-brand-charcoal dark:text-dark-mode-text-2 font-semibold hover:underline">Sign up here</Link>
+                    Don&apos;t have an account?{' '}
+                    <Link to="/signup" className="text-brand-charcoal dark:text-dark-mode-text-2 font-semibold hover:underline">
+                        Sign up here
+                    </Link>
                 </div>
             </Container>
         </div>
     );
-}
+};
 
 export default LoginPage;

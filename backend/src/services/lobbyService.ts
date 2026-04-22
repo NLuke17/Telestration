@@ -1,4 +1,4 @@
-import crypto from 'crypto';
+import crypto, { randomInt } from 'crypto';
 import bcrypt from 'bcryptjs';
 import prisma from '../prisma/client';
 import { generateRoomCode } from '../utils/roomCode';
@@ -88,10 +88,60 @@ export async function getLobbySnapshot(roomCodeRaw: string) {
     return lobby;
 }
 
-export async function leaveLobby(roomCodeRaw: string, userId: string) {
+export type LeaveLobbyResult =
+    | { kind: 'deleted'; lobbyId: string }
+    | { kind: 'updated'; lobbyId: string };
+
+/**
+ * Remove a player from the lobby. Host is reassigned to a random remaining player.
+ * If the leaving player was the last one, the lobby is deleted.
+ * Leaving is not allowed while a game is in progress (same constraint as joining).
+ */
+export async function leaveLobby(roomCodeRaw: string, userId: string): Promise<LeaveLobbyResult> {
     const roomCode = roomCodeRaw.toUpperCase();
-    const lobby = await prisma.lobby.update({ where: { roomCode }, data: { players: { disconnect: { id: userId } } }, include: lobbyInclude });
-    return lobby;
+
+    return prisma.$transaction(async (tx) => {
+        const lobby = await tx.lobby.findUnique({
+            where: { roomCode },
+            include: { players: true },
+        });
+
+        if (!lobby) {
+            throw new Error('LOBBY_NOT_FOUND');
+        }
+
+        const inLobby = lobby.players.some((p) => p.id === userId);
+        if (!inLobby) {
+            throw new Error('NOT_IN_LOBBY');
+        }
+
+        if (lobby.state === 'IN_PROGRESS') {
+            throw new Error('LOBBY_GAME_IN_PROGRESS');
+        }
+
+        const remainingPlayers = lobby.players.filter((p) => p.id !== userId);
+
+        if (remainingPlayers.length === 0) {
+            await tx.lobby.delete({ where: { roomCode } });
+            return { kind: 'deleted', lobbyId: lobby.id };
+        }
+
+        let newHostId = lobby.hostId;
+        if (lobby.hostId === userId) {
+            const ids = remainingPlayers.map((p) => p.id);
+            newHostId = ids[randomInt(ids.length)];
+        }
+
+        await tx.lobby.update({
+            where: { roomCode },
+            data: {
+                players: { disconnect: { id: userId } },
+                hostId: newHostId,
+            },
+        });
+
+        return { kind: 'updated', lobbyId: lobby.id };
+    });
 }
 
 export async function deleteLobby(roomCodeRaw: string, actingUserId: string) {
