@@ -20,6 +20,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import lightBg from '../../assets/lightmode.jpg';
 import darkBg from '../../assets/darkmode.jpg';
 import ColorModeButton from '../../components/common/ColorModeButton';
+import ConfirmDialog from '../../components/common/ConfirmDialog';
 import { PiMoonStars, PiTrash } from 'react-icons/pi';
 
 function sanitizeFilenameBase(name: string): string {
@@ -39,6 +40,7 @@ const AccountPage: React.FC = () => {
   const [downloadMessage, setDownloadMessage] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteMessage, setDeleteMessage] = useState<string | null>(null);
+  const [deleteConfirmItem, setDeleteConfirmItem] = useState<SavedFlipbookSummary | null>(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [avatarError, setAvatarError] = useState<string | null>(null);
   const gifScratchRef = useRef<HTMLCanvasElement | null>(null);
@@ -182,13 +184,7 @@ const AccountPage: React.FC = () => {
     []
   );
 
-  const handleDeleteSaved = useCallback(async (item: SavedFlipbookSummary) => {
-    const confirmed = window.confirm(
-      'Delete this saved flipbook from your account? This cannot be undone.'
-    );
-    if (!confirmed) {
-      return;
-    }
+  const runDeleteSaved = useCallback(async (item: SavedFlipbookSummary) => {
     setDeleteMessage(null);
     setDeletingId(item.id);
     try {
@@ -212,6 +208,19 @@ const AccountPage: React.FC = () => {
       className="box-border flex min-h-screen w-full flex-col items-center px-3 py-20 sm:px-6 sm:py-16"
       style={{ backgroundImage: `url(${theme === 'dark' ? darkBg : lightBg})` }}
     >
+      <ConfirmDialog
+        open={deleteConfirmItem !== null}
+        title="Delete saved flipbook?"
+        message="Delete this saved flipbook from your account? This cannot be undone."
+        confirmLabel={deletingId ? 'Deleting…' : 'Delete'}
+        danger
+        onCancel={() => setDeleteConfirmItem(null)}
+        onConfirm={() => {
+          const item = deleteConfirmItem;
+          setDeleteConfirmItem(null);
+          if (item) void runDeleteSaved(item);
+        }}
+      />
       {/* Toggle Button */}
       <ColorModeButton />
       <canvas ref={gifScratchRef} className="hidden" aria-hidden />
@@ -324,7 +333,7 @@ const AccountPage: React.FC = () => {
                       deletingId === item.id ? 'Deleting saved flipbook' : 'Delete saved flipbook from library'
                     }
                     disabled={downloadingId !== null || deletingId !== null}
-                    onClick={() => void handleDeleteSaved(item)}
+                    onClick={() => setDeleteConfirmItem(item)}
                   >
                     <PiTrash size={18} aria-hidden />
                   </button>

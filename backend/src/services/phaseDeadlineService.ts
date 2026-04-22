@@ -1,5 +1,6 @@
 import prisma from '../prisma/client';
 import { logDebug, logError, logInfo, logWarn } from '../utils/logger';
+import { PHASE_DEADLINE_SUBMISSION_GRACE_MS } from '../config/constants';
 import { pickRandomFallbackPrompt } from '../config/prompts';
 import type { WSContext } from '../ws/context/wsContext';
 import { broadcastPhaseChange } from '../ws/handlers/gameWs';
@@ -15,8 +16,8 @@ import { ensureFavoriteVotesForDeadline, finalizeFavoriteVoting } from './favori
 const EMPTY_DRAWING_JSON = '[]';
 
 /**
- * When `phaseDeadline` has passed, fill any missing submissions and advance the round once.
- * Idempotent with respect to already-submitted players (upserts / skips).
+ * When `phaseDeadline` plus {@link PHASE_DEADLINE_SUBMISSION_GRACE_MS} has passed, fill any missing
+ * submissions and advance the round once. Idempotent with respect to already-submitted players.
  */
 export async function processExpiredPhaseDeadlines(ctx: WSContext): Promise<void> {
   const lobbies = await prisma.lobby.findMany({
@@ -53,7 +54,13 @@ async function processLobbyPhaseDeadlineIfStale(ctx: WSContext, lobbyId: string)
     return;
   }
 
-  if (round.phaseDeadline.getTime() > Date.now()) {
+  const deadlineMs = round.phaseDeadline.getTime();
+  const now = Date.now();
+  if (now < deadlineMs) {
+    return;
+  }
+  // Do not inject placeholders or advance until grace elapses — late WS submits may still be in flight.
+  if (now < deadlineMs + PHASE_DEADLINE_SUBMISSION_GRACE_MS) {
     return;
   }
 

@@ -14,6 +14,7 @@ import ColorModeButton from '../../components/common/ColorModeButton';
 import { PiPlanet } from 'react-icons/pi';
 import { GAME_NAME } from '../../constants/branding';
 import Tutorial from '../../components/common/Tutorial';
+import ConfirmDialog from '../../components/common/ConfirmDialog';
 
 const MIN_PLAYERS = 2;
 
@@ -37,6 +38,9 @@ const LobbyPage: React.FC = () => {
     const [deleteError, setDeleteError] = useState<string | null>(null);
     const [isLeaving, setIsLeaving] = useState(false);
     const [leaveError, setLeaveError] = useState<string | null>(null);
+    const [confirmAction, setConfirmAction] = useState<null | 'delete' | 'leave'>(null);
+    const [leaveHostNote, setLeaveHostNote] = useState('');
+    const [shareSuccessMessage, setShareSuccessMessage] = useState<string | null>(null);
 
     // Handle game started event - redirect to countdown
     React.useEffect(() => {
@@ -73,9 +77,8 @@ const LobbyPage: React.FC = () => {
         }
     }, [error, navigate]);
 
-    const handleDeleteLobby = async () => {
+    const runDeleteLobby = async () => {
         if (!roomCode || !userId || lobby?.host.id !== userId) return;
-        if (!window.confirm('Delete this room for everyone? This cannot be undone.')) return;
         setIsDeleting(true);
         setDeleteError(null);
         try {
@@ -89,13 +92,8 @@ const LobbyPage: React.FC = () => {
         }
     };
 
-    const handleLeaveLobby = async () => {
+    const runLeaveLobby = async () => {
         if (!roomCode || !userId) return;
-        const hostNote =
-            lobby?.host.id === userId && (lobby.players?.length ?? 0) > 1
-                ? ' Another player will be picked at random as the new host.'
-                : '';
-        if (!window.confirm(`Leave this room and go back home?${hostNote}`)) return;
         setIsLeaving(true);
         setLeaveError(null);
         try {
@@ -107,6 +105,21 @@ const LobbyPage: React.FC = () => {
         } finally {
             setIsLeaving(false);
         }
+    };
+
+    const openDeleteLobbyConfirm = () => {
+        if (!roomCode || !userId || lobby?.host.id !== userId) return;
+        setConfirmAction('delete');
+    };
+
+    const openLeaveLobbyConfirm = () => {
+        if (!roomCode || !userId) return;
+        const hostNote =
+            lobby?.host.id === userId && (lobby.players?.length ?? 0) > 1
+                ? ' Another player will be picked at random as the new host.'
+                : '';
+        setLeaveHostNote(hostNote);
+        setConfirmAction('leave');
     };
 
     const handleShare = async () => {
@@ -122,9 +135,10 @@ const LobbyPage: React.FC = () => {
                     url: shareUrl,
                 });
             } else {
-                // Fallback: copy to clipboard
+                // Fallback: copy to clipboard (avoid alert — unreliable on iOS after async)
                 await navigator.clipboard.writeText(shareUrl);
-                alert('Room link copied to clipboard!');
+                setShareSuccessMessage('Room link copied to clipboard.');
+                window.setTimeout(() => setShareSuccessMessage(null), 4000);
             }
         } catch (err) {
             console.error('Error sharing:', err);
@@ -214,6 +228,29 @@ const LobbyPage: React.FC = () => {
             className="box-border flex min-h-screen w-full flex-col items-center justify-center bg-gray-50 px-3 py-20 sm:px-5 sm:py-16"
             style={{ backgroundImage: `url(${theme === 'dark' ? darkBg : lightBg})` }}
         >
+            <ConfirmDialog
+                open={confirmAction === 'delete'}
+                title="Delete room?"
+                message="Delete this room for everyone? This cannot be undone."
+                confirmLabel={isDeleting ? 'Deleting…' : 'Delete room'}
+                danger
+                onCancel={() => setConfirmAction(null)}
+                onConfirm={() => {
+                    setConfirmAction(null);
+                    void runDeleteLobby();
+                }}
+            />
+            <ConfirmDialog
+                open={confirmAction === 'leave'}
+                title="Leave room?"
+                message={`Leave this room and go back home?${leaveHostNote}`}
+                confirmLabel={isLeaving ? 'Leaving…' : 'Leave'}
+                onCancel={() => setConfirmAction(null)}
+                onConfirm={() => {
+                    setConfirmAction(null);
+                    void runLeaveLobby();
+                }}
+            />
             <ColorModeButton />
             <Container
                 width="900px"
@@ -228,7 +265,7 @@ const LobbyPage: React.FC = () => {
                     </h1>
                     <button
                         type="button"
-                        onClick={() => void handleLeaveLobby()}
+                        onClick={openLeaveLobbyConfirm}
                         disabled={isLeaving || isGameInProgress}
                         className="shrink-0 rounded-lg border border-light-mode-border bg-white px-3 py-2 text-sm font-semibold text-light-mode-text-1 shadow-sm transition-all duration-150 ease-out enabled:hover:-translate-y-px enabled:hover:border-indigo-300 enabled:hover:bg-indigo-50 enabled:hover:text-indigo-950 enabled:hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50 dark:border-dark-mode-border dark:bg-slate-950 dark:text-dark-mode-text-1 dark:shadow-none dark:enabled:hover:-translate-y-px dark:enabled:hover:border-indigo-400/50 dark:enabled:hover:bg-indigo-950/40 dark:enabled:hover:text-indigo-100 dark:enabled:hover:shadow-md dark:enabled:hover:shadow-indigo-950/50"
                     >
@@ -282,13 +319,18 @@ const LobbyPage: React.FC = () => {
                                 className="w-40 py-3"
                                 onClick={handleShare}
                             />
+                            {shareSuccessMessage && (
+                                <p className="text-center text-sm font-medium text-emerald-700 dark:text-emerald-400">
+                                    {shareSuccessMessage}
+                                </p>
+                            )}
 
                             {isHost && (
                                 <>
                                     <Button
                                         label={isDeleting ? 'Deleting…' : 'Delete room'}
                                         className="w-40 py-3 border border-red-300 text-red-700"
-                                        onClick={() => void handleDeleteLobby()}
+                                        onClick={openDeleteLobbyConfirm}
                                         disabled={isDeleting}
                                     />
                                     {isHost && !isGameInProgress && (

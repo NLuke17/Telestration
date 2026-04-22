@@ -12,6 +12,12 @@ export const VOTING_PHASE_DURATION_MS = 30000; // 30 seconds
 /** Auto-advance each flipbook during the end-of-game recap (client may also advance manually). */
 export const RECAP_FLIPBOOK_DURATION_MS = 14000;
 
+/**
+ * After `phaseDeadline`, wait this long before server-side auto-fill + phase advance.
+ * Lets slow clients finish uploading large drawing payloads (WS) when the UI timer hits zero.
+ */
+export const PHASE_DEADLINE_SUBMISSION_GRACE_MS = 12000;
+
 // Game configuration
 export const MIN_PLAYERS_TO_START = 2;
 export const MAX_ROUNDS = 5;
