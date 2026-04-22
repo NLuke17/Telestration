@@ -68,13 +68,15 @@ const LobbyPage: React.FC = () => {
         }
     }, [lobby, gameState, navigate, roomCode]);
 
-    // Handle lobby deleted - redirect to home
+    // Lobby gone (deleted or never existed): return to home after a short message
     React.useEffect(() => {
-        if (error && error.includes('deleted')) {
-            setTimeout(() => {
-                navigate('/');
-            }, 2000);
-        }
+        if (!error) return;
+        const lower = error.toLowerCase();
+        if (!lower.includes('deleted') && !lower.includes('not found')) return;
+        const id = window.setTimeout(() => {
+            navigate('/', { replace: true });
+        }, 2000);
+        return () => window.clearTimeout(id);
     }, [error, navigate]);
 
     const runDeleteLobby = async () => {
@@ -177,18 +179,22 @@ const LobbyPage: React.FC = () => {
         }
     };
 
-    // Loading state
-    if (wsStatus === 'connecting' || !isConnected) {
+    const waitingForLobby = (wsStatus === 'connecting' || !isConnected) && !error;
+
+    // Loading state (invalid / missing room yields WS error before lobby:connected)
+    if (waitingForLobby) {
         return (
-            <div className="box-border flex min-h-screen w-full flex-col items-center justify-center bg-gray-50 px-3 py-20 sm:px-5 sm:py-16">
+            <div className="box-border flex min-h-screen w-full flex-col items-center justify-center bg-gray-50 px-3 py-20 dark:bg-gray-950 sm:px-5 sm:py-16">
                 <ColorModeButton />
                 <Container
                     width="900px"
                     height="500px"
                     padding="5em"
-                    className="flex flex-col items-center justify-center border-2 border-dark-grey bg-white shadow-xl"
+                    className="flex flex-col items-center justify-center border-2 border-dark-grey shadow-xl"
                 >
-                    <p className="text-heading-3">Connecting to lobby...</p>
+                    <p className="text-heading-3 text-light-mode-text-1 dark:text-dark-mode-text-1">
+                        Connecting to lobby...
+                    </p>
                 </Container>
             </div>
         );
@@ -196,18 +202,22 @@ const LobbyPage: React.FC = () => {
 
     // Error state
     if (error) {
+        const redirectHome =
+            error.toLowerCase().includes('deleted') || error.toLowerCase().includes('not found');
         return (
-            <div className="box-border flex min-h-screen w-full flex-col items-center justify-center bg-gray-50 px-3 py-20 sm:px-5 sm:py-16">
+            <div className="box-border flex min-h-screen w-full flex-col items-center justify-center bg-gray-50 px-3 py-20 dark:bg-gray-950 sm:px-5 sm:py-16">
                 <ColorModeButton />
                 <Container
                     width="900px"
                     height="500px"
                     padding="5em"
-                    className="flex flex-col items-center justify-center border-2 border-dark-grey bg-white shadow-xl"
+                    className="flex flex-col items-center justify-center border-2 border-dark-grey shadow-xl"
                 >
-                    <p className="text-heading-3 text-red-600">Error: {error}</p>
-                    {error.includes('deleted') && (
-                        <p className="text-body mt-4">Redirecting to home...</p>
+                    <p className="text-heading-3 text-red-600 dark:text-red-400">Error: {error}</p>
+                    {redirectHome && (
+                        <p className="text-body mt-4 text-gray-600 dark:text-dark-mode-text-2">
+                            Redirecting to home...
+                        </p>
                     )}
                 </Container>
             </div>
@@ -256,7 +266,7 @@ const LobbyPage: React.FC = () => {
                 width="900px"
                 height="550px"
                 padding="2em"
-                className="flex min-h-0 flex-col justify-between gap-6 rounded-lg border-2 border-dark-grey bg-white p-4 shadow-xl sm:p-8 xl:p-10"
+                className="flex min-h-0 flex-col justify-between gap-6 rounded-lg border-2 border-dark-grey p-4 shadow-xl sm:p-8 xl:p-10"
             >
                 <div className="mb-2 flex w-full min-w-0 flex-row flex-wrap items-center justify-between gap-3 sm:mb-4">
                     <h1 className="flex min-w-0 flex-1 items-center gap-2 text-left text-heading-1 text-light-mode-text-1 dark:text-dark-mode-text-1">
@@ -275,14 +285,15 @@ const LobbyPage: React.FC = () => {
                 <div className="flex w-full flex-1 flex-col items-stretch gap-8 xl:flex-row xl:justify-between xl:gap-6">
                     {/* Left: players */}
                     <div className="flex w-full shrink-0 flex-col gap-4 xl:w-64">
-                        <h2 className="dark:text-dark-mode-text-2 text-lg font-bold text-center w-full">
+                        <h2 className="text-center text-lg font-bold text-light-mode-text-1 dark:text-dark-mode-text-2 w-full">
                             Players ({playerCount}/{MIN_PLAYERS} min)
                         </h2>
                         <Container
                             width='100%'
                             height='auto'
                             padding='1em'
-                            className='flex flex-col items-start border-2 border-light-grey rounded-lg bg-white shadow-xl gap-4'>
+                            className="flex flex-col items-start gap-4 rounded-lg border-2 border-light-grey shadow-xl dark:border-dark-mode-border"
+                            >
                             <div className="flex flex-col gap-2">
                                 {lobby?.players.map((player) => {
                                     const isPlayerHost = player.id === lobby.host.id;
@@ -293,10 +304,12 @@ const LobbyPage: React.FC = () => {
                                                 src={player.profilePicture}
                                                 size="40"
                                             />
-                                            <span className="text-dark-grey">
+                                            <span className="text-dark-grey dark:text-dark-mode-text-1">
                                                 {player.username}
                                                 {isPlayerHost && (
-                                                    <span className="text-xs text-gray-500 ml-1">(Host)</span>
+                                                    <span className="ml-1 text-xs text-gray-500 dark:text-dark-mode-text-2">
+                                                        (Host)
+                                                    </span>
                                                 )}
                                             </span>
                                         </div>
@@ -308,7 +321,9 @@ const LobbyPage: React.FC = () => {
 
                     {/* Middle: invite and start */}
                     <div className="flex w-full min-w-0 flex-1 flex-col items-center gap-2">
-                        <h2 className="dark:text-dark-mode-text-2 text-lg font-bold text-center">Room code:</h2>
+                        <h2 className="text-center text-lg font-bold text-light-mode-text-1 dark:text-dark-mode-text-2">
+                            Room code:
+                        </h2>
                         <p className="text-heading-1 dark:text-dark-mode-text-1 font-bold text-center leading-none mb-4">
                             {roomCode}
                         </p>
@@ -348,13 +363,13 @@ const LobbyPage: React.FC = () => {
                         {/* Feedback Messages - Moved inside the card */}
                         <div className="mt-4 min-h-[40px]">
                             {startError && (
-                                <p className="text-red-600 text-sm text-center">{startError}</p>
+                                <p className="text-center text-sm text-red-600 dark:text-red-400">{startError}</p>
                             )}
                             {deleteError && (
-                                <p className="text-red-600 text-sm text-center">{deleteError}</p>
+                                <p className="text-center text-sm text-red-600 dark:text-red-400">{deleteError}</p>
                             )}
                             {leaveError && (
-                                <p className="text-red-600 text-sm text-center">{leaveError}</p>
+                                <p className="text-center text-sm text-red-600 dark:text-red-400">{leaveError}</p>
                             )}
                             {isGameInProgress && (
                                 <p className="dark:text-dark-mode-text-2 text-blue-600 text-sm text-center">
@@ -367,7 +382,7 @@ const LobbyPage: React.FC = () => {
                                 </p>
                             )}
                             {!isHost && !isGameInProgress && (
-                                <p className="dark:text-dark-mode-text-2 text-gray-600 text-sm text-center">
+                                <p className="text-center text-sm text-gray-600 dark:text-dark-mode-text-2">
                                     Waiting for host...
                                 </p>
                             )}
@@ -376,8 +391,10 @@ const LobbyPage: React.FC = () => {
 
                     {/* Right: how to play (rulebook) */}
                     <div className="flex w-full shrink-0 flex-col items-center gap-4 xl:w-64">
-                        <h2 className="dark:text-dark-mode-text-2 text-lg font-bold text-center">How to play</h2>
-                        <div className="flex h-[250px] w-full min-h-0 flex-col overflow-hidden rounded-lg border-2 border-light-grey bg-white shadow-xl">
+                        <h2 className="text-center text-lg font-bold text-light-mode-text-1 dark:text-dark-mode-text-2">
+                            How to play
+                        </h2>
+                        <div className="flex h-[250px] w-full min-h-0 flex-col overflow-hidden rounded-lg border-2 border-light-grey shadow-xl dark:border-dark-mode-border">
                             <Tutorial embedded width="h-full min-h-0 w-full flex-1" />
                         </div>
                     </div>

@@ -41,7 +41,13 @@ export function parseCanvasPathsJson(drawingData: string | null | undefined): Ca
             if (pts.length === 0) {
                 continue;
             }
-            const strokeWidth = typeof o.strokeWidth === 'number' ? o.strokeWidth : 4;
+            const rawStroke = o.strokeWidth;
+            const strokeWidth =
+                typeof rawStroke === 'number' && Number.isFinite(rawStroke)
+                    ? rawStroke
+                    : typeof rawStroke === 'string' && Number.isFinite(Number(rawStroke))
+                      ? Number(rawStroke)
+                      : 4;
             const strokeColor = typeof o.strokeColor === 'string' ? o.strokeColor : '#000000';
             const drawMode = typeof o.drawMode === 'boolean' ? o.drawMode : true;
             paths.push({
@@ -72,6 +78,7 @@ export type AnimatedSketchDisplayProps = {
 
 /**
  * Read-only sketch replay: progressively calls `loadPaths` so strokes appear in order.
+ * `loadPaths` appends to existing paths; we call `resetCanvas` before each load so prefixes are not duplicated (duplicates break eraser strokes and look like missing segments).
  * Always renders at the same logical resolution as the drawing page, then scales to fit `width`.
  */
 export const AnimatedSketchDisplay: React.FC<AnimatedSketchDisplayProps> = ({
@@ -116,11 +123,11 @@ export const AnimatedSketchDisplay: React.FC<AnimatedSketchDisplayProps> = ({
             return;
         }
         if (!paths?.length) {
-            canvas.clearCanvas();
+            canvas.resetCanvas();
             return;
         }
 
-        canvas.clearCanvas();
+        canvas.resetCanvas();
         let i = 0;
 
         const step = () => {
@@ -128,6 +135,7 @@ export const AnimatedSketchDisplay: React.FC<AnimatedSketchDisplayProps> = ({
             if (!c) {
                 return;
             }
+            c.resetCanvas();
             c.loadPaths(paths.slice(0, i + 1));
             i += 1;
             if (i >= paths.length) {

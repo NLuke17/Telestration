@@ -13,10 +13,11 @@ export default function ToolSizeIndicator({
     variant = 'default',
     onClick
 }: ToolSizeIndicatorProps) {
-    const baseStyles = "w-[40px] h-[40px] flex items-center justify-center rounded-full border border-white"
+    const baseStyles =
+        'flex h-[40px] w-[40px] items-center justify-center rounded-full border border-white dark:border-zinc-500'
     const variantStyles = {
-        default: "bg-light-grey",
-        active: "bg-dark-grey",
+        default: 'bg-light-grey dark:bg-zinc-800',
+        active: 'bg-dark-grey dark:bg-zinc-500',
     };
     return (
         <button 

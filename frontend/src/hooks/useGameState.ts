@@ -3,6 +3,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import type { LobbyRoomStateResponse } from '../types/dto';
 import { HttpError } from '../services/api/httpClient';
 import { getWSClient, type ConnectionStatus } from '../services/ws/wsClient';
 import type { LobbySnapshot } from '../types/dto';
@@ -65,6 +66,8 @@ export function useLobby(roomCode: string, userId?: string) {
     if (!ws.isConnected || !roomCode) {
       return;
     }
+
+    setError(null);
 
     const client = getWSClient();
 
@@ -170,8 +173,11 @@ export function useGameState(lobbyId?: string, sync?: GameStateSync) {
   const [phaseEndsAt, setPhaseEndsAt] = useState<number | null>(null);
   const [chainWave, setChainWave] = useState<number | null>(null);
   const [maxChainWave, setMaxChainWave] = useState<number | null>(null);
+  const [phaseProgress, setPhaseProgress] = useState<LobbyRoomStateResponse['phaseProgress']>(undefined);
   const [isPhaseComplete, setIsPhaseComplete] = useState(false);
   const ws = useWebSocket();
+  const syncRef = useRef(sync);
+  syncRef.current = sync;
 
   useEffect(() => {
     // Poll must not depend on lobby?.id — that snapshot can arrive after game start, which would
@@ -226,6 +232,7 @@ export function useGameState(lobbyId?: string, sync?: GameStateSync) {
         if (typeof s.maxChainWave === 'number') {
           setMaxChainWave(s.maxChainWave);
         }
+        setPhaseProgress(s.phaseProgress);
       } catch (e) {
         if (e instanceof HttpError && e.status === 404) {
           stopPolling();
@@ -250,6 +257,22 @@ export function useGameState(lobbyId?: string, sync?: GameStateSync) {
 
     const client = getWSClient();
 
+    const refreshPhaseProgress = async () => {
+      const z = syncRef.current;
+      if (!z?.roomCode || !z?.userId) {
+        return;
+      }
+      try {
+        const { getGameState } = await import('../services/api/lobbyApi');
+        const s = await getGameState(z.roomCode, z.userId);
+        if (s.state === 'IN_PROGRESS') {
+          setPhaseProgress(s.phaseProgress);
+        }
+      } catch {
+        // ignore
+      }
+    };
+
     // Subscribe to game events (use singleton + stable deps — `ws` object identity changes every render
     // and was re-registering handlers so one server broadcast hit multiple listeners.)
     const unsubscribers = [
@@ -259,6 +282,7 @@ export function useGameState(lobbyId?: string, sync?: GameStateSync) {
           setRoundId(msg.roundId);
           setRoundNumber(msg.roundNumber);
           setIsPhaseComplete(false);
+          setPhaseProgress(undefined);
         }
       ),
 
@@ -270,6 +294,8 @@ export function useGameState(lobbyId?: string, sync?: GameStateSync) {
         setPhase(msg.phase);
         setPhaseEndsAt(typeof msg.endsAt === 'number' ? msg.endsAt : null);
         setIsPhaseComplete(false);
+        setPhaseProgress(undefined);
+        void refreshPhaseProgress();
       }),
 
       client.subscribe<{ type: 'game:phase_complete'; phase: 'DRAWING' | 'GUESSING' }>(
@@ -283,6 +309,20 @@ export function useGameState(lobbyId?: string, sync?: GameStateSync) {
         'game:round_complete',
         () => {
           setIsPhaseComplete(true);
+        }
+      ),
+
+      client.subscribe<{ type: 'game:drawing_submitted'; flipbookId: string; userId: string }>(
+        'game:drawing_submitted',
+        () => {
+          void refreshPhaseProgress();
+        }
+      ),
+
+      client.subscribe<{ type: 'game:guess_submitted'; flipbookId: string; userId: string }>(
+        'game:guess_submitted',
+        () => {
+          void refreshPhaseProgress();
         }
       ),
     ];
@@ -307,6 +347,7 @@ export function useGameState(lobbyId?: string, sync?: GameStateSync) {
     phaseEndsAt,
     chainWave,
     maxChainWave,
+    phaseProgress,
     isPhaseComplete,
     submitDrawing,
     submitGuess,

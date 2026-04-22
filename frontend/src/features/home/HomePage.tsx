@@ -130,8 +130,10 @@ const HomePage: React.FC = () => {
                                     size="44"
                                 />
                                 <div className="hidden min-w-0 flex-col sm:flex">
-                                    <span className="text-xs uppercase text-gray-500 tracking-wide">Account</span>
-                                    <span className="text-body-base font-semibold text-brand-charcoal truncate sm:max-w-[200px]">
+                                    <span className="text-xs uppercase tracking-wide text-gray-500 dark:text-dark-mode-text-2">
+                                        Account
+                                    </span>
+                                    <span className="text-body-base truncate font-semibold text-brand-charcoal dark:text-dark-mode-text-1 sm:max-w-[200px]">
                                         {user.username}
                                     </span>
                                 </div>

@@ -29,8 +29,7 @@ export default function InputField({
                 <label
                     htmlFor={id}
                     className={`text-light-mode-text-2 dark:text-dark-mode-text-2
-                        ${compact ? 'text-xs text-gray-700' : 'text-sm'}`
-                    }
+                        ${compact ? 'text-xs text-gray-700 dark:text-dark-mode-text-2' : 'text-sm'}`}
                 >
                     {label}
                 </label>

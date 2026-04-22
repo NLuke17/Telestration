@@ -23,6 +23,47 @@ type RoundForState = {
   }>;
 };
 
+/**
+ * How many players have finished the current chain step (same completion rule as advanceRound).
+ * Denominator is always N = player count (one submission slot per player per phase).
+ */
+function computePhaseSubmissionProgress(
+  phase: 'DRAWING' | 'GUESSING',
+  chainWave: number,
+  playerCount: number,
+  flipbooks: Array<{
+    prompt: string | null;
+    drawings: unknown[];
+    guesses: unknown[];
+  }>
+): { submitted: number; expected: number } | undefined {
+  const N = playerCount;
+  if (N < 1) {
+    return undefined;
+  }
+
+  if (phase === 'GUESSING' && chainWave === 0) {
+    const submitted = flipbooks.filter(
+      (fb) => !!(fb.prompt && fb.prompt.trim().length > 0)
+    ).length;
+    return { submitted, expected: N };
+  }
+
+  if (phase === 'DRAWING' && chainWave >= 1 && chainWave <= N - 1) {
+    const need = (chainWave + 1) / 2;
+    const submitted = flipbooks.filter((fb) => fb.drawings.length >= need).length;
+    return { submitted, expected: N };
+  }
+
+  if (phase === 'GUESSING' && chainWave >= 2 && chainWave <= N - 1) {
+    const need = chainWave / 2;
+    const submitted = flipbooks.filter((fb) => fb.guesses.length >= need).length;
+    return { submitted, expected: N };
+  }
+
+  return undefined;
+}
+
 function computeWorkFlipbookContext(
   round: RoundForState,
   playerIds: string[],
@@ -326,6 +367,16 @@ export async function getGameState(roomCode: string, userId: string) {
       }
     }
 
+    const phaseProgress =
+      currentPhase === 'DRAWING' || currentPhase === 'GUESSING'
+        ? computePhaseSubmissionProgress(
+            currentPhase,
+            chainWave,
+            playerCount,
+            currentRound.flipbooks
+          )
+        : undefined;
+
     return {
       ...baseState,
       roundId: currentRound.id,
@@ -342,6 +393,7 @@ export async function getGameState(roomCode: string, userId: string) {
       workFlipbookId,
       workFlipbookDrawFromText,
       voteFlipbooks,
+      phaseProgress,
       counts: {
         submittedDrawings: totalDrawings,
         expectedDrawings,

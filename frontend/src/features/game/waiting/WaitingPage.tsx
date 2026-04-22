@@ -100,23 +100,25 @@ const WaitingPage: React.FC = () => {
     const displayPhase = gameState.phase ?? phaseFromApi;
 
     return (
-        <div className="box-border flex min-h-screen w-full flex-col items-center justify-center bg-gray-50 px-3 py-20 sm:px-5 sm:py-16">
+        <div className="box-border flex min-h-screen w-full flex-col items-center justify-center bg-gray-50 px-3 py-20 dark:bg-gray-950 sm:px-5 sm:py-16">
             <Container
                 width="900px"
                 height="500px"
                 padding="5em"
-                className="flex flex-col items-center justify-center gap-6 rounded-lg border-2 border-dark-grey bg-white text-center shadow-xl sm:gap-8"
+                className="flex flex-col items-center justify-center gap-6 rounded-lg border-2 border-dark-grey text-center shadow-xl sm:gap-8"
             >
-                <h1 className="text-heading-1">Waiting for other players...</h1>
-                
+                <h1 className="text-heading-1 text-light-mode-text-1 dark:text-dark-mode-text-1">
+                    Waiting for other players...
+                </h1>
+
                 {displayPhase && (
-                    <p className="text-heading-3 text-gray-600">
+                    <p className="text-heading-3 text-gray-600 dark:text-dark-mode-text-2">
                         Current Phase: {displayPhase}
                     </p>
                 )}
-                
+
                 {gameState.roundNumber > 0 && (
-                    <p className="text-body">
+                    <p className="text-body text-light-mode-text-1 dark:text-dark-mode-text-2">
                         Round {gameState.roundNumber}
                     </p>
                 )}
@@ -127,7 +129,7 @@ const WaitingPage: React.FC = () => {
                     <div className="animate-bounce w-3 h-3 bg-blue-500 rounded-full" style={{ animationDelay: '0.2s' }}></div>
                 </div>
                 
-                <p className="text-body text-center max-w-md">
+                <p className="text-body max-w-md text-center text-gray-600 dark:text-dark-mode-text-2">
                     Please wait while other players complete their submissions.
                     You&apos;ll be redirected automatically when everyone is ready.
                 </p>

@@ -109,7 +109,7 @@ const ResultsPage: React.FC = () => {
                 width="960px"
                 height="auto"
                 padding="2em"
-                className="flex flex-col gap-6 border-2 border-dark-grey bg-white shadow-xl"
+                className="flex flex-col gap-6 border-2 border-dark-grey shadow-xl"
             >
                 <h1 className="text-heading-1 text-light-mode-text-1 dark:text-dark-mode-text-1">Results</h1>
                 <p className="text-body text-gray-600 dark:text-dark-mode-text-2">
@@ -119,7 +119,7 @@ const ResultsPage: React.FC = () => {
                 {loadError && <p className="text-body text-red-600">{loadError}</p>}
                 <div className="flex flex-col gap-6">
                     {rows.length === 0 && !loadError && (
-                        <p className="text-heading-3 text-gray-600">Loading results…</p>
+                        <p className="text-heading-3 text-gray-600 dark:text-dark-mode-text-2">Loading results…</p>
                     )}
                     {rows.map((r) => (
                         <div
@@ -135,11 +135,15 @@ const ResultsPage: React.FC = () => {
                                     <span className="text-body text-gray-600 dark:text-dark-mode-text-1">{r.voteCount} votes</span>
                                 </div>
                                 <div className="rounded-md border border-dark-grey bg-sky-50 dark:bg-indigo-50 p-3">
-                                    <div className="text-xs uppercase text-gray-500">Prompt</div>
-                                    <div className="text-body font-medium">{r.prompt}</div>
+                                    <div className="text-xs uppercase text-gray-500 dark:text-dark-mode-text-2">Prompt</div>
+                                    <div className="text-body font-medium text-light-mode-text-1 dark:text-dark-mode-text-1">
+                                        {r.prompt}
+                                    </div>
                                 </div>
                                 <div className="rounded-md border border-dark-grey bg-sky-50 dark:bg-indigo-50 p-2">
-                                    <div className="text-xs uppercase text-gray-500">Final drawing</div>
+                                    <div className="text-xs uppercase text-gray-500 dark:text-dark-mode-text-2">
+                                        Final drawing
+                                    </div>
                                     <div className="mt-2 flex justify-center">
                                         {r.finalDrawingData ? (
                                             <AnimatedSketchDisplay
@@ -150,7 +154,9 @@ const ResultsPage: React.FC = () => {
                                                 replayNonce={r.flipbookId.length + r.rank}
                                             />
                                         ) : (
-                                            <span className="text-sm text-gray-500">No drawing</span>
+                                            <span className="text-sm text-gray-500 dark:text-dark-mode-text-2">
+                                                No drawing
+                                            </span>
                                         )}
                                     </div>
                                 </div>

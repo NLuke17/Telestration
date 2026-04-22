@@ -366,12 +366,25 @@ const DrawingPage: React.FC = () => {
         (assignment as { drawFromText?: string }).drawFromText ||
         assignment.prompt ||
         'Draw something!';
-    const currentPage =
-        gameState.chainWave != null && gameState.maxChainWave != null && gameState.maxChainWave > 0
-            ? Math.min(gameState.chainWave, gameState.maxChainWave)
-            : gameState.roundNumber || 1;
-    const totalPages =
-        gameState.maxChainWave != null && gameState.maxChainWave > 0 ? gameState.maxChainWave : 4;
+    const playerTotal = lobby?.players.length ?? 0;
+    const pp = gameState.phaseProgress;
+    const counterPageNum = pp
+        ? String(pp.submitted)
+        : String(
+              gameState.chainWave != null && playerTotal > 0
+                  ? Math.min(gameState.chainWave + 1, playerTotal)
+                  : gameState.roundNumber || 1
+          );
+    const counterTotal = pp
+        ? String(pp.expected)
+        : String(
+              playerTotal > 0
+                  ? playerTotal
+                  : gameState.maxChainWave != null && gameState.maxChainWave > 0
+                    ? gameState.maxChainWave + 1
+                    : 4
+          );
+    const counterCaption = pp ? 'Submitted' : undefined;
 
     const isCanvasLocked = hasFinishedSubmit && !allowLocalEdit;
 
@@ -391,13 +404,18 @@ const DrawingPage: React.FC = () => {
                 className="flex flex-col items-center justify-center rounded-lg border-2 border-dark-grey"
             >
                 <div className="flex w-full flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                    <PageCounter pageNum={currentPage.toString()} totalPages={totalPages.toString()} className='dark:text-dark-mode-text-1 whitespace-nowrap text-heading-3' />
+                    <PageCounter
+                        pageNum={counterPageNum}
+                        totalPages={counterTotal}
+                        caption={counterCaption}
+                        className="dark:text-dark-mode-text-1 whitespace-nowrap text-heading-3"
+                    />
                     {/* Heading */}
                     <div className='flex flex-col flex-1 items-center text-center'>
                         <div className='dark:text-dark-mode-text-1 text-heading-3'>Hey, it's time to draw!</div>
                         <div className='dark:text-dark-mode-text-1 text-display-prompt'>{promptToDisplay}</div>
                         {isCanvasLocked && (
-                            <p className="text-body dark:text-dark-mode-text-2 text-gray-600 mt-2 max-w-md">
+                            <p className="text-body mt-2 max-w-md text-gray-600 dark:text-dark-mode-text-2">
                                 Waiting for other players. You&apos;ll continue automatically when everyone is done.
                             </p>
                         )}
@@ -508,7 +526,7 @@ const DrawingPage: React.FC = () => {
             </Container>
             {/* Tool size indicators */}
             <div className="flex w-full max-w-[900px] flex-col items-stretch justify-between gap-4 px-1 sm:flex-row sm:items-center sm:px-2">
-                <div className="flex flex-row gap-2 bg-mid-grey rounded-lg px-[20px] py-[15px] border border-dark-grey">
+                <div className="flex flex-row gap-2 rounded-lg border border-dark-grey bg-mid-grey px-[20px] py-[15px] dark:border-dark-mode-border dark:bg-zinc-800">
                     {sizes.map((size) => (
                         <ToolSizeIndicator
                             key={size}

@@ -76,6 +76,8 @@ export interface LobbyRoomStateResponse {
   workFlipbookId?: string | null;
   /** Caption / last guess line for the drawing step (when applicable). */
   workFlipbookDrawFromText?: string | null;
+  /** Players finished for the current prompt / draw / guess step (denominator = total players). */
+  phaseProgress?: { submitted: number; expected: number };
   counts?: {
     submittedDrawings: number;
     expectedDrawings: number;

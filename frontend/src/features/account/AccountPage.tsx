@@ -281,15 +281,19 @@ const AccountPage: React.FC = () => {
           <h1 className="text-heading-1 break-words">{displayName}</h1>
           <div className="mt-2 grid w-full max-w-xl grid-cols-1 gap-6 sm:grid-cols-3">
             <div className="rounded-md border border-dark-grey bg-white px-4 py-3">
-              <div className="text-xs uppercase tracking-wide text-gray-500">Games played</div>
+              <div className="text-xs uppercase tracking-wide text-gray-500 dark:text-dark-mode-text-2">
+                Games played
+              </div>
               <div className="text-2xl font-semibold text-brand-charcoal">{stats.gamesPlayed}</div>
             </div>
             <div className="rounded-md border border-dark-grey bg-white px-4 py-3">
-              <div className="text-xs uppercase tracking-wide text-gray-500">Wins</div>
+              <div className="text-xs uppercase tracking-wide text-gray-500 dark:text-dark-mode-text-2">Wins</div>
               <div className="text-2xl font-semibold text-brand-charcoal">{stats.wins}</div>
             </div>
             <div className="rounded-md border border-dark-grey bg-white px-4 py-3">
-              <div className="text-xs uppercase tracking-wide text-gray-500">Votes received</div>
+              <div className="text-xs uppercase tracking-wide text-gray-500 dark:text-dark-mode-text-2">
+                Votes received
+              </div>
               <div className="text-2xl font-semibold text-brand-charcoal">{stats.votes}</div>
             </div>
           </div>
@@ -344,9 +348,11 @@ const AccountPage: React.FC = () => {
                         {item.title?.trim() || item.prompt}
                       </div>
                       {item.title?.trim() ? (
-                        <div className="mt-1 line-clamp-2 text-sm text-gray-600">{item.prompt}</div>
+                        <div className="mt-1 line-clamp-2 text-sm text-gray-600 dark:text-dark-mode-text-2">
+                            {item.prompt}
+                        </div>
                       ) : null}
-                      <div className="mt-2 text-xs text-gray-500">
+                      <div className="mt-2 text-xs text-gray-500 dark:text-dark-mode-text-2">
                         Saved {new Date(item.createdAt).toLocaleString()}
                       </div>
                     </div>

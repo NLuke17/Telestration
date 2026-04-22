@@ -32,10 +32,10 @@ function SketchStillFrame({
       return;
     }
     if (!paths?.length) {
-      c.clearCanvas();
+      c.resetCanvas();
       return;
     }
-    c.clearCanvas();
+    c.resetCanvas();
     c.loadPaths(paths);
   }, [paths, drawingData, replayKey]);
 
@@ -123,7 +123,7 @@ const SavedFlipbookPreview: React.FC<Props> = ({ savedId }) => {
   if (loadError) {
     return (
       <div
-        className="mx-auto rounded-md border border-dashed border-gray-300 bg-slate-50 flex items-center justify-center text-center text-[11px] text-gray-500 px-2"
+        className="mx-auto flex items-center justify-center rounded-md border border-dashed border-gray-300 bg-slate-50 px-2 text-center text-[11px] text-gray-500 dark:border-zinc-600 dark:bg-zinc-900 dark:text-dark-mode-text-2"
         style={{ width: VIEW_W, height: VIEW_H }}
       >
         Preview unavailable
@@ -134,7 +134,7 @@ const SavedFlipbookPreview: React.FC<Props> = ({ savedId }) => {
   if (!data) {
     return (
       <div
-        className="mx-auto rounded-md border border-light-grey bg-slate-50 animate-pulse"
+        className="mx-auto animate-pulse rounded-md border border-light-grey bg-slate-50 dark:border-dark-mode-border dark:bg-zinc-900"
         style={{ width: VIEW_W, height: VIEW_H }}
       />
     );
@@ -145,19 +145,23 @@ const SavedFlipbookPreview: React.FC<Props> = ({ savedId }) => {
 
   return (
     <div
-      className="mx-auto flex w-full max-w-[200px] flex-col items-stretch overflow-hidden rounded-md border border-dark-grey bg-white"
+      className="mx-auto flex w-full max-w-[200px] flex-col items-stretch overflow-hidden rounded-md border border-dark-grey bg-white dark:border-dark-mode-border dark:bg-gray-950"
       aria-live="polite"
     >
-      <div className="flex flex-col border-b border-light-grey bg-slate-50 px-2 py-1.5">
-        <span className="text-[10px] font-medium uppercase tracking-wide text-gray-500">Prompt</span>
-        <p className="text-center text-[11px] leading-snug text-brand-charcoal line-clamp-4">{promptText}</p>
+      <div className="flex flex-col border-b border-light-grey bg-slate-50 px-2 py-1.5 dark:border-dark-mode-border dark:bg-zinc-900/80">
+        <span className="text-[10px] font-medium uppercase tracking-wide text-gray-500 dark:text-dark-mode-text-2">
+          Prompt
+        </span>
+        <p className="line-clamp-4 text-center text-[11px] leading-snug text-brand-charcoal dark:text-dark-mode-text-1">
+          {promptText}
+        </p>
       </div>
-      <div className="flex flex-col items-center bg-white py-2">
+      <div className="flex flex-col items-center bg-white py-2 dark:bg-gray-950">
         {hasDrawings && current ? (
           <SketchStillFrame drawingData={current.drawingData} replayKey={drawingIndex} />
         ) : (
           <div
-            className="mx-auto flex items-center justify-center rounded-sm border border-dashed border-gray-200 px-2 text-center text-[11px] text-gray-500"
+            className="mx-auto flex items-center justify-center rounded-sm border border-dashed border-gray-200 px-2 text-center text-[11px] text-gray-500 dark:border-zinc-600 dark:text-dark-mode-text-2"
             style={{ width: VIEW_W, height: VIEW_H }}
           >
             No drawings
@@ -165,11 +169,11 @@ const SavedFlipbookPreview: React.FC<Props> = ({ savedId }) => {
         )}
       </div>
       {hasDrawings ? (
-        <div className="flex flex-col items-center gap-0.5 border-t border-light-grey bg-slate-50 px-2 py-1.5 text-center">
-          <span className="text-[10px] uppercase tracking-wide text-gray-500">
+        <div className="flex flex-col items-center gap-0.5 border-t border-light-grey bg-slate-50 px-2 py-1.5 text-center dark:border-dark-mode-border dark:bg-zinc-900/80">
+          <span className="text-[10px] uppercase tracking-wide text-gray-500 dark:text-dark-mode-text-2">
             {current?.authorUsername ?? '—'}
           </span>
-          <span className="text-[10px] text-gray-600">
+          <span className="text-[10px] text-gray-600 dark:text-dark-mode-text-2">
             {drawingIndex + 1} / {drawings.length}
           </span>
         </div>

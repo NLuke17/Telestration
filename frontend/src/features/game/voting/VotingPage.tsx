@@ -239,28 +239,30 @@ const VotingPage: React.FC = () => {
                                 }}
                                 className={`flex flex-col gap-2 rounded-lg border-2 p-3 text-left transition-colors ${
                                     isMine
-                                        ? 'cursor-not-allowed border-gray-200 bg-gray-100 opacity-70'
+                                        ? 'cursor-not-allowed border-gray-200 bg-gray-100 opacity-70 dark:border-zinc-600 dark:bg-zinc-900'
                                         : isSelected
                                           ? 'border-charcoal bg-blue-50 dark:border-dark-mode-border dark:bg-indigo-50'
-                                          : 'border-dark-grey bg-white hover:border-charcoal dark:hover:border-dark-mode-border'
+                                          : 'border-dark-grey bg-white hover:border-charcoal dark:bg-gray-950 dark:hover:border-dark-mode-border'
                                 }`}
                             >
                                 <div className="flex items-center justify-between gap-2">
-                                    <span className="text-base font-semibold text-brand-charcoal">
+                                    <span className="text-base font-semibold text-brand-charcoal dark:text-dark-mode-text-1">
                                         {c.authorUsername}
                                     </span>
-                                    <span className="shrink-0 text-xs text-gray-500">{c.votes} votes</span>
+                                    <span className="shrink-0 text-xs text-gray-500 dark:text-dark-mode-text-2">
+                                        {c.votes} votes
+                                    </span>
                                 </div>
                                 <div className="rounded-md border border-dark-grey/80 bg-sky-50/90 dark:bg-indigo-50/90 dark:border-dark-mode-border px-2.5 py-2">
-                                    <div className="text-[10px] font-semibold uppercase tracking-wide text-gray-500">
+                                    <div className="text-[10px] font-semibold uppercase tracking-wide text-gray-500 dark:text-dark-mode-text-2">
                                         Prompt
                                     </div>
-                                    <div className="mt-0.5 line-clamp-4 text-sm font-medium leading-snug text-brand-charcoal">
+                                    <div className="mt-0.5 line-clamp-4 text-sm font-medium leading-snug text-brand-charcoal dark:text-dark-mode-text-1">
                                         {c.prompt}
                                     </div>
                                 </div>
                                 <div className="rounded-md border border-dark-grey/80 bg-sky-50/60 dark:bg-indigo-50/60 px-2 py-1.5">
-                                    <div className="text-[10px] font-semibold uppercase tracking-wide text-gray-500">
+                                    <div className="text-[10px] font-semibold uppercase tracking-wide text-gray-500 dark:text-dark-mode-text-2">
                                         Final drawing
                                     </div>
                                     <div className="mt-1 flex justify-center">
@@ -273,7 +275,9 @@ const VotingPage: React.FC = () => {
                                                 replayNonce={c.id.length}
                                             />
                                         ) : (
-                                            <span className="py-4 text-xs text-gray-500">No drawing</span>
+                                            <span className="py-4 text-xs text-gray-500 dark:text-dark-mode-text-2">
+                                                No drawing
+                                            </span>
                                         )}
                                     </div>
                                 </div>

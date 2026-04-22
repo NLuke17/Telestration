@@ -282,7 +282,7 @@ const RecapPage: React.FC = () => {
                     width="900px"
                     height="auto"
                     padding="2em"
-                    className="flex flex-col gap-6 border-2 border-dark-grey rounded-lg bg-white shadow-xl min-h-[480px]"
+                    className="flex min-h-[480px] flex-col gap-6 rounded-lg border-2 border-dark-grey shadow-xl"
                 >
                     <div className="flex justify-between items-center gap-4 flex-wrap">
                         <h1 className="text-heading-1 text-light-mode-text-1 dark:text-dark-mode-text-1">Flipbook recap</h1>
@@ -294,7 +294,7 @@ const RecapPage: React.FC = () => {
                     <h2 className="text-heading-2 text-light-mode-text-1 dark:text-dark-mode-text-2">{title}</h2>
 
                     {!isHost && (
-                        <p className="text-body text-gray-600 bg-gray-50 border border-dark-grey rounded-lg px-4 py-2">
+                        <p className="text-body rounded-lg border border-dark-grey bg-gray-50 px-4 py-2 text-gray-600 dark:bg-slate-900/80 dark:text-dark-mode-text-2">
                             The host controls this recap. Everyone sees the same cards at the same time.
                         </p>
                     )}
@@ -321,24 +321,30 @@ const RecapPage: React.FC = () => {
                             if (entry.kind === 'prompt') {
                                 return (
                                     <div key={`p-${i}`} className="rounded-lg border border-dark-grey p-4 bg-sky-50 dark:bg-indigo-50">
-                                        <div className="text-xs uppercase text-gray-500">Prompt</div>
-                                        <div className="text-heading-3">{entry.text}</div>
+                                        <div className="text-xs uppercase text-gray-500 dark:text-dark-mode-text-2">
+                                            Prompt
+                                        </div>
+                                        <div className="text-heading-3 text-light-mode-text-1 dark:text-dark-mode-text-1">
+                                            {entry.text}
+                                        </div>
                                     </div>
                                 );
                             }
                             if (entry.kind === 'guess') {
                                 return (
                                     <div key={entry.id} className="rounded-lg border border-dark-grey p-4 bg-sky-50 dark:bg-indigo-50">
-                                        <div className="text-xs uppercase text-gray-500">
+                                        <div className="text-xs uppercase text-gray-500 dark:text-dark-mode-text-2">
                                             Guess — {entry.authorUsername}
                                         </div>
-                                        <div className="text-body">{entry.text}</div>
+                                        <div className="text-body text-light-mode-text-1 dark:text-dark-mode-text-1">
+                                            {entry.text}
+                                        </div>
                                     </div>
                                 );
                             }
                             return (
                                 <div key={`${entry.id}-${flipbookIndex}-${entryCount}`} className="rounded-lg border border-dark-grey p-4 bg-sky-50 dark:bg-indigo-50">
-                                    <div className="text-xs uppercase text-gray-500">
+                                    <div className="text-xs uppercase text-gray-500 dark:text-dark-mode-text-2">
                                         Drawing — {entry.authorUsername}
                                     </div>
                                     <div className="mt-3 flex justify-center">
@@ -363,7 +369,7 @@ const RecapPage: React.FC = () => {
                                 disabled={isComplete}
                             />
                         ) : (
-                            <span className="text-body text-gray-500" />
+                            <span className="text-body text-gray-500 dark:text-dark-mode-text-2" />
                         )}
                     </div>
                 </Container>
@@ -371,21 +377,21 @@ const RecapPage: React.FC = () => {
 
             {currentFlipbookFullyRevealed && (
                 <div
-                    className="fixed bottom-0 left-0 right-0 z-50 border-t border-dark-grey bg-slate-50 shadow-[0_-4px_16px_rgba(0,0,0,0.06)]"
+                    className="fixed bottom-0 left-0 right-0 z-50 border-t border-dark-grey bg-slate-50 shadow-[0_-4px_16px_rgba(0,0,0,0.06)] dark:border-dark-mode-border dark:bg-gray-900 dark:shadow-[0_-4px_16px_rgba(0,0,0,0.35)]"
                     style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}
                 >
                     <div className="mx-auto flex w-full max-w-[900px] items-center gap-2 overflow-x-auto px-3 py-2">
                         {!isAuthenticated ? (
-                            <p className="min-w-0 flex-1 text-xs leading-snug text-gray-600">
-                                <span className="font-semibold text-gray-800">Save to library</span>
-                                <span className="text-gray-400"> · </span>
+                            <p className="min-w-0 flex-1 text-xs leading-snug text-gray-600 dark:text-dark-mode-text-2">
+                                <span className="font-semibold text-gray-800 dark:text-dark-mode-text-1">Save to library</span>
+                                <span className="text-gray-400 dark:text-dark-mode-text-2/70"> · </span>
                                 Sign in to keep a copy (up to {maxSaved}).
                             </p>
                         ) : (
                             <>
-                                <span className="shrink-0 text-xs text-gray-600">
-                                    <span className="font-semibold text-gray-800">Save to library</span>
-                                    <span className="text-gray-400"> · </span>
+                                <span className="shrink-0 text-xs text-gray-600 dark:text-dark-mode-text-2">
+                                    <span className="font-semibold text-gray-800 dark:text-dark-mode-text-1">Save to library</span>
+                                    <span className="text-gray-400 dark:text-dark-mode-text-2/70"> · </span>
                                     {savedLibrary.length}/{maxSaved} used
                                     {alreadySavedThis
                                         ? ' · Already saved'
@@ -403,7 +409,7 @@ const RecapPage: React.FC = () => {
                                             placeholder="Optional title"
                                             aria-label="Optional title for saved flipbook"
                                             disabled={saveBusy}
-                                            className="min-w-[6rem] flex-1 border-2 border-light-grey rounded-md px-2 py-1.5 text-sm outline-none transition-colors focus:border-charcoal disabled:cursor-not-allowed disabled:opacity-50 sm:max-w-[min(20rem,40vw)]"
+                                            className="min-w-[6rem] flex-1 rounded-md border-2 border-light-grey bg-white px-2 py-1.5 text-sm text-light-mode-text-1 outline-none transition-colors focus:border-charcoal disabled:cursor-not-allowed disabled:opacity-50 dark:border-dark-mode-border dark:bg-slate-950 dark:text-dark-mode-text-1 sm:max-w-[min(20rem,40vw)]"
                                         />
                                         <Button
                                             label={saveBusy ? 'Saving…' : 'Save'}
@@ -415,7 +421,7 @@ const RecapPage: React.FC = () => {
                                 )}
                                 {atLibraryLimit && !alreadySavedThis && (
                                     <span
-                                        className="min-w-0 max-w-[min(16rem,42vw)] truncate text-xs text-gray-500"
+                                            className="min-w-0 max-w-[min(16rem,42vw)] truncate text-xs text-gray-500 dark:text-dark-mode-text-2"
                                         title="Remove a save in your account to add this one."
                                     >
                                         Remove a save in your account to add this one.
@@ -423,7 +429,7 @@ const RecapPage: React.FC = () => {
                                 )}
                                 {saveMessage && (
                                     <span
-                                        className={`max-w-[min(14rem,38vw)] shrink-0 truncate text-xs ${saveMessage.startsWith('Saved') ? 'text-emerald-700' : 'text-red-600'
+                                        className={`max-w-[min(14rem,38vw)] shrink-0 truncate text-xs ${saveMessage.startsWith('Saved') ? 'text-emerald-700 dark:text-emerald-300' : 'text-red-600 dark:text-red-400'
                                             }`}
                                         title={saveMessage}
                                     >

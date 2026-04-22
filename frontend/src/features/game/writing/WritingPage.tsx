@@ -383,12 +383,25 @@ const WritingPage: React.FC = () => {
         );
     }
 
-    const currentPage =
-        gameState.chainWave != null && gameState.maxChainWave != null && gameState.maxChainWave > 0
-            ? Math.min(gameState.chainWave, gameState.maxChainWave)
-            : gameState.roundNumber || 1;
-    const totalPages =
-        gameState.maxChainWave != null && gameState.maxChainWave > 0 ? gameState.maxChainWave : 4;
+    const playerTotal = lobby?.players.length ?? 0;
+    const pp = gameState.phaseProgress;
+    const counterPageNum = pp
+        ? String(pp.submitted)
+        : String(
+              gameState.chainWave != null && playerTotal > 0
+                  ? Math.min(gameState.chainWave + 1, playerTotal)
+                  : gameState.roundNumber || 1
+          );
+    const counterTotal = pp
+        ? String(pp.expected)
+        : String(
+              playerTotal > 0
+                  ? playerTotal
+                  : gameState.maxChainWave != null && gameState.maxChainWave > 0
+                    ? gameState.maxChainWave + 1
+                    : 4
+          );
+    const counterCaption = pp ? 'Submitted' : undefined;
 
     const latestDrawing = !isInitialPrompt ? assignment.latestDrawingData : null;
     const isInputLocked = hasFinishedSubmit && !allowLocalEdit;
@@ -407,8 +420,9 @@ const WritingPage: React.FC = () => {
             >
                 <div className="flex w-full flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                     <PageCounter
-                        pageNum={currentPage.toString()}
-                        totalPages={totalPages.toString()}
+                        pageNum={counterPageNum}
+                        totalPages={counterTotal}
+                        caption={counterCaption}
                         className="text-heading-3 dark:text-dark-mode-text-1"
                     />
                     <TimerDisplay
@@ -423,7 +437,7 @@ const WritingPage: React.FC = () => {
                     </div>
 
                     {isInputLocked && (
-                        <p className="text-body text-center text-gray-600">
+                        <p className="text-body text-center text-gray-600 dark:text-dark-mode-text-2">
                             Waiting for other players. You&apos;ll continue automatically when everyone is done.
                         </p>
                     )}
@@ -431,7 +445,9 @@ const WritingPage: React.FC = () => {
 
                 {!isInitialPrompt && latestDrawing && (
                     <div className="flex flex-col gap-2 w-full">
-                        <div className="text-xs uppercase text-gray-500">Drawing to describe</div>
+                        <div className="text-xs uppercase text-gray-500 dark:text-dark-mode-text-2">
+                            Drawing to describe
+                        </div>
                         <AnimatedSketchDisplay
                             drawingData={latestDrawing}
                             width="100%"

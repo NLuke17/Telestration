@@ -12,9 +12,12 @@ export default function ToolButton ({
     onClick,
     ...buttonProps
 }: ToolButtonProps) {
-    const baseStyles = "w-[40px] aspect-square flex justify-center rounded-md"
-    const activeStyles = "bg-dark-grey text-white shadow-inner scale-95"
-    const defaultStyles = "bg-transparent text-slate-600 hover:bg-light-grey"
+    const baseStyles =
+        'flex aspect-square w-[40px] items-center justify-center rounded-md transition-colors'
+    const activeStyles =
+        'scale-95 bg-dark-grey text-white shadow-inner dark:bg-zinc-500 dark:text-white'
+    const defaultStyles =
+        'bg-transparent text-slate-600 hover:bg-light-grey dark:text-dark-mode-text-1 dark:hover:bg-zinc-800/90'
     return (
         <button 
             type={type}

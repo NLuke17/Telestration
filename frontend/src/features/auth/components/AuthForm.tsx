@@ -11,7 +11,6 @@ interface AuthFormProps {
 const AuthForm: React.FC<AuthFormProps> = ({ mode = 'login' }) => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
-    const [profilePicture, setProfilePicture] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     
@@ -37,11 +36,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode = 'login' }) => {
 
         try {
             if (mode === 'signup') {
-                await signup({ 
-                    username, 
-                    password, 
-                    profilePicture: profilePicture || undefined 
-                });
+                await signup({ username, password });
             } else {
                 await login({ username, password });
             }
@@ -97,18 +92,6 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode = 'login' }) => {
                         required={true}
                     />
                 </div>
-                {mode === 'signup' && (
-                    <div className='flex flex-col'>
-                        <InputField
-                            id='profilePicture'
-                            label="Profile Picture URL (Optional)"
-                            placeholder="https://example.com/avatar.jpg"
-                            value={profilePicture}
-                            onChange={setProfilePicture}
-                            disabled={isLoading}
-                        />
-                    </div>
-                )}
                 <Button
                     label={isLoading ? 'Please wait...' : (mode === 'signup' ? 'Sign Up' : 'Login')}
                     type="submit"
