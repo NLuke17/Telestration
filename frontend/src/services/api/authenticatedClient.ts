@@ -4,7 +4,7 @@
  */
 
 import { resolveApiBaseUrl, withApiPrefix } from '../../config/runtimeUrls';
-import { HttpError } from './httpClient';
+import { HttpError, type ApiError } from './httpClient';
 import { rotateSessionTokensFromRefresh } from './tokenRefresh';
 import { AUTH_LOGOUT_REQUIRED_EVENT } from './authEvents';
 
@@ -61,13 +61,14 @@ async function authenticatedRequest<T>(
   try {
     const response = await fetch(url, config);
 
-    // Parse JSON response
-    let data: any;
-    try {
-      data = await response.json();
-    } catch {
-      // If response is not JSON, use text
-      data = await response.text();
+    const raw = await response.text();
+    let data: unknown = raw;
+    if (raw.length > 0) {
+      try {
+        data = JSON.parse(raw) as unknown;
+      } catch {
+        /* leave as raw string (e.g. HTML error page) */
+      }
     }
 
     if (!response.ok) {
@@ -81,7 +82,7 @@ async function authenticatedRequest<T>(
         }
         window.dispatchEvent(new Event(AUTH_LOGOUT_REQUIRED_EVENT));
       }
-      throw new HttpError(response.status, response.statusText, data);
+      throw new HttpError(response.status, response.statusText, data as ApiError | undefined);
     }
 
     return data as T;

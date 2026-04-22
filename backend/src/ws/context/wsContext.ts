@@ -1,4 +1,4 @@
-import { WebSocketServer } from 'ws';
+import type { WebSocketServer } from 'ws';
 import { getLobbyRegistry } from '../state/lobbyRegistry';
 import { getPresenceTracker } from '../state/presenceTracker';
 import { PromptTracker } from '../state/promptTracker';

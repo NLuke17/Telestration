@@ -176,7 +176,8 @@ export async function saveFlipbookToLibrary(
 
 /**
  * Remove a flipbook from the signed-in user's library (requires JWT).
+ * Uses POST with JSON body so the id is not embedded in a multi-segment path (avoids proxy/router ambiguity).
  */
 export async function deleteSavedFlipbook(savedId: string): Promise<void> {
-  await authenticatedClient.delete<{ ok: boolean }>(`/game/saved-flipbooks/${savedId}`);
+  await authenticatedClient.post<{ ok: boolean }>('/game/saved-flipbook/remove', { savedId });
 }

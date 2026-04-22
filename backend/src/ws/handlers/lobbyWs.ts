@@ -1,4 +1,4 @@
-import { WebSocket } from 'ws';
+import type { WebSocket } from 'ws';
 import { WSContext } from '../context/wsContext';
 import { ClientConn, createClientConn, setLobby } from '../core/clientConn';
 import { send, broadcast } from '../core/wsUtils';

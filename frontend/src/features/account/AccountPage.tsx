@@ -20,7 +20,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import lightBg from '../../assets/lightmode.jpg';
 import darkBg from '../../assets/darkmode.jpg';
 import ColorModeButton from '../../components/common/ColorModeButton';
-import { PiMoonStars } from 'react-icons/pi';
+import { PiMoonStars, PiTrash } from 'react-icons/pi';
 
 function sanitizeFilenameBase(name: string): string {
   return name.replace(/[^\w\s-]/g, '').replace(/\s+/g, '-').slice(0, 80) || 'flipbook';
@@ -194,8 +194,14 @@ const AccountPage: React.FC = () => {
     try {
       await deleteSavedFlipbook(item.id);
       setSavedList((prev) => prev.filter((s) => s.id !== item.id));
-    } catch {
-      setDeleteMessage('Could not delete that flipbook. Try again in a moment.');
+    } catch (err: unknown) {
+      const msg =
+        err instanceof HttpError
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : 'Could not delete that flipbook. Try again in a moment.';
+      setDeleteMessage(msg);
     } finally {
       setDeletingId(null);
     }
@@ -309,8 +315,19 @@ const AccountPage: React.FC = () => {
               {savedList.map((item) => (
                 <li
                   key={item.id}
-                  className="flex min-w-0 flex-col items-center gap-3 rounded-lg border border-dark-grey bg-white p-3"
+                  className="relative flex min-w-0 flex-col items-center gap-3 rounded-lg border border-dark-grey bg-white p-3 pt-10"
                 >
+                  <button
+                    type="button"
+                    className="absolute right-2 top-2 z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-red-200 bg-white text-red-600 shadow-sm hover:bg-red-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500 disabled:cursor-not-allowed disabled:border-gray-300 disabled:bg-gray-100 disabled:text-gray-400 dark:border-red-800 dark:bg-zinc-900 dark:text-red-400 dark:hover:bg-red-950/50 dark:disabled:border-zinc-600 dark:disabled:bg-zinc-800 dark:disabled:text-zinc-500"
+                    aria-label={
+                      deletingId === item.id ? 'Deleting saved flipbook' : 'Delete saved flipbook from library'
+                    }
+                    disabled={downloadingId !== null || deletingId !== null}
+                    onClick={() => void handleDeleteSaved(item)}
+                  >
+                    <PiTrash size={18} aria-hidden />
+                  </button>
                   <SavedFlipbookPreview savedId={item.id} />
                   <div className="flex w-full min-w-0 flex-col items-center gap-2 px-1 text-center">
                     <div className="min-w-0">
@@ -324,22 +341,12 @@ const AccountPage: React.FC = () => {
                         Saved {new Date(item.createdAt).toLocaleString()}
                       </div>
                     </div>
-                    <div className="flex w-full flex-col items-stretch gap-2 sm:flex-row sm:justify-center">
-                      <Button
-                        type="button"
-                        label={downloadingId === item.id ? 'Building GIF…' : 'Download as GIF'}
-                        disabled={downloadingId !== null || deletingId !== null}
-                        onClick={() => void handleDownloadGif(item)}
-                      />
-                      <Button
-                        type="button"
-                        variant="image"
-                        label={deletingId === item.id ? 'Deleting…' : 'Delete from library'}
-                        className="border border-red-600 bg-white px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-50 disabled:border-gray-400 disabled:bg-gray-400 disabled:text-white dark:border-red-400 dark:bg-transparent dark:text-red-300 dark:hover:bg-red-950/40 dark:disabled:border-gray-500 dark:disabled:bg-gray-500"
-                        disabled={downloadingId !== null || deletingId !== null}
-                        onClick={() => void handleDeleteSaved(item)}
-                      />
-                    </div>
+                    <Button
+                      type="button"
+                      label={downloadingId === item.id ? 'Building GIF…' : 'Download as GIF'}
+                      disabled={downloadingId !== null || deletingId !== null}
+                      onClick={() => void handleDownloadGif(item)}
+                    />
                   </div>
                 </li>
               ))}

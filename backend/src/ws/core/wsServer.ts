@@ -1,4 +1,5 @@
-import { WebSocketServer, WebSocket } from 'ws';
+import ws from 'ws';
+import type { WebSocket, WebSocketServer } from 'ws';
 import { Server } from 'http';
 import { WS_MAX_PAYLOAD_BYTES, WS_HEARTBEAT_INTERVAL_MS } from '../../config/constants';
 import { logInfo, logError } from '../../utils/logger';
@@ -10,7 +11,7 @@ export interface WSServerConfig {
 }
 
 export function createWSS(config: WSServerConfig): WebSocketServer {
-  const wss = new WebSocketServer({
+  const wss = new ws.WebSocketServer({
     server: config.server,
     path: config.path || '/ws',
     maxPayload: config.maxPayload || WS_MAX_PAYLOAD_BYTES,
@@ -22,12 +23,12 @@ export function createWSS(config: WSServerConfig): WebSocketServer {
 
 export function installHeartbeat(wss: WebSocketServer): () => void {
   const interval = setInterval(() => {
-    wss.clients.forEach((ws: WebSocket & { isAlive?: boolean }) => {
-      if (ws.isAlive === false) {
-        return ws.terminate();
+    wss.clients.forEach((socket: WebSocket & { isAlive?: boolean }) => {
+      if (socket.isAlive === false) {
+        return socket.terminate();
       }
-      ws.isAlive = false;
-      ws.ping();
+      socket.isAlive = false;
+      socket.ping();
     });
   }, WS_HEARTBEAT_INTERVAL_MS);
 
@@ -41,8 +42,8 @@ export function installHeartbeat(wss: WebSocketServer): () => void {
 }
 
 export function installConnectionGuards(wss: WebSocketServer): void {
-  wss.on('connection', (ws: WebSocket) => {
-    ws.on('error', (error) => {
+  wss.on('connection', (client: WebSocket) => {
+    client.on('error', (error: Error) => {
       logError('WebSocket error', { error: error.message });
     });
   });

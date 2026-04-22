@@ -70,16 +70,22 @@ export const saveFlipbookToLibrarySchema = z.object({
   }),
 });
 
-// GET /game/saved-flipbooks/:savedId/presentation
-export const getSavedFlipbookPresentationSchema = z.object({
+/** Express may surface dynamic params as string or string[] — normalize before UUID check. */
+const savedFlipbookIdParamsSchema = z.object({
   params: z.object({
-    savedId: uuidSchema,
+    savedId: z.preprocess(
+      (v) => (Array.isArray(v) ? v[0] : v),
+      uuidSchema
+    ),
   }),
 });
 
-// DELETE /game/saved-flipbooks/:savedId
-export const deleteSavedFlipbookSchema = z.object({
-  params: z.object({
+// GET /game/saved-flipbooks/:savedId/presentation
+export const getSavedFlipbookPresentationSchema = savedFlipbookIdParamsSchema;
+
+// POST /game/saved-flipbook/remove — singular path avoids router/proxy confusion with /saved-flipbooks/*
+export const deleteSavedFlipbookBodySchema = z.object({
+  body: z.object({
     savedId: uuidSchema,
   }),
 });

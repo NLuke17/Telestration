@@ -9,7 +9,7 @@ import {
   getFlipbookPresentationSchema,
   saveFlipbookToLibrarySchema,
   getSavedFlipbookPresentationSchema,
-  deleteSavedFlipbookSchema,
+  deleteSavedFlipbookBodySchema,
 } from '../validation/game.validation';
 import {
   submitDrawing,
@@ -146,6 +146,23 @@ router.get('/saved-flipbooks', authenticateJWT, async (req: AuthRequest, res) =>
   }
 });
 
+router.post(
+  '/saved-flipbook/remove',
+  authenticateJWT,
+  validate(deleteSavedFlipbookBodySchema),
+  async (req: AuthRequest, res) => {
+    try {
+      const savedId = (req.body as { savedId: string }).savedId;
+      const ownerId = req.user?.userId as string;
+      await deleteSavedFlipbookForOwner(ownerId, savedId);
+      return res.json({ ok: true });
+    } catch (e: any) {
+      if (e.message === 'SAVED_FLIPBOOK_NOT_FOUND') return res.status(404).json({ error: 'Not found' });
+      return res.status(500).json({ error: 'Failed to delete saved flipbook' });
+    }
+  }
+);
+
 router.get(
   '/saved-flipbooks/:savedId/presentation',
   authenticateJWT,
@@ -159,23 +176,6 @@ router.get(
     } catch (e: any) {
       if (e.message === 'SAVED_FLIPBOOK_NOT_FOUND') return res.status(404).json({ error: 'Not found' });
       return res.status(500).json({ error: 'Failed to load saved flipbook' });
-    }
-  }
-);
-
-router.delete(
-  '/saved-flipbooks/:savedId',
-  authenticateJWT,
-  validate(deleteSavedFlipbookSchema),
-  async (req: AuthRequest, res) => {
-    try {
-      const savedId = typeof req.params.savedId === 'string' ? req.params.savedId : req.params.savedId[0];
-      const ownerId = req.user?.userId as string;
-      await deleteSavedFlipbookForOwner(ownerId, savedId);
-      return res.json({ ok: true });
-    } catch (e: any) {
-      if (e.message === 'SAVED_FLIPBOOK_NOT_FOUND') return res.status(404).json({ error: 'Not found' });
-      return res.status(500).json({ error: 'Failed to delete saved flipbook' });
     }
   }
 );
