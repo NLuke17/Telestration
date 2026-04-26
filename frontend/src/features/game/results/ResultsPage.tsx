@@ -132,7 +132,7 @@ const ResultsPage: React.FC = () => {
                             <div className="flex min-w-0 flex-1 flex-col gap-3">
                                 <div className="flex flex-wrap items-baseline justify-between gap-2">
                                     <span className="text-heading-3 dark:text-dark-mode-text-1">{r.authorUsername}</span>
-                                    <span className="text-body text-gray-600 dark:text-dark-mode-text-1">{r.voteCount} {r.voteCount > 1 ? 'votes' : 'vote'}</span>
+                                    <span className="text-body text-gray-600 dark:text-dark-mode-text-1">{r.voteCount} {r.voteCount === 1 ? 'votes' : 'vote'}</span>
                                 </div>
                                 <div className="rounded-md border border-dark-grey bg-sky-50 dark:bg-dark-mode-input-background/20 p-3">
                                     <div className="text-xs uppercase text-gray-500 dark:text-dark-mode-text-2">Prompt</div>

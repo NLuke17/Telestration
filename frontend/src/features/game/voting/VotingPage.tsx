@@ -220,7 +220,7 @@ const VotingPage: React.FC = () => {
                 </div>
                 <p className="text-sm leading-relaxed text-light-mode-text-1 dark:text-dark-mode-text-1">
                     Click someone else&apos;s flipbook to vote for them. Tap{' '}
-                    <span className="font-semibold">Done</span> when you&apos;re set. You can unlock and
+                    <span className="font-semibold">Vote</span> when you&apos;re set. You can unlock and
                     change your vote until the timer ends.
                 </p>
                 {error && <p className="text-body text-red-600">{error}</p>}
