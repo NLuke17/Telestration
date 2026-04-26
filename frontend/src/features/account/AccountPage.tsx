@@ -328,11 +328,11 @@ const AccountPage: React.FC = () => {
               {savedList.map((item) => (
                 <li
                   key={item.id}
-                  className="relative flex min-w-0 flex-col items-center gap-3 rounded-lg border border-dark-grey bg-white p-3 pt-10"
+                  className="relative flex min-w-0 flex-col items-center gap-3 rounded-lg border border-dark-grey bg-sky-50 dark:bg-dark-mode-input-background/20 p-3 pt-10"
                 >
                   <button
                     type="button"
-                    className="absolute right-2 top-2 z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-red-200 bg-white text-red-600 shadow-sm hover:bg-red-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500 disabled:cursor-not-allowed disabled:border-gray-300 disabled:bg-gray-100 disabled:text-gray-400 dark:border-red-800 dark:bg-zinc-900 dark:text-red-400 dark:hover:bg-red-950/50 dark:disabled:border-zinc-600 dark:disabled:bg-zinc-800 dark:disabled:text-zinc-500"
+                    className="absolute right-2 top-2 z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-red-200 bg-white text-red-600 shadow-sm hover:bg-red-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500 disabled:cursor-not-allowed disabled:border-gray-300 disabled:bg-gray-100 disabled:text-gray-400 dark:border-red-800 dark:bg-zinc-900 dark:text-red-400 dark:hover:bg-red-950 dark:disabled:border-zinc-600 dark:disabled:bg-zinc-800 dark:disabled:text-zinc-500"
                     aria-label={
                       deletingId === item.id ? 'Deleting saved flipbook' : 'Delete saved flipbook from library'
                     }
@@ -344,7 +344,7 @@ const AccountPage: React.FC = () => {
                   <SavedFlipbookPreview savedId={item.id} />
                   <div className="flex w-full min-w-0 flex-col items-center gap-2 px-1 text-center">
                     <div className="min-w-0">
-                      <div className="font-semibold text-brand-charcoal line-clamp-2">
+                      <div className="font-semibold text-brand-charcoal dark:text-dark-mode-text-1 line-clamp-2">
                         {item.title?.trim() || item.prompt}
                       </div>
                       {item.title?.trim() ? (
