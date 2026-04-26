@@ -136,7 +136,7 @@ const ResultsPage: React.FC = () => {
                                 </div>
                                 <div className="rounded-md border border-dark-grey bg-sky-50 dark:bg-dark-mode-input-background/20 p-3">
                                     <div className="text-xs uppercase text-gray-500 dark:text-dark-mode-text-2">Prompt</div>
-                                    <div className="text-body font-medium text-brand-charcoal dark:text-dark-mode-text-1">
+                                    <div className="text-body font-medium text-brand-charcoal dark:text-dark-mode-text-1 break-words">
                                         {r.prompt}
                                     </div>
                                 </div>
