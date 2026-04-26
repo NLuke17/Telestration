@@ -132,16 +132,16 @@ const ResultsPage: React.FC = () => {
                             <div className="flex min-w-0 flex-1 flex-col gap-3">
                                 <div className="flex flex-wrap items-baseline justify-between gap-2">
                                     <span className="text-heading-3 dark:text-dark-mode-text-1">{r.authorUsername}</span>
-                                    <span className="text-body text-gray-600 dark:text-dark-mode-text-1">{r.voteCount} votes</span>
+                                    <span className="text-body text-gray-600 dark:text-dark-mode-text-1">{r.voteCount} {r.voteCount > 1 ? 'votes' : 'vote'}</span>
                                 </div>
-                                <div className="rounded-md border border-dark-grey bg-sky-50 p-3">
-                                    <div className="text-xs uppercase text-gray-500">Prompt</div>
-                                    <div className="text-body font-medium text-brand-charcoal">
+                                <div className="rounded-md border border-dark-grey bg-sky-50 dark:bg-dark-mode-input-background/20 p-3">
+                                    <div className="text-xs uppercase text-gray-500 dark:text-dark-mode-text-2">Prompt</div>
+                                    <div className="text-body font-medium text-brand-charcoal dark:text-dark-mode-text-1">
                                         {r.prompt}
                                     </div>
                                 </div>
-                                <div className="rounded-md border border-dark-grey bg-sky-50 p-2">
-                                    <div className="text-xs uppercase text-gray-500">Final drawing</div>
+                                <div className="rounded-md border border-dark-grey bg-sky-50 dark:bg-dark-mode-input-background/20 p-2">
+                                    <div className="text-xs uppercase text-gray-500 dark:text-dark-mode-text-2">Final drawing</div>
                                     <div className="mt-2 flex justify-center">
                                         {r.finalDrawingData ? (
                                             <AnimatedSketchDisplay

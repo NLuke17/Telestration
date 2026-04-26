@@ -538,7 +538,7 @@ const DrawingPage: React.FC = () => {
             </Container>
             {/* Tool size indicators */}
             <div className="flex w-full max-w-[900px] flex-col items-stretch justify-between gap-4 px-1 sm:flex-row sm:items-center sm:px-2">
-                <div className="flex flex-row gap-2 rounded-lg border border-dark-grey bg-mid-grey px-[20px] py-[15px] dark:border-dark-mode-border dark:bg-zinc-800">
+                <div className="flex flex-row gap-2 rounded-lg border border-dark-grey bg-mid-grey px-[20px] py-[15px] dark:border-dark-mode-border dark:bg-dark-mode-input-background/20">
                     {sizes.map((size) => (
                         <ToolSizeIndicator
                             key={size}
