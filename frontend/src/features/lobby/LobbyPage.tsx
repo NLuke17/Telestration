@@ -18,6 +18,7 @@ import Tutorial from '../../components/common/Tutorial';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 
 const MIN_PLAYERS = 2;
+const MAX_PLAYERS = 8;
 
 const LobbyPage: React.FC = () => {
     const { theme } = useTheme();
@@ -310,7 +311,7 @@ const LobbyPage: React.FC = () => {
                     {/* Left: players */}
                     <div className="flex w-full shrink-0 flex-col gap-4 xl:w-64">
                         <h2 className="text-center text-lg font-bold text-light-mode-text-1 dark:text-dark-mode-text-2 w-full">
-                            Players ({playerCount}/{MIN_PLAYERS} min)
+                            Players {playerCount}/{MAX_PLAYERS} maximum
                         </h2>
                         <Container
                             width='100%'

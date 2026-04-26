@@ -219,8 +219,8 @@ const VotingPage: React.FC = () => {
                     />
                 </div>
                 <p className="text-sm leading-relaxed text-light-mode-text-1 dark:text-dark-mode-text-1">
-                    Pick someone else&apos;s flipbook — initial prompt and final drawing below. Tap{' '}
-                    <span className="font-semibold">Done</span> when you&apos;re set. You can unlock and
+                    Click someone else&apos;s flipbook to vote for them. Tap{' '}
+                    <span className="font-semibold">Vote</span> when you&apos;re set. You can unlock and
                     change your vote until the timer ends.
                 </p>
                 {error && <p className="text-body text-red-600">{error}</p>}
@@ -241,7 +241,7 @@ const VotingPage: React.FC = () => {
                                     isMine
                                         ? 'cursor-not-allowed border-gray-200 bg-gray-100 opacity-70 dark:border-zinc-600 dark:bg-zinc-900'
                                         : isSelected
-                                          ? 'border-charcoal bg-blue-50'
+                                          ? 'border-charcoal bg-blue-50 dark:bg-dark-mode-input-background/40 dark:border-dark-mode-border-2'
                                           : 'border-dark-grey bg-white hover:border-charcoal dark:bg-gray-950 dark:hover:border-dark-mode-border'
                                 }`}
                             >
@@ -253,16 +253,16 @@ const VotingPage: React.FC = () => {
                                         {c.votes} votes
                                     </span>
                                 </div>
-                                <div className="rounded-md border border-dark-grey/80 bg-sky-50/90 px-2.5 py-2">
-                                    <div className="text-[10px] font-semibold uppercase tracking-wide text-gray-500">
+                                <div className="rounded-md border border-dark-grey/80 bg-sky-50/90 dark:bg-dark-mode-input-background/20 px-2.5 py-2">
+                                    <div className="text-[10px] font-semibold uppercase tracking-wide text-gray-500 dark:text-dark-mode-text-2">
                                         Prompt
                                     </div>
-                                    <div className="mt-0.5 line-clamp-4 text-sm font-medium leading-snug text-brand-charcoal">
+                                    <div className="mt-0.5 line-clamp-4 text-sm font-medium leading-snug text-brand-charcoal dark:text-dark-mode-text-1">
                                         {c.prompt}
                                     </div>
                                 </div>
-                                <div className="rounded-md border border-dark-grey/80 bg-sky-50/60 px-2 py-1.5">
-                                    <div className="text-[10px] font-semibold uppercase tracking-wide text-gray-500">
+                                <div className="rounded-md border border-dark-grey/80 bg-sky-50/60 dark:bg-dark-mode-input-background/20 px-2 py-1.5">
+                                    <div className="text-[10px] font-semibold uppercase tracking-wide text-gray-500 dark:text-dark-mode-text-2">
                                         Final drawing
                                     </div>
                                     <div className="mt-1 flex justify-center">
@@ -275,7 +275,7 @@ const VotingPage: React.FC = () => {
                                                 replayNonce={c.id.length}
                                             />
                                         ) : (
-                                            <span className="py-4 text-xs text-gray-500">No drawing</span>
+                                            <span className="py-4 text-xs text-gray-500 dark:text-dark-mode-text-1">No drawing</span>
                                         )}
                                     </div>
                                 </div>
@@ -289,7 +289,7 @@ const VotingPage: React.FC = () => {
                     )}
                     {(!hasFinishedSubmit || allowLocalEdit) && (
                         <Button
-                            label={isSubmitting ? 'Submitting…' : 'Done'}
+                            label={isSubmitting ? 'Submitting…' : 'Vote'}
                             onClick={() => void submitVote()}
                             disabled={
                                 isSubmitting ||

@@ -53,6 +53,8 @@ const WritingPage: React.FC = () => {
     const handleSubmitRef = useRef<(opts?: { fromTimer?: boolean }) => Promise<void>>(async () => { });
     const timeUpAutoSubmitRef = useRef(false);
 
+    const MAX_CHARS = 200;
+
     useEffect(() => {
         if (gameState.phase === 'DRAWING' && roomCode) {
             navigate(`/game/${roomCode}/countdown?phase=DRAWING`, { replace: true });
@@ -388,19 +390,19 @@ const WritingPage: React.FC = () => {
     const counterPageNum = pp
         ? String(pp.submitted)
         : String(
-              gameState.chainWave != null && playerTotal > 0
-                  ? Math.min(gameState.chainWave + 1, playerTotal)
-                  : gameState.roundNumber || 1
-          );
+            gameState.chainWave != null && playerTotal > 0
+                ? Math.min(gameState.chainWave + 1, playerTotal)
+                : gameState.roundNumber || 1
+        );
     const counterTotal = pp
         ? String(pp.expected)
         : String(
-              playerTotal > 0
-                  ? playerTotal
-                  : gameState.maxChainWave != null && gameState.maxChainWave > 0
+            playerTotal > 0
+                ? playerTotal
+                : gameState.maxChainWave != null && gameState.maxChainWave > 0
                     ? gameState.maxChainWave + 1
                     : 4
-          );
+        );
     const counterCaption = pp ? 'Submitted' : undefined;
 
     const latestDrawing = !isInitialPrompt ? assignment.latestDrawingData : null;
@@ -468,8 +470,16 @@ const WritingPage: React.FC = () => {
                         value={sentence}
                         onChange={setSentence}
                         disabled={isInputLocked}
+                        maxLength={MAX_CHARS}
                         className="w-full flex-1"
                     />
+                    {/* Visual Counter */}
+                    <div className={`text-right text-xs mt-1 font-medium ${sentence.length >= MAX_CHARS
+                            ? 'text-red-500'
+                            : 'text-gray-500 dark:text-dark-mode-text-2'
+                        }`}>
+                        {sentence.length} / {MAX_CHARS}
+                    </div>
                     <div className="flex flex-row items-center gap-3 shrink-0">
                         {hasFinishedSubmit && !allowLocalEdit && (
                             <Button

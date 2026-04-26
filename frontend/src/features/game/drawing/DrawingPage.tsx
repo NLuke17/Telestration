@@ -383,19 +383,19 @@ const DrawingPage: React.FC = () => {
     const counterPageNum = pp
         ? String(pp.submitted)
         : String(
-              gameState.chainWave != null && playerTotal > 0
-                  ? Math.min(gameState.chainWave + 1, playerTotal)
-                  : gameState.roundNumber || 1
-          );
+            gameState.chainWave != null && playerTotal > 0
+                ? Math.min(gameState.chainWave + 1, playerTotal)
+                : gameState.roundNumber || 1
+        );
     const counterTotal = pp
         ? String(pp.expected)
         : String(
-              playerTotal > 0
-                  ? playerTotal
-                  : gameState.maxChainWave != null && gameState.maxChainWave > 0
+            playerTotal > 0
+                ? playerTotal
+                : gameState.maxChainWave != null && gameState.maxChainWave > 0
                     ? gameState.maxChainWave + 1
                     : 4
-          );
+        );
     const counterCaption = pp ? 'Submitted' : undefined;
 
     const isCanvasLocked = hasFinishedSubmit && !allowLocalEdit;
@@ -459,6 +459,7 @@ const DrawingPage: React.FC = () => {
                             const active = penNorm === toPickerHex(hex);
                             const isWhite = toPickerHex(hex) === '#FFFFFF';
                             return (
+                            
                                 <button
                                     key={hex}
                                     type="button"
@@ -469,11 +470,10 @@ const DrawingPage: React.FC = () => {
                                         canvasRef.current?.eraseMode(false);
                                         setSelectedTool('pen');
                                     }}
-                                    className={`flex aspect-square w-full max-w-[2.75rem] justify-self-center rounded-md border-2 p-0.5 transition-shadow md:max-w-[2.85rem] ${
-                                        active
-                                            ? 'border-indigo-500 ring-2 ring-indigo-400 ring-offset-1 ring-offset-white dark:ring-offset-gray-950'
-                                            : `border-dark-grey ${isWhite ? 'ring-1 ring-gray-300 dark:ring-gray-500' : ''}`
-                                    }`}
+                                    className={`flex aspect-square w-full max-w-[2.75rem] justify-self-center rounded-md border-2 p-0.5 transition-shadow md:max-w-[2.85rem] ${active
+                                        ? 'border-indigo-500 ring-2 ring-indigo-400 ring-offset-1 ring-offset-white dark:ring-offset-gray-950'
+                                        : `border-dark-grey ${isWhite ? 'ring-1 ring-gray-300 dark:ring-gray-500' : ''}`
+                                        }`}
                                 >
                                     <span
                                         className={`block h-full min-h-0 w-full rounded-sm border shadow-inner ${isWhite ? 'border-gray-300' : 'border-black/25'}`}
@@ -498,11 +498,10 @@ const DrawingPage: React.FC = () => {
                             aria-label="Custom color"
                             title="Custom color"
                             onClick={() => customColorInputRef.current?.click()}
-                            className={`flex aspect-square w-full max-w-[2.75rem] items-center justify-center justify-self-center rounded-md border-2 border-dark-grey bg-white text-brand-charcoal hover:bg-slate-50 dark:bg-gray-900 dark:text-dark-mode-text-1 dark:hover:bg-gray-800 md:max-w-[2.85rem] ${
-                                usesCustomColor
-                                    ? 'border-indigo-500 ring-2 ring-indigo-400 ring-offset-1 ring-offset-white dark:ring-offset-gray-950'
-                                    : ''
-                            }`}
+                            className={`flex aspect-square w-full max-w-[2.75rem] items-center justify-center justify-self-center rounded-md border-2 border-dark-grey bg-white text-brand-charcoal hover:bg-slate-50 dark:bg-gray-900 dark:text-dark-mode-text-1 dark:hover:bg-gray-800 md:max-w-[2.85rem] ${usesCustomColor
+                                ? 'border-indigo-500 ring-2 ring-indigo-400 ring-offset-1 ring-offset-white dark:ring-offset-gray-950'
+                                : ''
+                                }`}
                         >
                             <PiPalette size={22} aria-hidden />
                         </button>
@@ -519,6 +518,7 @@ const DrawingPage: React.FC = () => {
                     />
                     {/* Tools */}
                     <div className="flex flex-row flex-wrap justify-center gap-2 lg:flex-col lg:flex-nowrap lg:gap-1">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-dark-mode-text-2 ml-1">Drawing Tools</span>
                         <ToolButton key='undo' icon={<SlActionUndo size={30} />} aria-label="Undo" onClick={() => {
                             canvasRef.current?.undo()
                         }} />
@@ -538,18 +538,19 @@ const DrawingPage: React.FC = () => {
             </Container>
             {/* Tool size indicators */}
             <div className="flex w-full max-w-[900px] flex-col items-stretch justify-between gap-4 px-1 sm:flex-row sm:items-center sm:px-2">
-                <div className="flex flex-row gap-2 rounded-lg border border-dark-grey bg-mid-grey px-[20px] py-[15px] dark:border-dark-mode-border dark:bg-zinc-800">
-                    {sizes.map((size) => (
-                        <ToolSizeIndicator
-                            key={size}
-                            toolSize={size}
-                            variant={selectedSize === size ? 'active' : 'default'}
-                            onClick={() => {
-                                setSelectedSize(size);
-                            }}
-                        />
-                    ))}
-                </div>
+                    <div className="flex flex-row gap-2 rounded-lg border border-dark-grey bg-mid-grey px-[20px] py-[15px] dark:border-dark-mode-border dark:bg-dark-mode-input-background/20">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-dark-mode-text-2 ml-1">Brush Size</span>
+                        {sizes.map((size) => (
+                            <ToolSizeIndicator
+                                key={size}
+                                toolSize={size}
+                                variant={selectedSize === size ? 'active' : 'default'}
+                                onClick={() => {
+                                    setSelectedSize(size);
+                                }}
+                            />
+                        ))}
+                    </div>
                 <div className="flex flex-row items-center gap-3">
                     {hasFinishedSubmit && !allowLocalEdit && (
                         <Button

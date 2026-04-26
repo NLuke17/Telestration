@@ -117,11 +117,11 @@ const HomePage: React.FC = () => {
                             {GAME_NAME}
                         </h1>
                     </div>
-                    <div className="flex shrink-0 flex-row items-center justify-end">
+                    <div className="flex shrink-0 flex-row items-center justify-end ">
                         {isAuthenticated && user ? (
                             <Link
                                 to="/account"
-                                className="flex max-w-full flex-row items-center gap-2 rounded-lg border border-dark-grey bg-white px-2 py-1.5 shadow-sm hover:bg-slate-50 transition-colors sm:gap-3 sm:px-4 sm:py-2"
+                                className="flex max-w-full flex-row items-center gap-2 rounded-lg dark:bg-dark-mode-input-background/20 border border-dark-grey bg-white px-2 py-1.5 shadow-sm hover:bg-slate-50 dark:hover:bg-gray-900 dark:hover:border-dark-mode-text-2 transition-colors sm:gap-3 sm:px-4 sm:py-2"
                                 title={user.username}
                             >
                                 <InitialAvatar
@@ -168,7 +168,7 @@ const HomePage: React.FC = () => {
                                     setRoomCodeInput(e.target.value.toUpperCase());
                                     setJoinError(null);
                                 }}
-                                className="dark:bg-white w-full border border-gray-300 rounded px-3 py-2 text-center"
+                                className="dark:bg-dark-mode-input-background/20 dark:placeholder:text-gray-400 dark:text-gray-100 w-full border border-gray-300 dark:border-dark-mode-border-2 rounded px-3 py-2 text-center"
                                 maxLength={6}
                             />
                             <Button

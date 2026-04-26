@@ -320,9 +320,9 @@ const RecapPage: React.FC = () => {
                         {visibleTimeline.map((entry, i) => {
                             if (entry.kind === 'prompt') {
                                 return (
-                                    <div key={`p-${i}`} className="rounded-lg border border-dark-grey bg-sky-50 p-4">
-                                        <div className="text-xs uppercase text-gray-500">Prompt</div>
-                                        <div className="text-heading-3 text-brand-charcoal">
+                                    <div key={`p-${i}`} className="rounded-lg border border-dark-grey bg-sky-50 dark:bg-dark-mode-input-background/20 p-4">
+                                        <div className="text-xs uppercase text-gray-500 dark:text-dark-mode-text-2">Prompt</div>
+                                        <div className="text-heading-3 text-brand-charcoal dark:text-dark-mode-text-1">
                                             {entry.text}
                                         </div>
                                     </div>
@@ -330,20 +330,20 @@ const RecapPage: React.FC = () => {
                             }
                             if (entry.kind === 'guess') {
                                 return (
-                                    <div key={entry.id} className="rounded-lg border border-dark-grey bg-sky-50 p-4">
-                                        <div className="text-xs uppercase text-gray-500">
+                                    <div key={entry.id} className="rounded-lg border border-dark-grey bg-sky-50 dark:bg-dark-mode-input-background/20 p-4">
+                                        <div className="text-xs uppercase text-gray-500 dark:text-dark-mode-text-2">
                                             Guess — {entry.authorUsername}
                                         </div>
-                                        <div className="text-body text-brand-charcoal">{entry.text}</div>
+                                        <div className="text-body text-brand-charcoal dark:text-dark-mode-text-1">{entry.text}</div>
                                     </div>
                                 );
                             }
                             return (
                                 <div
                                     key={`${entry.id}-${flipbookIndex}-${entryCount}`}
-                                    className="rounded-lg border border-dark-grey bg-sky-50 p-4"
+                                    className="rounded-lg border border-dark-grey bg-sky-50 dark:bg-dark-mode-input-background/20 p-4"
                                 >
-                                    <div className="text-xs uppercase text-gray-500">
+                                    <div className="text-xs uppercase text-gray-500 dark:text-dark-mode-text-2">
                                         Drawing — {entry.authorUsername}
                                     </div>
                                     <div className="mt-3 flex justify-center">
