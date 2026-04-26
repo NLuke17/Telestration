@@ -219,7 +219,7 @@ const VotingPage: React.FC = () => {
                     />
                 </div>
                 <p className="text-sm leading-relaxed text-light-mode-text-1 dark:text-dark-mode-text-1">
-                    Pick someone else&apos;s flipbook — initial prompt and final drawing below. Tap{' '}
+                    Click someone else&apos;s flipbook to vote for them. Tap{' '}
                     <span className="font-semibold">Done</span> when you&apos;re set. You can unlock and
                     change your vote until the timer ends.
                 </p>
