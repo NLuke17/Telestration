@@ -16,6 +16,7 @@ import { getWSClient } from '../../../services/ws/wsClient';
 import { useAuth } from '../../../contexts/AuthContext';
 import { AnimatedSketchDisplay } from '../../../components/game/AnimatedSketchDisplay';
 import { useTheme } from '../../../contexts/ThemeContext';
+import { wordFilter } from '../../../utils/moderation';
 
 import lightBg from '../../../assets/lightmode.jpg';
 import darkBg from '../../../assets/darkmode.jpg';
@@ -258,7 +259,19 @@ const WritingPage: React.FC = () => {
             return;
         }
 
-        const text = sentence.trim();
+        const check = wordFilter.checkProfanity(sentence);
+        let text: string = sentence.trim();
+
+        if (check.containsProfanity) {
+            if (opts?.fromTimer) {
+                // If the timer is up, don't block—just censor it so the game moves on
+                text = check.processedText ?? "Censored Message";
+            } else {
+                // If they clicked "Done", block and show error
+                setError(`Please remove inappropriate language: ${check.profaneWords.join(', ')}`);
+                return;
+            }
+        }
 
         if (opts?.fromTimer) {
             timeUpAutoSubmitRef.current = true;
@@ -458,25 +471,40 @@ const WritingPage: React.FC = () => {
                     </div>
                 )}
 
-                <div className="flex flex-col sm:flex-row items-center justify-center w-full gap-4">
+                <div className="relative flex-1 w-full">
                     <InputField
                         id="sentence"
                         label=""
-                        placeholder={
-                            isInitialPrompt
-                                ? "e.g., 'A cat riding a skateboard'"
-                                : 'Type your guess here!'
-                        }
+                        placeholder="Type your guess here!"
                         value={sentence}
-                        onChange={setSentence}
+                        onChange={(val) => {
+                            setSentence(val);
+                            // Check for profanity immediately
+                            const check = wordFilter.checkProfanity(val);
+                            if (check.containsProfanity) {
+                                setError(`Hey! "${check.profaneWords.join(', ')}" isn't allowed.`);
+                            } else {
+                                // Clear the error if they fix the word
+                                if (error?.includes("isn't allowed")) {
+                                    setError(null);
+                                }
+                            }
+                        }}
                         disabled={isInputLocked}
-                        maxLength={MAX_CHARS}
-                        className="w-full flex-1"
+                        maxLength={140}
+                        className={`w-full ${wordFilter.checkProfanity(sentence).containsProfanity ? 'border-red-500' : ''}`}
                     />
+
+                    {/* Real-time warning text */}
+                    {wordFilter.checkProfanity(sentence).containsProfanity && (
+                        <div className="text-red-500 text-xs mt-1 font-bold animate-pulse">
+                            Inappropriate language detected!
+                        </div>
+                    )}
                     {/* Visual Counter */}
                     <div className={`text-right text-xs mt-1 font-medium ${sentence.length >= MAX_CHARS
-                            ? 'text-red-500'
-                            : 'text-gray-500 dark:text-dark-mode-text-2'
+                        ? 'text-red-500'
+                        : 'text-gray-500 dark:text-dark-mode-text-2'
                         }`}>
                         {sentence.length} / {MAX_CHARS}
                     </div>
