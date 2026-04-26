@@ -11,6 +11,7 @@ import darkBg from '../../assets/darkmode.jpg';
 import ColorModeButton from '../../components/common/ColorModeButton';
 import SiteLogo from '../../components/common/SiteLogo';
 import { GAME_NAME } from '../../constants/branding';
+import { PiCaretLeft } from 'react-icons/pi';
 
 const SignupPage: React.FC = () => {
     const { theme } = useTheme();
@@ -26,6 +27,13 @@ const SignupPage: React.FC = () => {
                 padding="5em"
                 className="flex min-h-0 flex-col items-center justify-center gap-6 border-2 border-dark-grey rounded-lg sm:gap-8"
             >
+                <Link
+                    to="/"
+                    className="flex w-full items-center gap-1 self-start text-sm font-semibold text-indigo-600/90 hover:underline dark:text-indigo-300/90"
+                >
+                    <PiCaretLeft className="h-4 w-4 shrink-0" aria-hidden />
+                    Back to home
+                </Link>
                 <div className="flex w-full flex-col gap-2">
                     <div className="flex w-full items-center gap-3">
                         <SiteLogo size={48} className="drop-shadow-sm" />
