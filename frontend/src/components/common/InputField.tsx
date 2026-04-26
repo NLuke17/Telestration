@@ -44,7 +44,7 @@ export default function InputField({
                 disabled={disabled}
                 required={required}
                 onChange={(e) => onChange(e.target.value)}
-                className={`text-light-mode-text-2 dark:text-slate-950 border-2 border-light-grey bg-transparent dark:bg-dark-mode-input-background rounded-md outline-none focus:border-charcoal transition-colors ${
+                className={`text-light-mode-text-2 dark:text-dark-mode-text-2 dark:placeholder:text-gray-400 border-2 border-light-grey bg-transparent dark:bg-dark-mode-input-background/20 rounded-md outline-none focus:border-charcoal transition-colors ${
                     compact ? 'px-2 py-1.5 text-sm' : 'px-3 py-2 text-body-base gap-2'
                 } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
             />
