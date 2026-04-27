@@ -46,7 +46,7 @@ export default function TutorialSlideshow({ children, className = '', embedded =
             <button
                 type="button"
                 onClick={prevSlide}
-                className="absolute left-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-dark-grey/20 text-white transition-all hover:bg-dark-grey/40"
+                className="absolute left-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-dark-grey/20 text-white transition-all hover:bg-dark-grey/50"
                 aria-label="Previous slide"
             >
                 &larr;
@@ -55,7 +55,7 @@ export default function TutorialSlideshow({ children, className = '', embedded =
             <button
                 type="button"
                 onClick={nextSlide}
-                className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-dark-grey/20 text-white transition-all hover:bg-dark-grey/40"
+                className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-dark-grey/20 text-white transition-all hover:bg-dark-grey/50"
                 aria-label="Next slide"
             >
                 &rarr;
@@ -68,7 +68,9 @@ export default function TutorialSlideshow({ children, className = '', embedded =
                         key={i}
                         onClick={() => setCurrentIndex(i)}
                         className={`h-2 w-2 rounded-full transition-all ${
-                            i === currentIndex ? 'w-4 bg-blue-500' : 'bg-gray-300'
+                            i === currentIndex 
+                                ? 'w-4 bg-blue-500' 
+                                : 'bg-gray-300 dark:bg-dark-grey' // updated for dark mode
                         }`}
                         aria-label={`Go to slide ${i + 1}`}
                     />
