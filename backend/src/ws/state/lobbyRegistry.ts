@@ -1,5 +1,5 @@
 import { ClientConn } from '../core/clientConn';
-import { logInfo, logWarn } from '../../utils/logger';
+import { logInfo } from '../../utils/logger';
 
 /**
  * Lobby membership registry

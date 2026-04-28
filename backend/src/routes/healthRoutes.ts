@@ -6,7 +6,7 @@ import { getLobbyRegistry } from '../ws/state/lobbyRegistry';
 
 const router = express.Router();
 
-router.get('/', (req, res) => {
+router.get('/', (_req, res) => {
     res.json({ message: 'Health check passed' });
 });
 
@@ -14,7 +14,7 @@ router.get('/', (req, res) => {
  * Dev/ops: list recent lobbies from Postgres + in-memory WS connection counts.
  * Disabled in production (returns 404) to avoid leaking room codes on public URLs.
  */
-router.get('/lobbies', async (req, res) => {
+router.get('/lobbies', async (_req, res) => {
     if (isProd()) {
         return res.status(404).json({ error: 'Not found' });
     }
@@ -49,7 +49,7 @@ router.get('/lobbies', async (req, res) => {
     }
 });
 
-router.get('/db', async (req, res) => {
+router.get('/db', async (_req, res) => {
     try {
         const userCount = await prisma.user.count();
         res.json({ 

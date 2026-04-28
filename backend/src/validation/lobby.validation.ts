@@ -4,9 +4,6 @@ import { z } from 'zod';
  * Lobby validation schemas
  */
 
-// UUID validation helper
-const uuidSchema = z.string().uuid({ message: 'Invalid UUID format' });
-
 /** Stored User.id (UUID or legacy client-generated ids) */
 const participantIdSchema = z.string().min(1).max(128);
 

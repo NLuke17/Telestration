@@ -4,7 +4,7 @@
  */
 
 import { getPrisma } from '../prisma/client';
-import { LobbySnapshot, UserDTO, FlipbookDTO, RoundDTO } from '../types/dto';
+import { LobbySnapshot } from '../types/dto';
 
 const prisma = getPrisma();
 

@@ -92,12 +92,12 @@ export function setupWebSocket(server: Server): WSGatewayHandle {
       logInfo('Lobby deleted, all connections removed', { lobbyId, connectionCount: connections.length });
     },
 
-    async notifyPlayerJoined(lobbyId: string, userId: string): Promise<void> {
+    async notifyPlayerJoined(lobbyId: string, _userId: string): Promise<void> {
       await broadcastLobbySnapshot(ctx, lobbyId);
       await broadcastPresence(ctx, lobbyId);
     },
 
-    async notifyPlayerLeft(lobbyId: string, userId: string): Promise<void> {
+    async notifyPlayerLeft(lobbyId: string, _userId: string): Promise<void> {
       await broadcastLobbySnapshot(ctx, lobbyId);
       await broadcastPresence(ctx, lobbyId);
     },

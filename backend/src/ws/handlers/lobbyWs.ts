@@ -3,8 +3,7 @@ import { WSContext } from '../context/wsContext';
 import { ClientConn, createClientConn, setLobby } from '../core/clientConn';
 import { send, broadcast } from '../core/wsUtils';
 import { parseEnvelope, routeMessage, MessageHandler } from '../core/wsRouter';
-import { WSClientMessage } from '../../types/ws';
-import { logInfo, logError, logWarn } from '../../utils/logger';
+import { logInfo, logError } from '../../utils/logger';
 import { normalizeRoomCode } from '../../utils/roomCode';
 import {
   handleDrawingSubmission,
@@ -199,7 +198,7 @@ async function handleLobbyConnect(
 }
 
 async function handleLobbyReady(
-  ctx: WSContext,
+  _ctx: WSContext,
   conn: ClientConn,
   msg: { type: 'lobby:ready'; ready: boolean }
 ): Promise<void> {

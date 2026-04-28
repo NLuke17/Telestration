@@ -154,11 +154,32 @@ export type ListSavedFlipbooksResponse = {
   maxSaved: number;
 };
 
+/** Default matches backend `MAX_SAVED_FLIPBOOKS_PER_USER` when the API omits `maxSaved`. */
+const DEFAULT_MAX_SAVED_FLIPBOOKS = 10;
+
+function coerceListSavedFlipbooksResponse(raw: unknown): ListSavedFlipbooksResponse {
+  if (!raw || typeof raw !== 'object') {
+    return { savedFlipbooks: [], maxSaved: DEFAULT_MAX_SAVED_FLIPBOOKS };
+  }
+  const o = raw as Record<string, unknown>;
+  const list = o.savedFlipbooks;
+  const maxRaw = o.maxSaved;
+  const maxSaved =
+    typeof maxRaw === 'number' && Number.isFinite(maxRaw) && maxRaw >= 0
+      ? maxRaw
+      : DEFAULT_MAX_SAVED_FLIPBOOKS;
+  return {
+    savedFlipbooks: Array.isArray(list) ? (list as SavedFlipbookSummary[]) : [],
+    maxSaved,
+  };
+}
+
 /**
  * List flipbooks saved to the signed-in user's library (requires JWT).
  */
 export async function listSavedFlipbooks(): Promise<ListSavedFlipbooksResponse> {
-  return authenticatedClient.get<ListSavedFlipbooksResponse>('/game/saved-flipbooks');
+  const raw = await authenticatedClient.get<unknown>('/game/saved-flipbooks');
+  return coerceListSavedFlipbooksResponse(raw);
 }
 
 /**

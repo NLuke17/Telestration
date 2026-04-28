@@ -315,11 +315,11 @@ export async function submitGuess(
       }
       
       // Update the flipbook's prompt instead of creating a guess
-      const updatedFlipbook = await prisma.flipbook.update({
+      await prisma.flipbook.update({
         where: { id: flipbookId },
         data: { prompt: text.trim() },
       });
-      
+
       logInfo('Initial prompt submitted', {
         flipbookId,
         userId,
