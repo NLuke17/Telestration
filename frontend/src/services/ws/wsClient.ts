@@ -23,19 +23,16 @@ export class WSClient {
    */
   connect(): void {
     if (this.ws?.readyState === WebSocket.OPEN || this.ws?.readyState === WebSocket.CONNECTING) {
-      console.log('[WSClient] Already connected or connecting');
       return;
     }
 
     this.setStatus('connecting');
     const wsUrl = resolveWebSocketUrl();
-    console.log('[WSClient] Connecting to', wsUrl);
 
     try {
       this.ws = new WebSocket(wsUrl);
 
       this.ws.onopen = () => {
-        console.log('[WSClient] Connected');
         this.setStatus('connected');
         this.startHeartbeat();
         this.clearReconnectTimer();
@@ -51,7 +48,6 @@ export class WSClient {
       };
 
       this.ws.onclose = () => {
-        console.log('[WSClient] Disconnected');
         this.setStatus('disconnected');
         this.stopHeartbeat();
         
@@ -73,7 +69,6 @@ export class WSClient {
    * Disconnect from WebSocket server
    */
   disconnect(): void {
-    console.log('[WSClient] Disconnecting...');
     this.shouldReconnect = false;
     this.clearReconnectTimer();
     this.stopHeartbeat();
@@ -99,7 +94,6 @@ export class WSClient {
 
     try {
       this.ws.send(JSON.stringify(message));
-      console.log('[WSClient] Sent:', type, payload);
       return true;
     } catch (error) {
       console.error('[WSClient] Failed to send message:', error);
@@ -120,7 +114,6 @@ export class WSClient {
 
     // Type assertion needed here due to generic constraint
     this.handlers.get(type)!.add(handler as unknown as WSMessageHandler);
-    console.log('[WSClient] Subscribed to:', type);
 
     // Return unsubscribe function
     return () => this.unsubscribe(type, handler as unknown as WSMessageHandler);
@@ -133,7 +126,6 @@ export class WSClient {
     const handlers = this.handlers.get(type);
     if (handlers) {
       handlers.delete(handler);
-      console.log('[WSClient] Unsubscribed from:', type);
 
       if (handlers.size === 0) {
         this.handlers.delete(type);
@@ -174,7 +166,6 @@ export class WSClient {
   private handleMessage(data: string): void {
     try {
       const message = JSON.parse(data) as WSServerMessage;
-      console.log('[WSClient] Received:', message.type, message);
 
       // Call handlers for this message type
       const handlers = this.handlers.get(message.type);
@@ -207,8 +198,7 @@ export class WSClient {
   private setStatus(status: ConnectionStatus): void {
     if (this.status !== status) {
       this.status = status;
-      console.log('[WSClient] Status changed to:', status);
-      
+
       // Notify all status listeners
       this.statusListeners.forEach((listener) => {
         try {
@@ -225,7 +215,6 @@ export class WSClient {
       return;
     }
 
-    console.log(`[WSClient] Reconnecting in ${RECONNECT_DELAY}ms...`);
     this.reconnectTimer = setTimeout(() => {
       this.reconnectTimer = null;
       this.connect();

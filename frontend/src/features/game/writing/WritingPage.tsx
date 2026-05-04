@@ -237,13 +237,6 @@ const WritingPage: React.FC = () => {
         }
     }, [gameState.roundId, gameState.phase, userId, roomCode, navigate]);
 
-    // Handle phase complete
-    useEffect(() => {
-        if (gameState.isPhaseComplete) {
-            console.log('Guessing phase complete');
-        }
-    }, [gameState.isPhaseComplete]);
-
     const handleSubmit = async (opts?: { fromTimer?: boolean }) => {
         if (!assignment || !userId || !sentence.trim()) {
             console.error('Missing required data for submission');

@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-// @ts-ignore - framer-motion is installed but TS server may not detect it immediately
 import { motion, AnimatePresence } from 'framer-motion';
 import Container from '../../../components/common/Container';
 import { getGameState } from '../../../services/api/lobbyApi';

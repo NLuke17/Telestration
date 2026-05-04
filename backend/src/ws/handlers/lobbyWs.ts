@@ -96,8 +96,6 @@ async function handleLobbyConnect(
     ctx.registry.joinLobby(snapshot.id, conn.connId);
     setLobby(conn, snapshot.id);
 
-    // Handle user authentication
-    // TODO: Replace this with proper JWT/session validation
     if (msg.userId) {
       conn.userId = msg.userId;
       ctx.presence.markConnected(snapshot.id, msg.userId);
