@@ -16,21 +16,18 @@ import { PiPlanet } from 'react-icons/pi';
 import { GAME_NAME } from '../../constants/branding';
 import Tutorial from '../../components/common/Tutorial';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
-
-const MIN_PLAYERS = 2;
-const MAX_PLAYERS = 8;
+import { MIN_LOBBY_PLAYERS_TO_START, MAX_LOBBY_PLAYERS } from '../../constants/lobbyLimits';
+import { getOrCreateLobbyUserId } from '../../utils/lobbyUserId';
 
 const LobbyPage: React.FC = () => {
     const { theme } = useTheme();
     const { roomCode } = useParams<{ roomCode: string }>();
     const navigate = useNavigate();
-    const { user } = useAuth();
+    const { user, isAuthenticated } = useAuth();
 
-    // Get userId from auth context
-    const userId = user?.id || localStorage.getItem('userId') || '';
+    const userId = getOrCreateLobbyUserId(isAuthenticated, user);
     const sync = roomCode && userId ? { roomCode, userId } : undefined;
 
-    // Use custom hooks for lobby state
     const { lobby, isConnected, error, wsStatus } = useLobby(roomCode || '', userId);
     const gameState = useGameState(lobby?.id, sync);
 
@@ -67,27 +64,15 @@ const LobbyPage: React.FC = () => {
     const [leaveHostNote, setLeaveHostNote] = useState('');
     const [shareSuccessMessage, setShareSuccessMessage] = useState<string | null>(null);
 
-    // Handle game started event - redirect to countdown
     React.useEffect(() => {
-        console.log('[LobbyPage] Game state updated:', {
-            roundId: gameState.roundId,
-            phase: gameState.phase,
-            roundNumber: gameState.roundNumber
-        });
-
         if (gameState.roundId && gameState.phase) {
-            console.log('[LobbyPage] Game started, navigating to countdown page with phase:', gameState.phase);
             navigate(`/game/${roomCode}/countdown?phase=${gameState.phase}`, { replace: true });
         }
     }, [gameState.roundId, gameState.phase, gameState.roundNumber, navigate, roomCode]);
 
-    // Handle lobby already in progress - redirect to countdown
     React.useEffect(() => {
         if (lobby && lobby.state === 'IN_PROGRESS') {
-            console.log('[LobbyPage] Lobby is already in progress, checking game state');
-            // If we have game state, redirect to countdown with phase
             if (gameState.roundId && gameState.phase) {
-                console.log('[LobbyPage] Redirecting to countdown for game in progress with phase:', gameState.phase);
                 navigate(`/game/${roomCode}/countdown?phase=${gameState.phase}`, { replace: true });
             }
         }
@@ -175,28 +160,19 @@ const LobbyPage: React.FC = () => {
     const handleStart = async () => {
         if (!roomCode || !lobby) return;
 
-        console.log('[LobbyPage] handleStart called', { roomCode, lobbyId: lobby.id, playerCount: lobby.players.length });
-
         setIsStarting(true);
         setStartError(null);
 
         try {
-            // Start the lobby via REST API
-            console.log('[LobbyPage] Calling startLobby API...');
             const result = await startLobby(roomCode);
-            console.log('[LobbyPage] startLobby API response:', result);
 
             const allPrefilled =
                 result.flipbooks?.every((fb) => (fb.prompt || '').trim().length > 0) ?? false;
             const startPhase = allPrefilled ? 'DRAWING' : 'GUESSING';
 
             setTimeout(() => {
-                console.log('[LobbyPage] Host navigating to countdown, phase:', startPhase);
                 navigate(`/game/${roomCode}/countdown?phase=${startPhase}`);
             }, 400);
-
-            // The game:started event will be received via WebSocket for other players
-            // and handled by the useEffect above
         } catch (err: any) {
             console.error('[LobbyPage] Failed to start game:', err);
             setStartError(err.message || 'Failed to start game');
@@ -251,7 +227,7 @@ const LobbyPage: React.FC = () => {
 
     const isHost = lobby?.host.id === userId;
     const playerCount = lobby?.players.length || 0;
-    const hasMinimumPlayers = playerCount >= MIN_PLAYERS;
+    const hasMinimumPlayers = playerCount >= MIN_LOBBY_PLAYERS_TO_START;
     const canStart =
         isHost &&
         hasMinimumPlayers &&
@@ -311,7 +287,7 @@ const LobbyPage: React.FC = () => {
                     {/* Left: players */}
                     <div className="flex w-full shrink-0 flex-col gap-4 xl:w-64">
                         <h2 className="text-center text-lg font-bold text-light-mode-text-1 dark:text-dark-mode-text-2 w-full">
-                            Players {playerCount}/{MAX_PLAYERS} maximum
+                            Players {playerCount}/{MAX_LOBBY_PLAYERS} maximum
                         </h2>
                         <Container
                             width='100%'
@@ -403,7 +379,7 @@ const LobbyPage: React.FC = () => {
                             )}
                             {isHost && !isGameInProgress && !hasMinimumPlayers && (
                                 <p className="dark:text-dark-mode-text-2 text-amber-600 text-sm text-center">
-                                    Need at least {MIN_PLAYERS} players ({playerCount}/{MIN_PLAYERS})
+                                    Need at least {MIN_LOBBY_PLAYERS_TO_START} players ({playerCount}/{MIN_LOBBY_PLAYERS_TO_START})
                                 </p>
                             )}
                             {!isHost && !isGameInProgress && (

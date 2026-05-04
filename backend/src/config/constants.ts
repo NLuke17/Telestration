@@ -1,5 +1,6 @@
 export const ROOM_CODE_LENGTH = 6;
 export const WS_MAX_PAYLOAD_BYTES = 1024 * 1024; // 1MB
+/** Authoritative max lobby size; mirror in `frontend/src/constants/lobbyLimits.ts` for UI. */
 export const LOBBY_MAX_PLAYERS = 8;
 export const LOBBY_IDLE_TTL_SECONDS = 3600; // 1 hour
 export const WS_HEARTBEAT_INTERVAL_MS = 30000; // 30 seconds
@@ -20,6 +21,7 @@ export const RECAP_FLIPBOOK_DURATION_MS = 14000;
 export const PHASE_DEADLINE_SUBMISSION_GRACE_MS = 8000;
 
 // Game configuration
+/** Mirror in `frontend/src/constants/lobbyLimits.ts` for client-side messaging. */
 export const MIN_PLAYERS_TO_START = 2;
 export const MAX_ROUNDS = 5;
 /** Max flipbooks each user may copy into their library (JWT accounts). */

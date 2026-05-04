@@ -252,14 +252,6 @@ const DrawingPage: React.FC = () => {
         }
     }, [gameState.roundId, gameState.phase, userId, roomCode]);
 
-    // Handle phase complete - navigate to waiting or next phase
-    useEffect(() => {
-        if (gameState.isPhaseComplete) {
-            // Phase is complete, show waiting screen or navigate
-            console.log('Drawing phase complete');
-        }
-    }, [gameState.isPhaseComplete]);
-
     const handleSubmit = async (opts?: { fromTimer?: boolean }) => {
         if (!canvasRef.current || !assignment || !userId) {
             console.error('Missing required data for submission');

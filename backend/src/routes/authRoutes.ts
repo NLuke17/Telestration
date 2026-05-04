@@ -1,6 +1,5 @@
 import express from "express";
 import multer from "multer";
-// @ts-ignore - express-rate-limit v8.x includes types, TS server cache issue
 import rateLimit from "express-rate-limit"; 
 import { createUser, listUsers, loginUser, refreshUserToken, logoutUser, logoutAllDevices, deleteUserAccount, getUserProfile, updateUserProfilePictureUrl } from "../services/authService";
 import { persistUserAvatar } from "../services/avatarService";

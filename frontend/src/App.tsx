@@ -3,7 +3,6 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-d
 import { AuthProvider } from './contexts/AuthContext';
 import { useTokenRefresh } from './hooks/useTokenRefresh';
 
-// Pages
 import HomePage from './features/home/HomePage';
 import LoginPage from './features/auth/LoginPage';
 import SignupPage from './features/auth/SignupPage';
@@ -18,8 +17,6 @@ import ResultsPage from './features/game/results/ResultsPage';
 import AccountPage from './features/account/AccountPage';
 import { ProtectedRoute } from './components/ProtectedRoute';
 
-// Debug page (development only)
-import Home from './pages/home';
 import { ThemeProvider } from './contexts/ThemeContext';
 
 function AppContent() {
@@ -55,11 +52,9 @@ function AppContent() {
           <Route path="/game/:roomCode/vote" element={<VotingPage />} />
           <Route path="/game/:roomCode/results" element={<ResultsPage />} />
 
-          {/* Legacy/Debug Routes */}
           <Route path="/home" element={<Navigate to="/" replace />} />
           <Route path="/drawing" element={<Navigate to="/" replace />} />
           <Route path="/writing" element={<Navigate to="/" replace />} />
-          <Route path="/debug" element={<Home />} />
 
           {/* 404 Catch-all */}
           <Route path="*" element={<Navigate to="/" replace />} />

@@ -15,6 +15,7 @@ import lightBg from '../../assets/lightmode.jpg';
 import darkBg from '../../assets/darkmode.jpg';
 import ColorModeButton from '../../components/common/ColorModeButton';
 import SiteLogo from '../../components/common/SiteLogo';
+import { getOrCreateLobbyUserId } from '../../utils/lobbyUserId';
 
 const HomePage: React.FC = () => {
     const navigate = useNavigate();
@@ -26,20 +27,7 @@ const HomePage: React.FC = () => {
     const [isJoining, setIsJoining] = useState(false);
 
     const handleCreateLobby = async () => {
-        let userId: string;
-
-        if (isAuthenticated && user) {
-            userId = user.id;
-        } else {
-            // Generate a temporary user ID if not logged in
-            const storedUserId = localStorage.getItem('userId');
-            if (storedUserId) {
-                userId = storedUserId;
-            } else {
-                userId = crypto.randomUUID();
-                localStorage.setItem('userId', userId);
-            }
-        }
+        const userId = getOrCreateLobbyUserId(isAuthenticated, user);
 
         try {
             setIsCreating(true);
@@ -61,20 +49,7 @@ const HomePage: React.FC = () => {
             return;
         }
 
-        let userId: string;
-
-        if (isAuthenticated && user) {
-            userId = user.id;
-        } else {
-            // Generate a temporary user ID if not logged in
-            const storedUserId = localStorage.getItem('userId');
-            if (storedUserId) {
-                userId = storedUserId;
-            } else {
-                userId = crypto.randomUUID();
-                localStorage.setItem('userId', userId);
-            }
-        }
+        const userId = getOrCreateLobbyUserId(isAuthenticated, user);
 
         try {
             setIsJoining(true);
@@ -99,14 +74,12 @@ const HomePage: React.FC = () => {
             style={{ backgroundImage: `url(${theme === 'dark' ? darkBg : lightBg})` }}
         >
             <ColorModeButton />
-            {/* Home content container */}
             <Container
                 width="900px"
                 height="500px"
                 padding="3em"
                 className="flex flex-col items-center justify-center gap-6 border-2 border-dark-grey rounded-lg sm:gap-8"
             >
-                {/* Heading — one row on all breakpoints; title can wrap within its flex space */}
                 <div className="relative z-20 flex w-full shrink-0 flex-row flex-wrap items-center justify-between gap-x-3 gap-y-2">
                     <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
                         <SiteLogo
@@ -147,9 +120,7 @@ const HomePage: React.FC = () => {
                         )}
                     </div>
                 </div>
-                {/* Main content */}
                 <div className="flex min-h-0 w-full flex-1 flex-col justify-center gap-8 lg:flex-row lg:items-stretch lg:gap-6">
-                    {/* Join a room option */}
                     <div className="flex w-full min-w-0 flex-col items-center gap-5 text-center lg:min-h-0 lg:flex-1 lg:basis-0">
                         <div className="mb-8 flex items-start justify-center gap-2 text-center text-body dark:text-dark-mode-text-1">
                             <PiPlanet
@@ -190,9 +161,7 @@ const HomePage: React.FC = () => {
                             </div>
                         </div>
                     </div>
-                    {/* How to Play (rulebook) */}
                     <Tutorial width="min-h-0 w-full min-w-0 max-h-[40vh] lg:max-h-full lg:flex-1 lg:basis-0" />
-                    {/* Start a new room option */}
                     <div className="flex w-full min-w-0 flex-col items-center gap-5 text-center lg:min-h-0 lg:flex-1 lg:basis-0">
                         <div className="mb-8 flex items-start justify-center gap-2 text-center text-body dark:text-dark-mode-text-1">
                             <PiRocketLaunch
